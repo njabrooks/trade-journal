@@ -514,12 +514,44 @@
         "release_reference": "d139934716d654b8608a1d591f96de572aefa467",
         "revision": "d139934716d654b8608a1d591f96de572aefa467"
       }
+    },
+    {
+      "approved_version": "1.0.0",
+      "authority": "scope:trade-journal",
+      "dependencies": [],
+      "id": "capability:scope:trade-journal/workflow-discovery",
+      "package_digest": "sha256:d9ca9b499592f86cba3a9d46f37d20a693e59c91f7e19953d48a03b122f546ad",
+      "provider_adapters": [
+        {
+          "evidence": "evidence/claude.json",
+          "id": "workflow-discovery-claude",
+          "provider": "claude",
+          "source": "adapters/claude.md",
+          "state": "current",
+          "validated_at": "2026-08-11"
+        },
+        {
+          "evidence": "evidence/codex.json",
+          "id": "workflow-discovery-codex",
+          "provider": "codex",
+          "source": "adapters/codex.md",
+          "state": "current",
+          "validated_at": "2026-08-11"
+        }
+      ],
+      "repository": "github:njabrooks/trade-journal",
+      "source": {
+        "development_digest": null,
+        "package_path": "capabilities/workflow-discovery",
+        "release_reference": "ecceceb16f892e4521f5ea6e6e153d641f328beb",
+        "revision": "ecceceb16f892e4521f5ea6e6e153d641f328beb"
+      }
     }
   ],
-  "evidence_time": "2026-08-10",
+  "evidence_time": "2026-08-11",
   "kind": "CapabilityRegistryLock",
   "mode": "published",
   "publication_eligible": true,
-  "registry_digest": "sha256:65001f14dd03520f72d55b166944d587e02626790c2c2636f3fedb6b7cd9b0e2",
+  "registry_digest": "sha256:6f3fc8453554ba37b70d7e4aef4862fb0b46a70da5e8767df5ecd5bda045b602",
   "schema_version": "1.0.0"
 }

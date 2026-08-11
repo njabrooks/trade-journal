@@ -38,12 +38,12 @@ describe("Provider Adapter generation eligibility", () => {
 
     expect(validateEligibility(artifact)).toEqual([]);
     expect(artifact.outcome).toBe("eligible-adapters-present");
-    expect(artifact.generation_eligible_count).toBe(48);
+    expect(artifact.generation_eligible_count).toBe(50);
     expect(artifact.governed_outputs).toEqual([
       "docs/agents/provider-entry-points/staging/claude.md",
       "docs/agents/provider-entry-points/staging/codex.md",
     ]);
-    expect(artifact.entries).toHaveLength(73);
+    expect(artifact.entries).toHaveLength(74);
   });
 
   it("rebuilds the checked-in artifact byte-for-byte", () => {

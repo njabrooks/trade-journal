@@ -210,6 +210,21 @@
         "enabled": true,
         "working_tree": "."
       }
+    },
+    {
+      "id": "capability:scope:trade-journal/workflow-discovery",
+      "authority": "scope:trade-journal",
+      "repository": "github:njabrooks/trade-journal",
+      "package_path": "capabilities/workflow-discovery",
+      "approved_version": "1.0.0",
+      "release": {
+        "source": ".",
+        "revision": "ecceceb16f892e4521f5ea6e6e153d641f328beb"
+      },
+      "development": {
+        "enabled": true,
+        "working_tree": "."
+      }
     }
   ]
 }

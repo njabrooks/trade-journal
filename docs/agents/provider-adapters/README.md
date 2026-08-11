@@ -1,7 +1,8 @@
 # Provider Adapter inventories
 
-These artifacts describe Trade Journal's provider-specific entry points and operational dependencies for J1.
-They are repository-owned migration evidence, not Capability Packages and not Adapter Conformance evidence.
+These artifacts describe Trade Journal's provider-specific entry points and operational dependencies. They are
+repository-owned supporting projections; exact Adapter Conformance comes only from the Capability Package and
+evidence binding referenced by a `current` entry.
 
 ## Validation boundary
 
@@ -31,7 +32,8 @@ Adapter Conformance. The accepted Workspace CLI remains authoritative for those 
 `interactive-inventory.json` contains:
 
 - all 36 repository-origin Claude records: 33 discovery paths and three issue #75 historical-only records;
-- the external machine-local interactive Codex bridge as a separate adapter;
+- repository-owned governed Claude and Codex workflow-discovery adapters;
+- the optional machine-local Codex bridge as an environmental bootstrap surface, not an adapter authority;
 - repository and external discovery surfaces;
 - all four Claude `SessionStart` hooks;
 - concrete mappings from Claude shell, web, Supabase, Tana, Massive, IBKR, Skill, and Agent surfaces to
@@ -113,7 +115,8 @@ invoke an agent model. Provider data dependencies such as Radon, IB Gateway, Mas
 access, credentials, login state, and macOS notifications remain visible on the live workflows where they
 affect execution.
 
-The parity script is supporting diagnostic tooling, not Adapter Conformance evidence. Likewise, a current
+The parity script gates the repository inventory and mirror only; it never reads or requires the optional
+machine-local bridge. It remains supporting diagnostic tooling, not Adapter Conformance evidence. Likewise, a current
 mirror and a valid rich inventory do not upgrade any W1 evidence state. J2 upgrades an inventory entry only
 when an exact source Capability version, package digest, adapter digest, complete evidence, immutable lock,
 and staged generated output bind it through W1. The remaining generic projections stay `unavailable`.
@@ -121,10 +124,10 @@ and staged generated output bind it through W1. The remaining generic projection
 ## Generation eligibility
 
 `generation-eligibility.json` is the deterministic projection of both inventories into J1's governed
-generation decision and the incremental J2 migration state. It covers all 73 inventoried entry points. The
-fourteen locked Capabilities now record 48 generation-eligible inventory entries and two whole-file governed
-staging outputs. Eleven packages are Trade Journal-owned; the three Notes-owned content-processing dependency
-packages remain external. The other 25 entries remain non-governed migration inputs or non-candidates with
+generation decision and the incremental J2 migration state. It covers all 74 inventoried entry points. The
+fifteen locked Capabilities now record 50 generation-eligible inventory entries and two whole-file governed
+staging outputs. Twelve packages are Trade Journal-owned; the three Notes-owned content-processing dependency
+packages remain external. The other 24 entries remain non-governed migration inputs or non-candidates with
 explicit dispositions.
 
 The portfolio-snapshot, belief-maintenance, belief-research-relation, claims-synthesis, research-publication,
@@ -135,6 +138,14 @@ package covers the maintenance, thesis-review, and claim-backfill inventory entr
 neutral boundary. Governed outputs stay under the staging discovery surface until a separately approved live
 or final discovery cutover. File presence, mirror parity, generic packaging, or historical execution cannot
 upgrade any remaining adapter.
+
+Workflow discovery adds current Claude and Codex interactive adapters. Each selects from this validated
+inventory and delegates to the exact locked Codex adapter or an honestly unavailable repository-authored
+migration input; it does not reproduce workflow procedures or execute the selected workflow. `AGENTS.md`
+provides repository-native activation. The Home Hub bridge remains optional bootstrap only, so its absence or
+drift cannot fail repository parity or become Adapter Conformance evidence. Exact release, artifact, observed
+environmental-bootstrap digests, scope, and rollback are recorded in
+`evidence/issue-71-workflow-discovery.json`.
 
 The four `process-note` and `process-transcript` projections instead bind to Notes content-processing `0.2.0`
 at one immutable Notes revision. Their legacy repository paths remain explicit migration inputs and active

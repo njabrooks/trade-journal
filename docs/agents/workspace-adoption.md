@@ -43,23 +43,22 @@ uses the accepted native-first hierarchy/dependency policy. The five canonical l
 live labels; unrelated labels remain a namespaced extension. The live `needs-triage` description was aligned to
 the exact canonical Work Item meaning during adoption.
 
-The accepted J1 manifest declared no owned Capability Packages. J2 now declares eleven Trade Journal-owned
+The accepted J1 manifest declared no owned Capability Packages. J2 now declares twelve Trade Journal-owned
 packages: portfolio snapshot, belief maintenance, belief-research relation, claims synthesis, thesis observation, thesis underwriting, belief evidence assessment,
-research publication, research pipeline, portfolio options advice, and morning attention brief. Archived, retired, and deprecated non-candidates plus the external machine-local Codex bridge
-remain visible in a namespaced extension. Rich inventory validity, mirror parity, and file presence do not
+research publication, research pipeline, portfolio options advice, morning attention brief, and workflow discovery. Archived, retired, and deprecated non-candidates remain visible in a namespaced extension; the machine-local Codex bridge is recorded only as optional environmental bootstrap. Rich inventory validity, mirror parity, and file presence do not
 establish Adapter Conformance; only exact W1-bound evidence upgrades an inventory entry. The federated Registry
 also resolves three Notes-owned packages from their accepted immutable release without declaring them owned by
 Trade Journal.
 
 ## Generation eligibility and refusal
 
-`docs/agents/provider-adapters/generation-eligibility.json` deterministically projects all 73 interactive and
+`docs/agents/provider-adapters/generation-eligibility.json` deterministically projects all 74 interactive and
 headless inventory entries. The accepted J1 state at governed evidence date `2026-08-04` recorded zero
-generation-eligible adapters and no governed outputs. At the current J2 evidence date `2026-08-10`, fourteen
-locked Capabilities—eleven Trade Journal-owned packages plus three Notes-owned packages—make 48 inventory
+generation-eligible adapters and no governed outputs. At the current J2 evidence date `2026-08-11`, fifteen
+locked Capabilities—twelve Trade Journal-owned packages plus three Notes-owned packages—make 50 inventory
 entries generation eligible while the whole-file Claude and Codex outputs
-remain staged. Existing `CLAUDE.md`, `AGENTS.md`, `.claude/skills/`, `.agents/skills/`, and the machine-local
-bridge remain migration inputs until their separately governed cutovers, except for the twenty research-pipeline
+remain staged. Existing `CLAUDE.md`, `.claude/skills/`, and `.agents/skills/` remain migration inputs until their
+separately governed cutovers, except for the twenty research-pipeline
 paths contracted by #69 to protective tombstones with exact governed replacements.
 
 The controlled refusal harness was executed in human and JSON modes against a clean detached Workspace
@@ -200,7 +199,7 @@ source revision `6b0615dea287d112ce190b1e749b6ff85b9b0750`. The ten former Claud
 headless projections retain their existing discovery paths as non-executable protective tombstones; each names
 one exact governed CLI stage, returns or requires zero writes, and preserves unavailable, refusal, provenance,
 idempotency, and genuine-judgment semantics. Active repository consumers now route to the governed CLI, while
-the machine-local Codex bridge continues to resolve safely through the retained paths. Historical instructions
+the governed workflow-discovery adapter resolves safely through the retained paths. Historical instructions
 remain recoverable from accepted pre-contraction merge `051c1c57c9dd447c930e4352262d6c4cd6f90fe2` and
 rollback requires only a repository revert followed by deterministic publication regeneration. The patch
 release supersedes the initial 1.3.0 publication after fixed-point Standards and Spec review found stale
@@ -277,6 +276,15 @@ adapter bindings, no operational consumer, and final `retire` dispositions. The 
 staged governed Provider Entry Points are unchanged because no governed bytes changed. Fixed point, exact
 digests, rollback, and scope are recorded in `evidence/issue-75-non-candidate-dispositions.json`.
 
+Issue #71 publishes workflow-discovery `1.0.0` from immutable Trade Journal revision
+`ecceceb16f892e4521f5ea6e6e153d641f328beb`. The provider-neutral contract selects from the validated
+repository inventory and delegates to an exact locked Codex adapter or an honestly unavailable retained
+repository source; it does not copy or execute workflow procedures. `AGENTS.md` provides repository-native
+activation, and the parity/pre-commit gate now validates only repository-owned discovery and mirror state.
+The existing Home Hub bridge remains usable as optional machine-local bootstrap, but its presence, absence,
+contents, and parity are never repository authority or Adapter Conformance evidence. No provider, database,
+investment, GitHub, scheduler, external repository, or machine-local bridge write is in scope.
+
 Issue #55's fixed-point review repair republishes the morning-attention-brief evidence at immutable revision
 `be091a981fcac066102005e1512d845de362b7a0`. The real deterministic bundle emits timestamped freshness from
 the thesis-observation, maintenance, and options-advice cron outcomes plus portfolio, decision, and calendar
@@ -290,7 +298,7 @@ issue `njabrooks/projects#31` continues to own any future replacement for that i
 
 CI evaluates Capability and Provider Entry Point freshness against the runner's current UTC date. The
 checked-in immutable Registry Lock remains independently reproducible at its recorded governed evidence date
-of `2026-08-10`; CI resolves a temporary present-day lock before clean-regeneration validation so current
+of `2026-08-11`; CI resolves a temporary present-day lock before clean-regeneration validation so current
 freshness is enforced without rewriting or making the published lock nondeterministic. A controlled public-CLI
 proof also evaluates evidence on `2026-09-06`, after its `2026-09-05` expiry, and requires the adapter to become
 `stale`, existing governed output validation to fail, regeneration to fail, and the absent target to remain

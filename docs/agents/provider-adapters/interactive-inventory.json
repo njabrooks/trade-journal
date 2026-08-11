@@ -49,7 +49,7 @@
       ],
       "evidence": {
         "state": "current",
-        "as_of": "2026-08-10",
+  "as_of": "2026-08-11",
         "capability_version": "1.3.1",
         "package_digest": "sha256:5fe78a3a67c2ce2756c37cdc6052523012835d5068cc29992e98158dd591e039",
         "adapter_digest": "sha256:ae03a42715dbce27565cf772cff6f71c82ec8bf7f4fb6c3ef7f3cf017ff30fd5",
@@ -1372,7 +1372,7 @@
         "Tana MCP access and Trade Journal database helpers."
       ],
       "limitations": [
-        "Machine-local Tana availability is not guaranteed; absent from curated Codex routing.",
+        "Discoverable through the governed router, but machine-local Tana availability is not guaranteed.",
         "No evidence is bound to an exact W1 Capability version, package digest, and adapter digest."
       ],
       "operational_consumers": [
@@ -2206,7 +2206,7 @@
         "Notes repository data and Trade Journal read access."
       ],
       "limitations": [
-        "Machine-local file dependency; absent from curated Codex routing.",
+        "Discoverable through the governed router, but the machine-local file dependency remains unavailable on other hosts.",
         "No evidence is bound to an exact W1 Capability version, package digest, and adapter digest."
       ],
       "operational_consumers": [
@@ -2226,8 +2226,70 @@
       }
     },
     {
+      "id": "interactive-claude-workflow-discovery",
+      "ability": "Discover and route interactive Claude work to the authoritative Trade Journal workflow source without executing it.",
+      "candidate_capability": {
+        "status": "candidate",
+        "id": "capability:scope:trade-journal/workflow-discovery",
+        "authority": "scope:trade-journal"
+      },
+      "provider": "claude",
+      "source": {
+        "ownership": "repository:njabrooks/trade-journal",
+        "location_class": "repository",
+        "path": "capabilities/workflow-discovery/adapters/claude.md"
+      },
+      "packaging": "governed-provider-adapter",
+      "invocation": {
+        "mode": "interactive",
+        "entry_point": "docs/agents/provider-entry-points/staging/claude.md",
+        "unattended_eligibility": "ineligible",
+        "rationale": "Workflow selection is an interactive read-only routing step; selected workflow execution is separately authorized."
+      },
+      "lifecycle": {
+        "status": "active",
+        "protective_tombstone": false
+      },
+      "authority_and_write_scope": {
+        "reads": "Repository guidance, the validated interactive inventory, immutable Registry Lock, and the exact selected adapter or retained repository-authored migration input.",
+        "writes": "No writes. Discovery does not execute the selected workflow or mutate provider, database, investment, tracker, scheduler, or cross-repository state.",
+        "judgment": "May surface routing ambiguity for user clarification; it cannot fabricate or resolve the selected workflow's genuine judgment."
+      },
+      "prerequisites": [
+        "Trade Journal repository checkout",
+        "Interactive Claude repository guidance and skill discovery",
+        "Selected workflow prerequisites are checked separately before execution"
+      ],
+      "limitations": [
+        "The governed whole-file Provider Entry Point remains staged rather than installed as the active root manual.",
+        "Claude skill and SessionStart packaging remains provider-specific and does not override the selected workflow authority.",
+        "A successfully discovered workflow may still be unavailable because its own evidence or environmental prerequisites are not current."
+      ],
+      "operational_consumers": [
+        "Interactive Claude user working in Trade Journal"
+      ],
+      "evidence": {
+        "state": "current",
+        "as_of": "2026-08-11",
+        "capability_version": "1.0.0",
+        "package_digest": "sha256:d9ca9b499592f86cba3a9d46f37d20a693e59c91f7e19953d48a03b122f546ad",
+        "adapter_digest": "sha256:82ee574c9e1e4c2bce81a425775a5de45ba350350f8589c3f9ff60d8f945b82b",
+        "reason": "Exact current evidence binds repository-owned workflow-discovery 1.0.0 and its Claude adapter."
+      },
+      "governed_binding": {
+        "package_path": "capabilities/workflow-discovery/capability-package.json",
+        "adapter_id": "workflow-discovery-claude",
+        "evidence_path": "capabilities/workflow-discovery/evidence/claude.json",
+        "staged_entry_point": "docs/agents/provider-entry-points/staging/claude.md"
+      },
+      "j2_disposition": {
+        "action": "migrate",
+        "rationale": "Stage exact inventory-based Claude routing without changing any authored workflow procedure or active execution consumer."
+      }
+    },
+    {
       "id": "interactive-codex-trade-journal-bridge",
-      "ability": "Route interactive Codex work to Trade Journal guidance and translate Claude-specific invocation and tools.",
+      "ability": "Discover and route interactive Codex work to the authoritative Trade Journal workflow source without executing it.",
       "candidate_capability": {
         "status": "candidate",
         "id": "capability:scope:trade-journal/workflow-discovery",
@@ -2235,50 +2297,56 @@
       },
       "provider": "codex",
       "source": {
-        "ownership": "machine-local:home-hub",
-        "location_class": "external-bridge",
-        "path": "~/.codex/skills/trade-journal-workflows/SKILL.md"
+        "ownership": "repository:njabrooks/trade-journal",
+        "location_class": "repository",
+        "path": "capabilities/workflow-discovery/adapters/codex.md"
       },
-      "packaging": "external-interactive-bridge",
+      "packaging": "governed-provider-adapter",
       "invocation": {
         "mode": "interactive",
-        "entry_point": "Codex skill discovery by repository or Trade Journal intent",
+        "entry_point": "docs/agents/provider-entry-points/staging/codex.md",
         "unattended_eligibility": "ineligible",
-        "rationale": "The bridge provides interactive routing and translation, not a headless execution contract."
+        "rationale": "Workflow selection is an interactive read-only routing step; selected workflow execution is separately authorized."
       },
       "lifecycle": {
         "status": "active",
         "protective_tombstone": false
       },
       "authority_and_write_scope": {
-        "reads": "Repository guidance, selected Claude skill bodies, and bridge references. Codex reads live state through available tools and repository helpers. Writes occur only when the selected workflow and user authority permit them.",
-        "writes": "The bridge itself writes nothing; selected workflows retain their own governed write boundaries.",
-        "judgment": "Maps provider differences but must preserve Trade Journal semantics and surface genuine user decisions."
+        "reads": "Repository guidance, the validated interactive inventory, immutable Registry Lock, and the exact selected adapter or retained repository-authored migration input.",
+        "writes": "No writes. Discovery does not execute the selected workflow or mutate provider, database, investment, tracker, scheduler, or cross-repository state.",
+        "judgment": "May surface routing ambiguity for user clarification; it cannot fabricate or resolve the selected workflow's genuine judgment."
       },
       "prerequisites": [
-        "Codex installation with the machine-local bridge",
         "Trade Journal repository checkout",
-        "Runtime-specific tools for the selected workflow"
+        "Interactive Codex repository guidance discovery",
+        "Selected workflow prerequisites are checked separately before execution"
       ],
       "limitations": [
-        "External to the repository and unavailable on hosts without the installed bridge.",
-        "Its exhaustive inventory covers 36 skills, while curated routing omits gateway, morning-brief, relate-bookmark, and visser-scan.",
-        "No evidence is bound to an exact W1 Capability version, package digest, and adapter digest."
+        "The governed whole-file Provider Entry Point remains staged rather than installed globally.",
+        "The Home Hub bridge may bootstrap discovery when installed, but its external bytes are not repository authority or conformance evidence.",
+        "A successfully discovered workflow may still be unavailable because its own evidence or environmental prerequisites are not current."
       ],
       "operational_consumers": [
         "Interactive Codex user working in Trade Journal"
       ],
       "evidence": {
-        "state": "unavailable",
-        "as_of": "2026-08-04",
-        "capability_version": null,
-        "package_digest": null,
-        "adapter_digest": null,
-        "reason": "Machine-local bridge presence and parity do not constitute W1 Adapter Conformance evidence."
+        "state": "current",
+        "as_of": "2026-08-11",
+        "capability_version": "1.0.0",
+        "package_digest": "sha256:d9ca9b499592f86cba3a9d46f37d20a693e59c91f7e19953d48a03b122f546ad",
+        "adapter_digest": "sha256:66aee497b6952678b61fe82d16deb8f80b3e9ae6cfb00f68b40ec997a5f6ec58",
+        "reason": "Exact current evidence binds repository-owned workflow-discovery 1.0.0 and its Codex adapter; the optional external bridge is not part of that evidence."
+      },
+      "governed_binding": {
+        "package_path": "capabilities/workflow-discovery/capability-package.json",
+        "adapter_id": "workflow-discovery-codex",
+        "evidence_path": "capabilities/workflow-discovery/evidence/codex.json",
+        "staged_entry_point": "docs/agents/provider-entry-points/staging/codex.md"
       },
       "j2_disposition": {
-        "action": "retain-temporarily",
-        "rationale": "Keep the bridge as the current interactive Codex discovery path until J2 establishes generated, evidence-bound entry points."
+        "action": "replace",
+        "rationale": "Repository inventory and the exact governed adapter now own routing semantics; retain the machine-local bridge only as optional environmental bootstrap."
       }
     }
   ],
@@ -2295,7 +2363,7 @@
       "provider": "codex",
       "location_class": "repository",
       "path": "AGENTS.md",
-      "coverage": "Codex runtime-difference shim; handwritten and not yet a W1-generated Provider Entry Point."
+      "coverage": "Repository-native bootstrap that directs Codex to the exact governed workflow-discovery adapter."
     },
     {
       "id": "claude-session-settings",
@@ -2305,25 +2373,25 @@
       "coverage": "Four Claude-only SessionStart command hooks."
     },
     {
-      "id": "codex-bridge-skill",
+      "id": "codex-workflow-discovery-adapter",
+      "provider": "codex",
+      "location_class": "repository",
+      "path": "capabilities/workflow-discovery/adapters/codex.md",
+      "coverage": "Exact governed router over the complete validated interactive inventory; delegates workflow semantics to their authoritative sources."
+    },
+    {
+      "id": "codex-generated-staging",
+      "provider": "codex",
+      "location_class": "repository",
+      "path": "docs/agents/provider-entry-points/staging/codex.md",
+      "coverage": "Whole-file governed staging output containing the locked workflow-discovery Capability and exact Codex adapter."
+    },
+    {
+      "id": "codex-bridge-bootstrap",
       "provider": "codex",
       "location_class": "external-bridge",
       "path": "~/.codex/skills/trade-journal-workflows/SKILL.md",
-      "coverage": "Curated interactive routing: 21 of 25 expected active workflows; four omissions are recorded, not repaired."
-    },
-    {
-      "id": "codex-workflow-map",
-      "provider": "codex",
-      "location_class": "external-bridge",
-      "path": "~/.codex/skills/trade-journal-workflows/references/workflow-map.md",
-      "coverage": "Curated intent-to-workflow routing: 21 of 25 expected active workflows."
-    },
-    {
-      "id": "codex-exhaustive-inventory",
-      "provider": "codex",
-      "location_class": "external-bridge",
-      "path": "~/.codex/skills/trade-journal-workflows/references/claude-inventory.md",
-      "coverage": "Exhaustive index of 33 repository Claude discovery sources plus three issue #75 historical-only records."
+      "coverage": "Optional Home Hub activation bootstrap only; external bytes are neither repository semantics nor Adapter Conformance evidence."
     }
   ],
   "session_hooks": [
@@ -2341,7 +2409,7 @@
       "provider": "claude",
       "trigger": "SessionStart",
       "command": "cd \"${CLAUDE_PROJECT_DIR:-.}\" && npx tsx scripts/ops/check-codex-parity.ts --nudge 2>/dev/null || true",
-      "purpose": "Surface bridge or mirror drift.",
+      "purpose": "Surface repository discovery-inventory or headless-mirror drift.",
       "availability": "Claude Code only",
       "limitation": "Supporting diagnostic, not W1 conformance evidence."
     },
@@ -2480,7 +2548,7 @@
     {
       "id": "skill-and-agent-invocation",
       "claude_surface": "Slash commands, Skill tool, and Agent/subagent assumptions",
-      "codex_mapping": "Read the selected .claude/skills/<name>/SKILL.md body, preserve workflow intent, and use Codex skills or multi-agent tools only when actually available.",
+      "codex_mapping": "Route through capabilities/workflow-discovery/adapters/codex.md; use the exact locked Codex adapter when current or the retained repository source when unavailable, preserving workflow intent and authority.",
       "authority": "AGENTS.md Claude-to-Codex translation rules",
       "prerequisites": [
         "Repository source skill",
@@ -2500,17 +2568,12 @@
     {
       "id": "no-exact-adapter-evidence",
       "classification": "evidence",
-      "detail": "Twenty-four interactive inventory entries have current evidence. Of thirteen unavailable entries, nine await J2 disposition and four non-candidates have completed final retire dispositions under issue #75."
+      "detail": "Twenty-six interactive inventory entries have current evidence. Of twelve unavailable entries, eight await J2 disposition and four non-candidates have completed final retire dispositions under issue #75."
     },
     {
-      "id": "curated-codex-routing-omissions",
-      "classification": "j2",
-      "detail": "gateway, morning-brief, relate-bookmark, and visser-scan are absent from both curated bridge routing files."
-    },
-    {
-      "id": "external-codex-bridge",
-      "classification": "evidence",
-      "detail": "The interactive Codex bridge is machine-local and cannot be assumed present in CI or on another host."
+      "id": "external-codex-bootstrap",
+      "classification": "environment",
+      "detail": "The optional Home Hub Codex bridge may activate repository discovery but is never read by repository parity gates or represented as semantic or Adapter Conformance authority."
     },
     {
       "id": "connector-era-assumptions",
@@ -2520,7 +2583,7 @@
     {
       "id": "slash-command-packaging",
       "classification": "j2",
-      "detail": "Claude slash-command entry points are invocation packaging; Codex reads the source body and maps available tools."
+      "detail": "Claude slash-command entry points are invocation packaging; governed Codex discovery resolves exact adapters or retained repository sources and maps only available tools."
     },
     {
       "id": "w1-rich-inventory-boundary",
