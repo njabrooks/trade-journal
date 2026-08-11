@@ -105,6 +105,46 @@ describe('issue #75 non-candidate entry-point dispositions', () => {
     }
   });
 
+  it('excludes every non-candidate from operational mappings and current coverage claims', () => {
+    const interactive = JSON.parse(
+      readFileSync(
+        resolve(
+          process.cwd(),
+          'docs/agents/provider-adapters/interactive-inventory.json',
+        ),
+        'utf8',
+      ),
+    ) as {
+      discovery_surfaces: Array<{ id: string; coverage: string }>;
+      tool_mappings: Array<{ affected_entries: string[] }>;
+    };
+    const headless = JSON.parse(
+      readFileSync(
+        resolve(
+          process.cwd(),
+          'docs/agents/provider-adapters/headless-inventory.json',
+        ),
+        'utf8',
+      ),
+    ) as { known_gaps: Array<{ id: string; detail: string }> };
+    const nonCandidateIds = new Set(entries.map((entry) => entry.id));
+
+    for (const mapping of interactive.tool_mappings) {
+      for (const affectedEntry of mapping.affected_entries) {
+        expect(nonCandidateIds.has(affectedEntry)).toBe(false);
+      }
+    }
+    expect(
+      interactive.discovery_surfaces.find(
+        (surface) => surface.id === 'codex-exhaustive-inventory',
+      )?.coverage,
+    ).toContain('33 repository Claude discovery sources plus three issue #75 historical-only records');
+    expect(
+      headless.known_gaps.find((gap) => gap.id === 'generic-contract-readiness')
+        ?.detail,
+    ).toContain('Fourteen current projections have generic packaging baselines');
+  });
+
   it('keeps configure-signal only as an exact no-read/no-write protective tombstone', () => {
     const tombstones = entries.filter((entry) => entry.lifecycle.protective_tombstone);
     expect(tombstones).toHaveLength(2);

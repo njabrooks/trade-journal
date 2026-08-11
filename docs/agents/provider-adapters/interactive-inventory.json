@@ -2323,7 +2323,7 @@
       "provider": "codex",
       "location_class": "external-bridge",
       "path": "~/.codex/skills/trade-journal-workflows/references/claude-inventory.md",
-      "coverage": "Exhaustive discovery of all 36 repository Claude skill sources."
+      "coverage": "Exhaustive index of 33 repository Claude discovery sources plus three issue #75 historical-only records."
     }
   ],
   "session_hooks": [
@@ -2379,7 +2379,7 @@
         "Writes remain limited by the selected workflow and user authority."
       ],
       "affected_entries": [
-        "All repository-authored Claude entries"
+        "All active repository-authored Claude entries"
       ]
     },
     {
@@ -2417,8 +2417,7 @@
       "affected_entries": [
         "interactive-claude-portfolio-and-options-mcp",
         "interactive-claude-process-transcript",
-        "interactive-claude-synthesize-claims",
-        "interactive-claude-archived-deep-dive"
+        "interactive-claude-synthesize-claims"
       ]
     },
     {
@@ -2492,7 +2491,7 @@
         "Generic headless mirrors and subagent wording do not authorize unattended judgment."
       ],
       "affected_entries": [
-        "All repository-authored Claude entries",
+        "All active repository-authored Claude entries",
         "interactive-codex-trade-journal-bridge"
       ]
     }

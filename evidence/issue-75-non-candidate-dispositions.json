@@ -114,8 +114,8 @@
     }
   },
   "inventory_artifacts": {
-    "interactive_sha256": "861675285cb6d52eb39273a9fd05832c439582790a8512e4596af19e376ca94f",
-    "headless_sha256": "e61fe59336a9b40ec647747e9f2ed73dd1f38912aaa5511233f8beeb8d23d18f",
+    "interactive_sha256": "c13e3792c9ae2ebf7dac14cd698c8cd1f5e987a25584784f87656d17df34b2b4",
+    "headless_sha256": "700a960d0d004b4ffbd0ef972d1916a8ab0d350d6c999afe2ccf0bcf0d58a533",
     "generation_eligibility_sha256": "ed583756f668ed18979b96d8e8467c64850ae8409b584f89edc0aa0770bd7e9b"
   },
   "governed_artifacts": {
@@ -129,9 +129,9 @@
     "generation_eligible_entries": 48,
     "active_claude_discovery_paths": 33,
     "active_codex_projections": 33,
-    "focused_issue_tests": "4 passed",
-    "focused_governance_tests": "205 passed, 6 skipped",
-    "full_vitest": "611 passed, 6 skipped",
+    "focused_issue_tests": "5 passed",
+    "focused_governance_tests": "206 passed, 6 skipped",
+    "full_vitest": "612 passed, 6 skipped",
     "python_unittest": "10 passed",
     "typescript": "passed",
     "issue_scoped_eslint": "passed",

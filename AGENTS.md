@@ -44,7 +44,7 @@
   `scripts/ops/check-codex-parity.ts` (run after any skill change, then `git add .agents`). Current at all 33
   discovery paths; three obsolete non-candidates now live only under `docs/archive/provider-adapters/issue-75/`.
   For interactive work, read the canonical `.claude/skills/` source — the mirror is headless-only.
-  - **NOTE — before relying on Codex for a headless CRON job:** 18 per-skill preambles are a *generic
+  - **NOTE — before relying on Codex for a headless CRON job:** 14 per-skill preambles are a *generic
     baseline*. Five executable workflows have bespoke contracts (`assess-validation-evidence`,
     `build-core-argument`, `finalize-for-upload`, `relate-research`, and `synthesize-claims`), while the ten
     contracted research-pipeline paths plus deferred `visser-scan` and unavailable `gateway`/`ibkr-quote` have bespoke refusal preambles. Give any

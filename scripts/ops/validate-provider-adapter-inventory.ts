@@ -20,6 +20,7 @@ const DEFAULT_INVENTORY = join(
   REPO_ROOT,
   'docs/agents/provider-adapters/interactive-inventory.json',
 );
+const HISTORICAL_EVIDENCE_ROOT = 'docs/archive/provider-adapters/issue-75/';
 const ACCEPTED_WORKSPACE_REVISION = '2b6ea3e02ff5ba114b0f91dd779c4afb26181358';
 const EVIDENCE_STATES = new Set([
   'current',
@@ -734,7 +735,7 @@ function validateEntry(
     if (
       !protective &&
       (!nonempty(sourcePath) ||
-        !sourcePath.startsWith('docs/archive/provider-adapters/issue-75/'))
+        !sourcePath.startsWith(HISTORICAL_EVIDENCE_ROOT))
     ) {
       diagnostics.push(
         diagnostic(
@@ -910,7 +911,18 @@ function validateSupportingCollections(inventory: JsonObject, diagnostics: Diagn
       .map((entry) => entry.id)
       .filter(nonempty),
   );
-  const affectedEntrySentinels = new Set(['All repository-authored Claude entries']);
+  const nonCandidateEntryIds = new Set(
+    (Array.isArray(inventory.entries) ? inventory.entries : [])
+      .filter(isObject)
+      .filter(
+        (entry) =>
+          isObject(entry.candidate_capability) &&
+          entry.candidate_capability.status === 'not-candidate',
+      )
+      .map((entry) => entry.id)
+      .filter(nonempty),
+  );
+  const affectedEntrySentinels = new Set(['All active repository-authored Claude entries']);
 
   for (const collection of ['discovery_surfaces', 'session_hooks', 'tool_mappings', 'known_gaps']) {
     const value = inventory[collection];
@@ -1005,6 +1017,15 @@ function validateSupportingCollections(inventory: JsonObject, diagnostics: Diagn
                 'TJ-INV-014',
                 `${path}/affected_entries`,
                 `Unknown affected inventory entry: ${entryId}.`,
+              ),
+            );
+          }
+          if (nonCandidateEntryIds.has(entryId)) {
+            diagnostics.push(
+              diagnostic(
+                'TJ-INV-018',
+                `${path}/affected_entries`,
+                `Historical or protective non-candidate cannot be an operational tool-mapping target: ${entryId}.`,
               ),
             );
           }
