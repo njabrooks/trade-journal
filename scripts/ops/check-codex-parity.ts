@@ -6,9 +6,9 @@
  *   1. INTERACTIVE inventory — docs/agents/provider-adapters/interactive-inventory.json.
  *   2. HEADLESS mirror — .agents/skills/ (generated from .claude/skills/).
  *
- * The optional ~/.codex/skills/trade-journal-workflows bridge is machine-local
- * bootstrap. It is deliberately not read or gated here: external bytes cannot be a
- * repository commit prerequisite or Adapter Conformance evidence.
+ * The ~/.codex/skills/trade-journal-workflows bridge is a machine-local legacy
+ * competing router. It is deliberately not read or gated here: external bytes
+ * cannot be a repository commit prerequisite or Adapter Conformance evidence.
  *
  * Usage:
  *   npx tsx scripts/ops/check-codex-parity.ts
@@ -87,7 +87,7 @@ function repositorySkillPaths(inventory: JsonObject): Set<string> {
   return paths;
 }
 
-function main() {
+async function main() {
   const args = parseArgs(process.argv.slice(2));
   if (!existsSync(CLAUDE_SKILLS_DIR)) {
     console.error(`No .claude/skills/ at ${CLAUDE_SKILLS_DIR}.`);
@@ -239,4 +239,12 @@ function main() {
   process.exit(gatingOk ? 0 : 1);
 }
 
-main();
+if (
+  process.argv[1] &&
+  resolve(process.argv[1]) === fileURLToPath(import.meta.url)
+) {
+  main().catch((error) => {
+    console.error(error instanceof Error ? error.message : String(error));
+    process.exit(1);
+  });
+}
