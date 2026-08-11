@@ -925,32 +925,32 @@
       },
       "packaging": "generated-headless-projection",
       "execution_contract": {
-        "class": "generic",
-        "preamble_path": ".agents/skills/ibkr-quote/HEADLESS_PREAMBLE.md",
-        "readiness": "Generated baseline packaging only; it is not evidence of unattended operational readiness."
+        "class": "bespoke",
+        "preamble_path": ".claude/skills/ibkr-quote/HEADLESS_PREAMBLE.md",
+        "readiness": "Protective zero-read/zero-write unavailable refusal only; it grants no gateway, qualification, market-data, or quote authority."
       },
       "invocation": {
         "mode": "headless",
         "entry_point": ".agents/skills/ibkr-quote/skill.json",
-        "unattended_eligibility": "conditional",
-        "rationale": "Prices requested structures but does not authorize trades."
+        "unattended_eligibility": "ineligible",
+        "rationale": "No accepted Radon package or exact unattended conformance exists."
       },
       "lifecycle": {
         "status": "active",
         "protective_tombstone": false
       },
       "authority_and_write_scope": {
-        "reads": "Requested option contracts and gateway state.",
-        "writes": "No Trade Journal database writes; may start the local gateway.",
-        "judgment": "Prices requested structures but does not authorize trades."
+        "reads": "No reads permitted by the unavailable headless refusal.",
+        "writes": "No writes, gateway operations, contract requests, or market-data requests permitted.",
+        "judgment": "No unattended quote or execution judgment permitted."
       },
       "prerequisites": [
         "Codex headless runtime with repository access",
         "Eligible Home Hub host, IB Gateway, market-data entitlement, and client id 20–49."
       ],
       "limitations": [
-        "Generic preamble is a packaging baseline, not an operational-readiness claim.",
-        "Host-only and may degrade to delayed data.",
+        "Bespoke preamble refuses all environment, contract, and market-data reads while Adapter Conformance is unavailable.",
+        "Host-only; gateway or market-data absence is an unavailable quote result, and delayed data must remain explicit.",
         "No evidence is bound to an exact W1 Capability version, package digest, and adapter digest."
       ],
       "operational_consumers": [
@@ -963,15 +963,15 @@
       },
       "evidence": {
         "state": "unavailable",
-        "as_of": "2026-08-04",
+        "as_of": "2026-08-11",
         "capability_version": null,
         "package_digest": null,
         "adapter_digest": null,
-        "reason": "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
+        "reason": "Radon publishes no accepted immutable option-quote Capability Package or exact Adapter Conformance evidence at the reviewed revision."
       },
       "j2_disposition": {
         "action": "retain-temporarily",
-        "rationale": "Keep the current boundary until J2 supplies an accepted replacement and operational evidence."
+        "rationale": "Retain the bounded non-governed requested-contract quote boundary until Radon publishes an accepted immutable package; do not infer support from gateway connectivity, market-data availability, or local files."
       }
     },
     {

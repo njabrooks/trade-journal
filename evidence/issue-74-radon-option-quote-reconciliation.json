@@ -1,0 +1,170 @@
+{
+  "kind": "RadonOptionQuoteReconciliation",
+  "schema_version": "1.0.0",
+  "issue": "njabrooks/trade-journal#74",
+  "recorded_at": "2026-08-11",
+  "accepted_predecessor": {
+    "issue": "njabrooks/trade-journal#47",
+    "latest_repair_merge": "abcedb11576bffde647ce6855ce9d3e0163483b3"
+  },
+  "fixed_point": "b1107701bce30ec78bf067c05f07e97b37624cf2",
+  "disposition": "retained-unavailable",
+  "rationale": "Radon remains Capability Authority, but its reviewed immutable default-branch revision publishes no option-quote Capability Package, Registry release, exact Adapter Conformance evidence, or release-selecting Work Item. Trade Journal therefore retains its bounded interactive requested-contract quote migration input, refuses unattended quote execution, and does not infer current support from local files, gateway connectivity, market-data availability, or historical quote output.",
+  "trade_journal_worktree": {
+    "revision": "b1107701bce30ec78bf067c05f07e97b37624cf2",
+    "stable_before_edit": true
+  },
+  "radon_authority": {
+    "repository": "github:njabrooks/radon",
+    "immutable_review_revision": "0e88af93c31471c093dbd61bc80c386ab8da38de",
+    "immutable_tree": "4b09dfc6fdc216b3b8ee354a06a625fc91994982",
+    "capability_id": "capability:scope:radon/ibkr-option-quote",
+    "accepted_package": "unavailable",
+    "capability_version": null,
+    "package_digest": null,
+    "adapter_digest": null,
+    "evidence": "unavailable",
+    "reviewed_source_digests": {
+      "AGENTS.md": "sha256:444620d91ddba9c18bc9960fc308db0062c3ce869c71c3972a5961bb93d924b2",
+      "CLAUDE.md": "sha256:31d18d0f975c1ee95f019ff4fba6bfe8ef97a2d04153c0ed83ddf2070c868f77",
+      "scripts/clients/ib_client.py": "sha256:e2606518a84d81e44e8b694850e3b795fb77a5df52a50f1834be1c02cec48256"
+    }
+  },
+  "radon_review": {
+    "remote_revision_tree_inspected": true,
+    "capability_package_present": false,
+    "capability_registry_present": false,
+    "adapter_conformance_evidence_present": false,
+    "repository_work_items_selecting_a_release": [],
+    "local_worktree_state": "unstable-with-unrelated-user-changes-read-only",
+    "local_worktree_mutated": false
+  },
+  "responsibility_boundaries": {
+    "capability_authority": {
+      "owner": "scope:radon",
+      "lifecycle": "unchanged"
+    },
+    "bulk_chain": {
+      "path": "scripts/ingest-ibkr-chains.py",
+      "owner": "scope:radon",
+      "lifecycle": "retained-unchanged-separate-ingestion-path"
+    },
+    "contract_qualification": {
+      "owner": "scope:radon",
+      "lifecycle": "retained-inside-requested-contract-quote-helpers"
+    },
+    "gateway_control": {
+      "path": "scripts/ops/gateway.sh",
+      "owner": "scope:radon",
+      "lifecycle": "retained-unchanged-separate-controller"
+    },
+    "requested_structure_quote": {
+      "path": "scripts/ibkr-option-quote.py",
+      "owner": "scope:radon",
+      "lifecycle": "retained-unchanged-interactive-migration-input"
+    },
+    "requested_contract_batch_quote": {
+      "path": "scripts/ibkr-quote-contracts.py",
+      "owner": "scope:radon",
+      "lifecycle": "retained-unchanged-machine-readable-migration-input"
+    },
+    "legacy_client_portal_quote": {
+      "path": "scripts/ibkr-option-quote.ts",
+      "owner": "repository:njabrooks/trade-journal",
+      "lifecycle": "deprecated-retained-unchanged"
+    }
+  },
+  "unavailable_behavior": {
+    "headless": "deterministic-zero-read-zero-write-refusal",
+    "missing_gateway": "unavailable-no-quote-result",
+    "missing_market_data": "unavailable-no-complete-quote-result",
+    "availability_evidence": "unavailable-not-inferred-or-simulated"
+  },
+  "migration_inputs": {
+    "interactive_claude": {
+      "path": ".claude/skills/ibkr-quote/SKILL.md",
+      "sha256": "59a5768c03cd1fcb6f70f83b4310076f6ae151301a724735a10f49ab9b55f319",
+      "lifecycle": "active-interactive-only"
+    },
+    "headless_codex": {
+      "path": ".agents/skills/ibkr-quote/SKILL.md",
+      "sha256": "a1ff4182754feb3a2bdef2f7a3fc7d5d8dfa0d02e8da52e167c0f5020337b1aa",
+      "unattended_eligibility": "ineligible"
+    },
+    "authored_headless_refusal": {
+      "path": ".claude/skills/ibkr-quote/HEADLESS_PREAMBLE.md",
+      "sha256": "95ac34dbeb0b1ce16214904b5a66fdbd5e68707b53dfc4f5d1a0bd3ee7b6f12f",
+      "execution_contract": "bespoke-zero-read-zero-write-unavailable-refusal"
+    },
+    "mirrored_headless_refusal": {
+      "path": ".agents/skills/ibkr-quote/HEADLESS_PREAMBLE.md",
+      "sha256": "95ac34dbeb0b1ce16214904b5a66fdbd5e68707b53dfc4f5d1a0bd3ee7b6f12f",
+      "execution_contract": "bespoke-zero-read-zero-write-unavailable-refusal"
+    },
+    "human_quote_helper": {
+      "path": "scripts/ibkr-option-quote.py",
+      "sha256": "dade9d463ffa5b0d1c358e78f03477f6f7fde8e41f48bd86db47d0b5840884b4",
+      "lifecycle": "retained-unchanged"
+    },
+    "machine_quote_helper": {
+      "path": "scripts/ibkr-quote-contracts.py",
+      "sha256": "cc67a7bb0f5ce9413db2f2cd9aa45e86489ff1bcf5c47d310ceed24817d9d009",
+      "lifecycle": "retained-unchanged"
+    },
+    "legacy_client_portal_helper": {
+      "path": "scripts/ibkr-option-quote.ts",
+      "sha256": "197d5d226b4f6dfb5c4d89c2ab5a3fe39d95c5d16c7649966bec91a1519bae0f",
+      "lifecycle": "deprecated-retained-unchanged"
+    },
+    "bulk_chain_helper": {
+      "path": "scripts/ingest-ibkr-chains.py",
+      "sha256": "fed25f77d9f0ce3dc8a5b5df0f738fe78a5cd54a88d7cd0daeaf0b47ef30a6f1",
+      "lifecycle": "retained-unchanged"
+    },
+    "gateway_controller": {
+      "path": "scripts/ops/gateway.sh",
+      "sha256": "7c5f7fbf8ce5057c5c516f262202b720ff2a87867db978e57d9d0d0330eb1e33",
+      "lifecycle": "retained-unchanged"
+    }
+  },
+  "governed_outputs": {
+    "registry_changed": false,
+    "registry_sha256": "65001f14dd03520f72d55b166944d587e02626790c2c2636f3fedb6b7cd9b0e2",
+    "lock_changed": false,
+    "lock_sha256": "9d43104a3d54e7d4f87c71f3d08bba0acc290a93ae1d1b1f8ab5b80f25cfdaae",
+    "generation_eligible_quote_projections": 0,
+    "staged_claude_sha256": "77b295ab2ae1ddf480b0a82c5adff4b64c0c56f446f9057b20c0ed515bae0871",
+    "staged_codex_sha256": "af49e83651ca9feac70661e21c7cbf9af2841bdb7f55494602958e5a456a2ea5"
+  },
+  "validation": {
+    "workspace_repository_conformance": "passed-human-json-and-authenticated-live-tracker",
+    "credential_free_tracker_negative_case": "passed-unavailable-credentials-unavailable",
+    "capability_validation": "14-locked-capabilities-passed-human-and-json",
+    "registry_lock_validation": "passed-published-human-json-byte-identical-reproduction",
+    "provider_entry_point_validation": "passed-2-unchanged-staged-outputs-human-and-json",
+    "inventory_validation": "passed-73-entries-48-generation-eligible",
+    "mirror_parity": "passed-36-of-36",
+    "provider_entry_point_refusal": "passed-ws-entry-005-byte-identical-no-write",
+    "evidence_freshness_refusal": "passed-stale-rejected-no-write",
+    "focused_governance_tests": "200-passed-6-skipped",
+    "full_tests": "606-passed-6-skipped",
+    "typecheck": "passed",
+    "issue_scoped_eslint": "passed",
+    "repository_eslint": "passed",
+    "production_build": "unavailable-hung-during-next-optimization-and-was-interrupted",
+    "managed_service_restart_and_smoke": "passed-http-200"
+  },
+  "scope_confirmation": {
+    "radon_worktree_mutated": false,
+    "gateway_operation_invoked": false,
+    "market_data_requested": false,
+    "credentials_read": false,
+    "active_discovery_changed": false,
+    "scheduler_changed": false,
+    "database_write": false,
+    "status_or_decision_item_changed": false,
+    "trade_authority_acquired": false,
+    "successor_work_started": false
+  },
+  "rollback_and_provenance": "The interactive quote skill, quote helpers, bulk-chain path, gateway controller, Registry, Lock, staged outputs, active discovery, and live provider state remain unchanged. Revert the issue #74 inventory, refusal-preamble, test, documentation, and receipt commit to restore the previous generic headless wrapper and pre-review inventory metadata. Historical bytes remain in Git."
+}
