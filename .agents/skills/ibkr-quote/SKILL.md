@@ -84,10 +84,10 @@ Format the output as:
 
 | Issue | Fix |
 |-------|-----|
-| `Connection refused` | Gateway not running → Step 2 |
+| `Connection refused` | Report `UNAVAILABLE: gateway-unavailable`; invoke the separate `/gateway` workflow only if gateway recovery is explicitly requested |
 | `API interface is in Read-Only mode` | Normal for quotes; ignore |
-| `market data is not subscribed` | No live sub → script auto-falls-back to delayed |
-| All quotes show `—` | Market closed OR contracts don't exist at those strikes |
+| `market data is not subscribed` | Report unavailable, or deliberately rerun the quote helper with `--delayed` to request delayed data |
+| All quotes show `—` | Report unavailable; the market may be closed or the requested contracts may lack data |
 | `Contract not qualified` | Check expiry is a valid IBKR expiry for the ticker |
 
 ## When NOT to Use This Skill

@@ -58,6 +58,26 @@ def connect_quote_gateway(ib):
     return False, "gateway-unavailable"
 
 
+def close_quote_session(ib, tickers_map=None):
+    """Release requested quote streams and the read-only IBKR connection."""
+    for _, _, ticker_data in (tickers_map or {}).values():
+        try:
+            ib.cancelMktData(ticker_data.contract)
+        except Exception:
+            pass
+    try:
+        ib.disconnect()
+    except Exception:
+        pass
+
+
+def unavailable_market_data(ib, tickers_map=None):
+    """Emit the interactive unavailable contract and close the quote session."""
+    print("\n  UNAVAILABLE: market-data-unavailable-or-contract-unqualified")
+    close_quote_session(ib, tickers_map)
+    return 2
+
+
 def main():
     from ib_insync import IB, Option  # noqa: E402
 
@@ -91,12 +111,15 @@ def main():
 
     # Live data by default (nick gateway profile carries the streaming bundle);
     # --delayed forces type 3 for sessions on an unentitled login
-    if "--delayed" in sys.argv:
-        ib.reqMarketDataType(3)  # 3 = delayed, 4 = delayed-frozen
-        print("  Market data type: DELAYED (forced)")
-    else:
-        ib.reqMarketDataType(1)  # 1 = live; unentitled contracts just won't populate
-        print("  Market data type: LIVE (use --delayed if quotes come back empty)")
+    try:
+        if "--delayed" in sys.argv:
+            ib.reqMarketDataType(3)  # 3 = delayed, 4 = delayed-frozen
+            print("  Market data type: DELAYED (forced)")
+        else:
+            ib.reqMarketDataType(1)  # 1 = live; unentitled contracts just won't populate
+            print("  Market data type: LIVE (use --delayed if quotes come back empty)")
+    except Exception:
+        return unavailable_market_data(ib)
 
     # Build option contracts
     contracts = []
@@ -130,7 +153,10 @@ def main():
             tickers_map[contract.conId] = (leg, contract, t)
 
     # Wait for data to populate
-    ib.sleep(3)
+    try:
+        ib.sleep(3)
+    except Exception:
+        return unavailable_market_data(ib, tickers_map)
 
     # Display results
     print(f"\n{'='*95}")
@@ -200,11 +226,7 @@ def main():
     else:
         print("\n  UNAVAILABLE: market-data-unavailable-or-contract-unqualified")
 
-    # Cancel market data
-    for _, _, t in tickers_map.values():
-        ib.cancelMktData(t.contract)
-
-    ib.disconnect()
+    close_quote_session(ib, tickers_map)
     return 0 if all_have_quotes else 2
 
 

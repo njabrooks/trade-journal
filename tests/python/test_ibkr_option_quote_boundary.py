@@ -1,8 +1,12 @@
 import importlib.util
+import io
 import json
 import sys
+import types
 import unittest
+from contextlib import redirect_stdout
 from pathlib import Path
+from unittest.mock import patch
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -54,6 +58,9 @@ class NoMarketDataIB:
     def connect(self, host, port, clientId, timeout=20):
         self.connect_calls.append((host, port, clientId, timeout))
 
+    def managedAccounts(self):
+        return ["test-account"]
+
     def reqMarketDataType(self, _data_type):
         return None
 
@@ -61,8 +68,10 @@ class NoMarketDataIB:
         option.conId = 123
         return [option]
 
-    def reqMktData(self, _option, _ticks, _snapshot, _regulatory_snapshot):
-        return NoMarketDataTicker()
+    def reqMktData(self, option, _ticks, _snapshot, _regulatory_snapshot):
+        ticker = NoMarketDataTicker()
+        ticker.contract = option
+        return ticker
 
     def sleep(self, _seconds):
         return None
@@ -82,6 +91,11 @@ class MarketDataRequestUnavailableIB(NoMarketDataIB):
 class MarketDataTypeUnavailableIB(NoMarketDataIB):
     def reqMarketDataType(self, _data_type):
         raise RuntimeError("market data type unavailable")
+
+
+class MarketDataWaitUnavailableIB(NoMarketDataIB):
+    def sleep(self, _seconds):
+        raise RuntimeError("market data wait unavailable")
 
 
 REQUESTS = [
@@ -171,6 +185,33 @@ class IbkrOptionQuoteBoundaryTests(unittest.TestCase):
         self.assertFalse(connected)
         self.assertEqual(reason, "gateway-unavailable")
         self.assertEqual([call[2] for call in fake.connect_calls], [33, 33])
+
+    def run_interactive_main(self, fake):
+        ib_insync = types.SimpleNamespace(IB=lambda: fake, Option=FakeOption)
+        output = io.StringIO()
+        with (
+            patch.dict(sys.modules, {"ib_insync": ib_insync}),
+            patch.object(sys, "argv", ["ibkr-option-quote.py", "IBIT", "BUY 49C 20260821"]),
+            redirect_stdout(output),
+        ):
+            exit_code = self.human.main()
+        return exit_code, output.getvalue()
+
+    def test_interactive_quote_translates_market_data_type_failure_to_unavailable(self):
+        fake = MarketDataTypeUnavailableIB()
+        exit_code, output = self.run_interactive_main(fake)
+
+        self.assertEqual(exit_code, 2)
+        self.assertIn("UNAVAILABLE: market-data-unavailable-or-contract-unqualified", output)
+        self.assertTrue(fake.disconnected)
+
+    def test_interactive_quote_translates_market_data_wait_failure_to_unavailable(self):
+        fake = MarketDataWaitUnavailableIB()
+        exit_code, output = self.run_interactive_main(fake)
+
+        self.assertEqual(exit_code, 2)
+        self.assertIn("UNAVAILABLE: market-data-unavailable-or-contract-unqualified", output)
+        self.assertTrue(fake.disconnected)
 
     def test_machine_process_output_remains_json_serializable(self):
         fake = GatewayUnavailableIB()
