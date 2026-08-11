@@ -117,6 +117,7 @@ describe('issue #75 non-candidate entry-point dispositions', () => {
     ) as {
       discovery_surfaces: Array<{ id: string; coverage: string }>;
       tool_mappings: Array<{ affected_entries: string[] }>;
+      known_gaps: Array<{ id: string; detail: string }>;
     };
     const headless = JSON.parse(
       readFileSync(
@@ -143,6 +144,18 @@ describe('issue #75 non-candidate entry-point dispositions', () => {
       headless.known_gaps.find((gap) => gap.id === 'generic-contract-readiness')
         ?.detail,
     ).toContain('Fourteen current projections have generic packaging baselines');
+    expect(
+      interactive.known_gaps.find((gap) => gap.id === 'no-exact-adapter-evidence')
+        ?.detail,
+    ).toContain(
+      '24 interactive entries without exact adapter evidence, twenty await J2 disposition and four unavailable non-candidates have completed final retire dispositions',
+    );
+    expect(
+      headless.known_gaps.find((gap) => gap.id === 'adapter-evidence-unavailable')
+        ?.detail,
+    ).toContain(
+      '23 headless entries without exact adapter evidence, nineteen await J2 disposition and four unavailable non-candidates have completed final retire dispositions',
+    );
   });
 
   it('keeps configure-signal only as an exact no-read/no-write protective tombstone', () => {

@@ -114,8 +114,8 @@
     }
   },
   "inventory_artifacts": {
-    "interactive_sha256": "c13e3792c9ae2ebf7dac14cd698c8cd1f5e987a25584784f87656d17df34b2b4",
-    "headless_sha256": "700a960d0d004b4ffbd0ef972d1916a8ab0d350d6c999afe2ccf0bcf0d58a533",
+    "interactive_sha256": "17773758100a8d8227e90f49ba25b73ed02baa8ca13d3d2744f42e757e367c0e",
+    "headless_sha256": "59e139a3d4139b6f9273bbdb6e37cb287c30cafec0d8489d5c7cb5365b6e6f0c",
     "generation_eligibility_sha256": "ed583756f668ed18979b96d8e8467c64850ae8409b584f89edc0aa0770bd7e9b"
   },
   "governed_artifacts": {

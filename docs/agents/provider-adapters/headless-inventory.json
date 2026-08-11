@@ -3037,7 +3037,7 @@
     {
       "id": "adapter-evidence-unavailable",
       "classification": "evidence",
-      "detail": "Thirteen Codex adapters now have exact current evidence across eleven governed Capabilities; the other 23 headless entries remain unavailable until their J2 dispositions are completed."
+      "detail": "Thirteen Codex adapters have exact current evidence across eleven governed Capabilities. Of the 23 headless entries without exact adapter evidence, nineteen await J2 disposition and four unavailable non-candidates have completed final retire dispositions under issue #75."
     },
     {
       "id": "generic-contract-readiness",

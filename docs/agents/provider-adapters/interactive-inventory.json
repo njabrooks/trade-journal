@@ -2500,7 +2500,7 @@
     {
       "id": "no-exact-adapter-evidence",
       "classification": "evidence",
-      "detail": "Thirteen Claude adapters now have exact current evidence across eleven governed Capabilities; the other 24 interactive entries remain unavailable until their J2 dispositions are completed."
+      "detail": "Thirteen Claude adapters have exact current evidence across eleven governed Capabilities. Of the 24 interactive entries without exact adapter evidence, twenty await J2 disposition and four unavailable non-candidates have completed final retire dispositions under issue #75."
     },
     {
       "id": "curated-codex-routing-omissions",
