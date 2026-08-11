@@ -1,0 +1,72 @@
+{
+  "limitation": "No live Claude or Codex provider invocation is claimed; this representative result binds identical observable requirements to the exact adapter bytes and accepted governed dependency behavior.",
+  "request": {
+    "focus": "Assess FIXT concentration, current option exposure, and one explicit bullish structure analysis.",
+    "accountIds": [],
+    "optionsAnalyses": [
+      {
+        "ticker": "FIXT",
+        "direction": "bullish",
+        "targetBase": 120,
+        "targetHigh": 140,
+        "horizonMonths": 6,
+        "downsideFloor": 80,
+        "quoteVerification": true
+      }
+    ]
+  },
+  "dependencyResults": {
+    "portfolioSnapshot": {
+      "snapshotDate": "2026-08-11",
+      "nav": 1000000,
+      "totalCashUsd": 200000,
+      "totalAbsNotional": 1100000,
+      "leverageRatio": 1.1,
+      "ownerBreakdown": [{ "owner": "TTC", "nav": 1000000 }],
+      "underlyingBreakdown": [
+        {
+          "ticker": "FIXT",
+          "positionCount": 2,
+          "totalMarketValueUsd": 150000,
+          "totalAbsNotionalUsd": 150000,
+          "pctNav": 0.15,
+          "positions": [
+            { "symbol": "FIXT", "assetClass": "STK", "quantity": 1000, "marketValueUsd": 100000, "unrealizedPnl": 12000, "account": "TTC_IBKR", "owner": "TTC" },
+            { "symbol": "FIXT 270115P00080000", "assetClass": "OPT", "quantity": -5, "marketValueUsd": 50000, "unrealizedPnl": 3000, "expiry": "2027-01-15", "strike": 80, "optionRight": "P", "side": "SHORT", "account": "TTC_IBKR", "owner": "TTC" }
+          ]
+        }
+      ],
+      "strategies": [],
+      "unlinkedPositions": [],
+      "cashBreakdown": [{ "currency": "USD", "source": "ibkr_flex", "balance": 200000, "balanceUsd": 200000, "account": "TTC_IBKR" }]
+    },
+    "optionsAnalyses": [
+      {
+        "status": "completed",
+        "analysis": {
+          "context": { "ticker": "FIXT", "spot": 100, "dataSource": "database" },
+          "strategies": [{ "name": "2027-01-15 120/140C, -80P", "marketPrice": -1.25 }]
+        },
+        "quoteVerification": {
+          "status": "unavailable",
+          "reason": "Radon publishes no accepted immutable option-quote Capability Package or current Adapter Conformance evidence."
+        },
+        "persistence": { "requested": false, "status": "not_requested", "reportId": null },
+        "writes": [],
+        "unavailableInputs": ["capability:scope:radon/ibkr-option-quote"],
+        "errors": []
+      }
+    ]
+  },
+  "observableRequirements": [
+    "preserve the complete portfolio snapshot and its 2026-08-11 date",
+    "ground the 15% FIXT concentration in underlyingBreakdown[0].pctNav",
+    "preserve the short-put quantity and account without converting market value into commitment",
+    "preserve the complete ordered options-analysis outcome",
+    "label -1.25 as a per-share Black-Scholes value rather than an executable quote",
+    "report Radon quote verification as unavailable",
+    "return writes as an empty array"
+  ],
+  "expectedStatus": "completed",
+  "expectedWrites": []
+}
