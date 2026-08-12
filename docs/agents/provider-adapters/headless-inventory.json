@@ -611,7 +611,7 @@
     },
     {
       "id": "headless-codex-decisions",
-      "ability": "Present and resolve Decision Items that require the user.",
+      "ability": "Unconditionally refuse unattended Decision Item inspection or resolution because current-user judgment cannot exist headlessly.",
       "candidate_capability": {
         "status": "candidate",
         "id": "capability:scope:trade-journal/decision-resolution",
@@ -621,62 +621,72 @@
       "source": {
         "ownership": "repository:njabrooks/trade-journal",
         "location_class": "repository",
-        "path": ".agents/skills/decisions/SKILL.md"
+        "path": "capabilities/decision-resolution/adapters/codex.md"
       },
       "authored_source": {
         "ownership": "repository:njabrooks/trade-journal",
         "location_class": "repository",
         "path": ".claude/skills/decisions/SKILL.md"
       },
-      "packaging": "generated-headless-projection",
+      "packaging": "governed-provider-adapter",
       "execution_contract": {
-        "class": "generic",
-        "preamble_path": ".agents/skills/decisions/HEADLESS_PREAMBLE.md",
-        "readiness": "Generated baseline packaging only; it is not evidence of unattended operational readiness."
+        "class": "bespoke",
+        "preamble_path": ".claude/skills/decisions/HEADLESS_PREAMBLE.md",
+        "readiness": "Unconditional zero-read/zero-write refusal only; there is no unattended execution or scheduling contract."
       },
       "invocation": {
         "mode": "headless",
-        "entry_point": ".agents/skills/decisions/skill.json",
+        "entry_point": "docs/agents/provider-entry-points/staging/codex.md",
         "unattended_eligibility": "ineligible",
-        "rationale": "Interactive-only foreground workflow; mirror presence does not authorize unattended execution."
+        "rationale": "Interactive-only resolution requires a current user's exact action; mirror and governed-adapter presence authorize refusal only."
       },
       "lifecycle": {
         "status": "active",
         "protective_tombstone": false
       },
       "authority_and_write_scope": {
-        "reads": "Open Decision Items and maintenance worklists.",
-        "writes": "User-authorized resolutions through resolve-decision and governed runbooks.",
-        "judgment": "Explicit resolver for genuine user judgment."
+        "reads": "No unattended reads; the refusal occurs before Decision Item, maintenance, database, credential, or provider access.",
+        "writes": "No unattended writes. Interactive resolution is separately bounded to selected runbook writes, validated status transition, and resolve-decision --by user audit.",
+        "judgment": "Headless execution cannot prompt for, infer, default, fabricate, or record current-user judgment."
       },
       "prerequisites": [
-        "Codex headless runtime with repository access",
-        "User participation and remote database access through ops scripts."
+        "Codex headless runtime may load only the refusal contract",
+        "No repository, database, credential, provider, or user-input prerequisite can make unattended resolution eligible"
       ],
       "limitations": [
-        "Generic preamble is a packaging baseline, not an operational-readiness claim.",
-        "Generic headless packaging does not make decision resolution autonomous.",
-        "No evidence is bound to an exact W1 Capability version, package digest, and adapter digest."
+        "The bespoke preamble permits only the exact interactive_user_judgment_required refusal with writes [].",
+        "The current evidence proves adapter semantics and refusal, not unattended execution support or scheduling eligibility."
       ],
       "operational_consumers": [
         "No live operational consumer; current repository automation does not invoke this Codex projection."
       ],
       "operational_risk": {
-        "level": "medium",
+        "level": "low",
         "priority": null,
-        "rationale": "Contains judgment or interactive control boundaries and is not a live scheduled consumer."
+        "rationale": "No live consumer and the exact headless contract refuses before all reads and writes."
       },
       "evidence": {
-        "state": "unavailable",
-        "as_of": "2026-08-04",
-        "capability_version": null,
-        "package_digest": null,
-        "adapter_digest": null,
-        "reason": "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
+        "state": "current",
+        "as_of": "2026-08-12",
+        "capability_version": "1.0.0",
+        "package_digest": "sha256:66158ba085f39170be27eea5b1b7180dfc872ced87a4b5f134cfdd56729e64d8",
+        "adapter_digest": "sha256:4618d8ca2d232fda1490ebb53309d787bfcaedafb9e8f7bb5f94f397c3986f44",
+        "reason": "Exact current evidence binds the Codex adapter's interactive-only semantics and unconditional headless refusal; unattended execution remains ineligible."
       },
       "j2_disposition": {
         "action": "migrate",
-        "rationale": "Migrate the provider packaging in J2 without changing the underlying Trade Journal workflow semantics."
+        "rationale": "Stage the exact governed Codex adapter while retaining the bespoke refusal mirror as the only headless migration input."
+      },
+      "migration_input": {
+        "ownership": "repository:njabrooks/trade-journal",
+        "location_class": "repository",
+        "path": ".agents/skills/decisions/SKILL.md"
+      },
+      "governed_binding": {
+        "package_path": "capabilities/decision-resolution/capability-package.json",
+        "adapter_id": "decision-resolution-codex",
+        "evidence_path": "capabilities/decision-resolution/evidence/codex.json",
+        "staged_entry_point": "docs/agents/provider-entry-points/staging/codex.md"
       }
     },
     {
@@ -3059,12 +3069,12 @@
     {
       "id": "adapter-evidence-unavailable",
       "classification": "evidence",
-      "detail": "Twenty-six headless inventory entries have current evidence. Of ten unavailable entries, six await J2 disposition and four non-candidates have completed final retire dispositions under issue #75."
+      "detail": "Twenty-seven headless inventory entries have current evidence. Of nine unavailable entries, five await J2 disposition and four non-candidates have completed final retire dispositions under issue #75."
     },
     {
       "id": "generic-contract-readiness",
       "classification": "execution-contract",
-      "detail": "Fifteen current projections have generic packaging baselines; nineteen have bespoke contracts, including ten governed research-pipeline tombstones and four unavailable or retired safety refusals. Three additional non-candidate records are historical evidence only outside active discovery."
+      "detail": "Fourteen current projections have generic packaging baselines; twenty have bespoke contracts, including the decision-resolution refusal, ten governed research-pipeline tombstones, and four unavailable or retired safety refusals. Three additional non-candidate records are historical evidence only outside active discovery."
     },
     {
       "id": "live-jobs-still-claude",
@@ -3074,7 +3084,7 @@
     {
       "id": "interactive-only-mirrors",
       "classification": "eligibility",
-      "detail": "decisions and thesis are mirrored for parity but remain explicitly ineligible for unattended execution."
+      "detail": "decisions and thesis are mirrored for parity but remain explicitly ineligible for unattended execution. Decision resolution now has an exact current governed adapter plus a bespoke unconditional zero-read/zero-write refusal; current Adapter Conformance does not make unattended execution current or schedulable."
     }
   ]
 }

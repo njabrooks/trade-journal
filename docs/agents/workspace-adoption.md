@@ -43,8 +43,8 @@ uses the accepted native-first hierarchy/dependency policy. The five canonical l
 live labels; unrelated labels remain a namespaced extension. The live `needs-triage` description was aligned to
 the exact canonical Work Item meaning during adoption.
 
-The accepted J1 manifest declared no owned Capability Packages. J2 now declares fourteen Trade Journal-owned
-packages: portfolio snapshot, belief maintenance, belief-research relation, claims synthesis, thesis observation, thesis underwriting, belief evidence assessment,
+The accepted J1 manifest declared no owned Capability Packages. J2 now declares fifteen Trade Journal-owned
+packages: portfolio snapshot, belief maintenance, belief-research relation, decision resolution, claims synthesis, thesis observation, thesis underwriting, belief evidence assessment,
 research publication, research pipeline, portfolio options advice, options volatility analysis, portfolio analysis, morning attention brief, and workflow discovery. Archived, retired, and deprecated non-candidates remain visible in a namespaced extension; the machine-local Codex bridge is recorded as an active legacy competing router with unavailable conformance evidence. Rich inventory validity, mirror parity, and file presence do not
 establish Adapter Conformance; only exact W1-bound evidence upgrades an inventory entry. The federated Registry
 also resolves three Notes-owned packages from their accepted immutable release without declaring them owned by
@@ -54,12 +54,21 @@ Trade Journal.
 
 `docs/agents/provider-adapters/generation-eligibility.json` deterministically projects all 74 interactive and
 headless inventory entries. The accepted J1 state at governed evidence date `2026-08-04` recorded zero
-generation-eligible adapters and no governed outputs. At the current J2 evidence date `2026-08-11`, seventeen
-locked Capabilities—fourteen Trade Journal-owned packages plus three Notes-owned packages—make 54 inventory
+generation-eligible adapters and no governed outputs. At the current J2 evidence date `2026-08-12`, eighteen
+locked Capabilities—fifteen Trade Journal-owned packages plus three Notes-owned packages—make 56 inventory
 entries generation eligible while the whole-file Claude and Codex outputs
 remain staged. Existing `CLAUDE.md`, `.claude/skills/`, and `.agents/skills/` remain migration inputs until their
 separately governed cutovers, except for the twenty research-pipeline
 paths contracted by #69 to protective tombstones with exact governed replacements.
+
+Issue #60 adds the source-owned `decision-resolution` Capability at immutable revision
+`5e4ec4682d571ccd518e78128acab8077f68851e`. Its exact Claude and Codex adapters are interactive-only: they
+require the current user's exact bounded action, close the packet only through `resolve-decision.ts --by user`,
+and use `update-entity-status.ts` for every status-changing resolution. The resolver now refuses missing or
+agent-authored authority before Decision Item access. The Codex mirror carries a bespoke unconditional
+zero-read/zero-write refusal, so current adapter evidence, parity, and staged discovery never authorize
+unattended execution or scheduling. No live provider, scheduler, credential, database state, active discovery,
+or investment state changed while collecting evidence.
 
 The controlled refusal harness was executed in human and JSON modes against a clean detached Workspace
 checkout at accepted revision `2b6ea3e02ff5ba114b0f91dd779c4afb26181358`:
@@ -319,7 +328,7 @@ issue `njabrooks/projects#31` continues to own any future replacement for that i
 
 CI evaluates Capability and Provider Entry Point freshness against the runner's current UTC date. The
 checked-in immutable Registry Lock remains independently reproducible at its recorded governed evidence date
-of `2026-08-11`; CI resolves a temporary present-day lock before clean-regeneration validation so current
+of `2026-08-12`; CI resolves a temporary present-day lock before clean-regeneration validation so current
 freshness is enforced without rewriting or making the published lock nondeterministic. A controlled public-CLI
 proof also evaluates evidence on `2026-09-06`, after its `2026-09-05` expiry, and requires the adapter to become
 `stale`, existing governed output validation to fail, regeneration to fail, and the absent target to remain

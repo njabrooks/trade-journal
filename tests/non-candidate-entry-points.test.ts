@@ -147,7 +147,7 @@ describe('issue #75 non-candidate entry-point dispositions', () => {
     expect(
       headless.known_gaps.find((gap) => gap.id === 'generic-contract-readiness')
         ?.detail,
-    ).toContain('Fifteen current projections have generic packaging baselines');
+    ).toContain('Fourteen current projections have generic packaging baselines');
     expect(
       interactive.known_gaps.find((gap) => gap.id === 'no-exact-adapter-evidence')
         ?.detail,
@@ -158,26 +158,26 @@ describe('issue #75 non-candidate entry-point dispositions', () => {
       interactive.known_gaps.find((gap) => gap.id === 'no-exact-adapter-evidence')
         ?.detail,
     ).toContain(
-      'After issues #71, #64, and #65 add governed workflow discovery, options-vol-analysis, and portfolio-analysis adapters, the current totals are twenty-eight current and ten unavailable; the same four non-candidate dispositions remain unchanged.',
+      'Issue #60 adds governed interactive-only decision resolution, making the current totals twenty-nine current and nine unavailable; the same four non-candidate dispositions remain unchanged.',
     );
     expect(
       headless.known_gaps.find((gap) => gap.id === 'adapter-evidence-unavailable')
         ?.detail,
     ).toContain(
-      'Twenty-six headless inventory entries have current evidence. Of ten unavailable entries, six await J2 disposition and four non-candidates have completed final retire dispositions',
+      'Twenty-seven headless inventory entries have current evidence. Of nine unavailable entries, five await J2 disposition and four non-candidates have completed final retire dispositions',
     );
     expect(
       interactive.entries.filter((entry) => entry.evidence.state === 'current'),
-    ).toHaveLength(28);
+    ).toHaveLength(29);
     expect(
       interactive.entries.filter((entry) => entry.evidence.state === 'unavailable'),
-    ).toHaveLength(10);
+    ).toHaveLength(9);
     expect(
       headless.entries.filter((entry) => entry.evidence.state === 'current'),
-    ).toHaveLength(26);
+    ).toHaveLength(27);
     expect(
       headless.entries.filter((entry) => entry.evidence.state === 'unavailable'),
-    ).toHaveLength(10);
+    ).toHaveLength(9);
   });
 
   it('keeps configure-signal only as an exact no-read/no-write protective tombstone', () => {

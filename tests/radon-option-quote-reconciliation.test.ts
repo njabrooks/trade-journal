@@ -238,6 +238,6 @@ describe("Radon-owned IBKR option quote reconciliation", () => {
 
     const inventoryGuide = read("docs/agents/provider-adapters/README.md");
     expect(inventoryGuide).toContain("`gateway`, `ibkr-quote`, and `visser-scan`");
-    expect(inventoryGuide).toContain("other 14 projections");
+    expect(inventoryGuide).toContain("other 13 projections");
   });
 });

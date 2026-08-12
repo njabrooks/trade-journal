@@ -1,0 +1,87 @@
+{
+  "id": "capability:scope:trade-journal/decision-resolution",
+  "authority": "scope:trade-journal",
+  "version": "1.0.0",
+  "intent": "Present unresolved Trade Journal Decision Items and record only the current user's explicit judgment through approved auditable resolution and validated lifecycle-transition operations.",
+  "contract": "Given an interactive Trade Journal repository session, the complete current unresolved Decision Item packet, and the current user's explicit selection of one bounded action, present the decision and its evidence without manufacturing judgment; execute only the selected runbook and approved repository operations; route every entity status change through scripts/ops/update-entity-status.ts; close the exact Decision Item through scripts/ops/resolve-decision.ts --by user; preserve the resulting journal audit and declared write set; and report the resolution, refusal, unavailability, or failure. Missing, ambiguous, inferred, agent-authored, stale, headless, autonomous, scheduled, background, or CI-supplied judgment is refused before any read or write. This Capability is interactive-only and has no unattended or scheduling eligibility.",
+  "instructions": [
+    "Require a live interactive repository session with the current user present. Refuse headless, autonomous, scheduled, cron, background, batch, CI, webhook, timeout-default, or ambient invocation before reading Decision Items or repository state.",
+    "Read open Decision Items only through npx tsx scripts/ops/list-decisions.ts --json. Read npx tsx scripts/ops/maintenance-status.ts --json only to distinguish unresolved user decisions from agent-run maintenance work; never treat a maintenance work item as an already-authorized resolution.",
+    "Present one complete unresolved Decision Item at a time with its decision type, subject, why raised, evidence context, recommended actions, and default recommendation. A default is advice only and is never user judgment.",
+    "Obtain the current user's explicit selection of one exact bounded action for the exact Decision Item. Refuse silence, missing or ambiguous wording, an unsupported action, an agent inference, a prior unrelated preference, or a recommendation without current acceptance. Do not fabricate, broaden, or self-authorize the selection.",
+    "For a built-in mechanical action, preview and apply only through scripts/ops/resolve-decision.ts with the exact Decision Item ID, selected action and required target IDs, and --by user. Never edit journal_entries or graph tables directly.",
+    "For a delegated action, complete the packet's exact runbook under its own authority first. Pass the resulting exact write records and rationale to scripts/ops/resolve-decision.ts --by user; do not claim or record a delegated write that did not complete.",
+    "When the user's selected resolution requires an entity status change, invoke scripts/ops/update-entity-status.ts with the exact entity type, ID, target status, and user-approved rationale before closing the Decision Item. Never bypass its transition validation or represent a rejected transition as resolved.",
+    "Require scripts/ops/resolve-decision.ts to record chosen_by user, the selected action, time, notes, declared writes, resolved or dismissed status, and a decision_resolved journal audit. Refuse missing explicit --by user authority, inactive or unknown Decision Items, missing target data, malformed writes, or failed audit persistence.",
+    "Return the exact Decision Item ID, chosen action, resolution status, approved-operation results, validated status transition when any, declared writes, audit outcome, and remaining unresolved count. Report unavailable prerequisites or failures without partial-success language.",
+    "Do not create Decision Items, drain maintenance worklists, change a scheduler, install a provider entry point, use ad-hoc SQL or generic database writers, access credentials for convenience, size or place trades, or make any investment judgment beyond the current user's exact selection.",
+    "The Claude and Codex Provider Adapters are interactive-only. A headless mirror may exist for parity and discovery but must unconditionally refuse before reads, writes, user prompting, provider calls, or execution; it can never be current for unattended execution or scheduled by this Capability."
+  ],
+  "conformance": {
+    "evidence_validity_days": 30,
+    "requirements": [
+      {
+        "id": "adapter-entry-point",
+        "category": "structural",
+        "description": "Each exact provider adapter is present in the staged governed Provider Entry Point generated from this package.",
+        "evidence_type": "automated"
+      },
+      {
+        "id": "interactive-only-boundary",
+        "category": "behavioural",
+        "description": "Both adapters and the bespoke Codex mirror refuse headless, autonomous, scheduled, background, batch, CI, or missing-user-presence execution before reads or writes and declare no unattended or scheduling eligibility.",
+        "evidence_type": "automated"
+      },
+      {
+        "id": "explicit-user-judgment",
+        "category": "behavioural",
+        "description": "Resolution requires the current user's exact action for the exact unresolved Decision Item; defaults, silence, ambiguity, agent inference, and missing explicit --by user authority are refused before mutation.",
+        "evidence_type": "automated"
+      },
+      {
+        "id": "auditable-resolution",
+        "category": "behavioural",
+        "description": "Every close uses scripts/ops/resolve-decision.ts --by user and records the selected action, notes, exact writes, resolution state, and decision_resolved journal audit without direct journal or generic database mutation.",
+        "evidence_type": "automated"
+      },
+      {
+        "id": "validated-status-transition",
+        "category": "behavioural",
+        "description": "Any status-changing resolution delegates to scripts/ops/update-entity-status.ts with an explicit rationale and refuses invalid transitions before the Decision Item is closed.",
+        "evidence_type": "automated"
+      },
+      {
+        "id": "provider-semantic-equivalence",
+        "category": "semantic",
+        "description": "The exact Claude and Codex adapters preserve the same interactive-only, genuine-user-judgment, approved-operation, audit, status-transition, failure, and no-scheduling semantics.",
+        "evidence_type": "human"
+      },
+      {
+        "id": "eligible-environment",
+        "category": "environmental",
+        "description": "The configured interactive Trade Journal runtime can execute the approved operations' non-mutating preflight, while absent database access or user presence remains an explicit refused or unavailable outcome.",
+        "evidence_type": "automated"
+      }
+    ]
+  },
+  "provider_adapters": [
+    {
+      "id": "decision-resolution-claude",
+      "provider": "claude",
+      "source": "adapters/claude.md",
+      "evidence": "evidence/claude.json"
+    },
+    {
+      "id": "decision-resolution-codex",
+      "provider": "codex",
+      "source": "adapters/codex.md",
+      "evidence": "evidence/codex.json"
+    }
+  ],
+  "dependencies": [
+    {
+      "id": "capability:scope:trade-journal/belief-maintenance",
+      "version_constraint": ">=1.0.0 <2.0.0"
+    }
+  ]
+}

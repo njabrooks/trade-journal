@@ -92,6 +92,21 @@
       }
     },
     {
+      "id": "capability:scope:trade-journal/decision-resolution",
+      "authority": "scope:trade-journal",
+      "repository": "github:njabrooks/trade-journal",
+      "package_path": "capabilities/decision-resolution",
+      "approved_version": "1.0.0",
+      "release": {
+        "source": ".",
+        "revision": "4aba7e1808785fbeff7fe67d052ade4dd3c782d9"
+      },
+      "development": {
+        "enabled": true,
+        "working_tree": "."
+      }
+    },
+    {
       "id": "capability:scope:trade-journal/claims-synthesis",
       "authority": "scope:trade-journal",
       "repository": "github:njabrooks/trade-journal",
