@@ -120,38 +120,44 @@ The parity script gates the repository inventory and mirror only; it never reads
 machine-local bridge. It remains supporting diagnostic tooling, not Adapter Conformance evidence. Likewise, a current
 mirror and a valid rich inventory do not upgrade any W1 evidence state. J2 upgrades an inventory entry only
 when an exact source Capability version, package digest, adapter digest, complete evidence, immutable lock,
-and staged generated output bind it through W1. The remaining generic projections stay `unavailable`.
+and governed generated output bind it through W1. The remaining generic projections stay `unavailable`.
 
 ## Generation eligibility
 
-`generation-eligibility.json` is the deterministic projection of both inventories into J1's governed
-generation decision and the incremental J2 migration state. It covers all 74 inventoried entry points. The
-nineteen locked Capabilities now record 58 generation-eligible inventory entries and two whole-file governed
-staging outputs. Sixteen packages are Trade Journal-owned; the three Notes-owned content-processing dependency
-packages remain external. The other 20 entries remain non-governed migration inputs or non-candidates with
-explicit dispositions.
+`generation-eligibility.json` is the deterministic projection of both inventories into the final governed
+generation state. It covers all 74 inventoried entry points. J1 recorded 73 entries; the exhaustive validator
+now finds 74 because repository-native Codex workflow discovery was added as a separately governed entry.
+The historical requirement is therefore satisfied against the larger validated set, never by dropping the
+new entry. The nineteen locked Capabilities record 58 generation-eligible entries and two authoritative
+whole-file Provider Entry Points. Sixteen packages are Trade Journal-owned; the three Notes-owned
+content-processing dependency packages remain external.
+
+Every projected entry has one final evidence-backed disposition: `governed`, `replaced`, `retained`,
+`deferred`, `retired`, `tombstone`, or `unavailable`. Current evidence plus exact bindings yields `governed`
+or `replaced`; unavailable records retain only their explicitly bounded final state. The previous `staging/`
+outputs are absent and are not discovery authority.
 
 The portfolio-snapshot, belief-maintenance, belief-research-relation, decision-resolution, claims-synthesis, research-publication,
 thesis-foreground, thesis-observation, thesis-underwriting, belief-evidence-assessment, portfolio-options-advice,
 options-vol-analysis, portfolio-analysis, and morning-attention-brief adapters are `current` because they bind to source-owned Capability version `1.0.0`, exact package and
 adapter digests, complete current evidence, and the immutable published Registry Lock. The belief-maintenance
 package covers the maintenance, thesis-review, and claim-backfill inventory entries through one provider-
-neutral boundary. Governed outputs stay under the staging discovery surface until a separately approved live
-or final discovery cutover. File presence, mirror parity, generic packaging, or historical execution cannot
-upgrade any remaining adapter.
+neutral boundary. The governed outputs at `docs/agents/provider-entry-points/{claude,codex}.md` are now the
+authoritative discovery surface. File presence, mirror parity, generic packaging, or historical execution
+cannot upgrade any remaining adapter.
 
 Issue #60 adds `decision-resolution` as an exact interactive-only Capability. Both provider adapters require
 the current user's exact action, close only through `resolve-decision.ts --by user`, and route status mutation
 only through `update-entity-status.ts`. The Codex mirror has a bespoke unconditional refusal that performs no
-reads or writes. Its exact adapter evidence is current for interactive staged discovery, while unattended
-execution and scheduling remain ineligible and cannot be inferred from Registry, mirror, or staging presence.
+reads or writes. Its exact adapter evidence is current for interactive governed discovery, while unattended
+execution and scheduling remain ineligible and cannot be inferred from Registry or mirror presence.
 
 Issue #61 adds `thesis-foreground` as an exact interactive-only Capability over one thesis. Query and
 what-changed are read-only; fresh observation, explicitly requested evidence recording, and re-underwriting
 delegate only to the Registry-resolved thesis-observation, belief-evidence-assessment, and thesis-underwriting
 Capabilities. Missing or ambiguous targets, incomplete evidence, missing current-user judgment, headless use,
 and every scheduling request fail closed. The Codex mirror now carries a bespoke unconditional zero-read/
-zero-write refusal, so current staged Adapter Conformance never implies unattended or scheduling eligibility.
+zero-write refusal, so current Adapter Conformance never implies unattended or scheduling eligibility.
 
 Workflow discovery adds current Claude and Codex interactive adapters. Each selects from this validated
 inventory and delegates to the selected provider's exact locked adapter or an honestly unavailable repository-authored

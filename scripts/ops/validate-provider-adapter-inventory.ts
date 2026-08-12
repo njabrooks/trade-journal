@@ -440,19 +440,19 @@ function validateEntry(
     const binding = value.governed_binding as JsonObject;
     exactFields(
       binding,
-      ['package_path', 'adapter_id', 'evidence_path', 'staged_entry_point'],
+      ['package_path', 'adapter_id', 'evidence_path', 'entry_point'],
       `${path}/governed_binding`,
       'TJ-INV-016',
       diagnostics,
     );
     requireStrings(
       binding,
-      ['package_path', 'adapter_id', 'evidence_path', 'staged_entry_point'],
+      ['package_path', 'adapter_id', 'evidence_path', 'entry_point'],
       `${path}/governed_binding`,
       'TJ-INV-016',
       diagnostics,
     );
-    for (const field of ['package_path', 'evidence_path', 'staged_entry_point']) {
+    for (const field of ['package_path', 'evidence_path', 'entry_point']) {
       const fieldValue = binding[field];
       if (
         nonempty(fieldValue) &&

@@ -22,7 +22,7 @@
       "packaging": "governed-provider-adapter",
       "invocation": {
         "mode": "interactive",
-        "entry_point": "docs/agents/provider-entry-points/staging/claude.md",
+        "entry_point": "docs/agents/provider-entry-points/claude.md",
         "unattended_eligibility": "ineligible",
         "rationale": "The final investment-research disposition is genuine user judgment."
       },
@@ -68,7 +68,7 @@
         "package_path": "capabilities/research-pipeline/capability-package.json",
         "adapter_id": "research-pipeline-claude",
         "evidence_path": "capabilities/research-pipeline/evidence/claude.json",
-        "staged_entry_point": "docs/agents/provider-entry-points/staging/claude.md"
+        "entry_point": "docs/agents/provider-entry-points/claude.md"
       }
     },
     {
@@ -88,7 +88,7 @@
       "packaging": "governed-provider-adapter",
       "invocation": {
         "mode": "interactive",
-        "entry_point": "docs/agents/provider-entry-points/staging/claude.md",
+        "entry_point": "docs/agents/provider-entry-points/claude.md",
         "unattended_eligibility": "conditional",
         "rationale": "Runs deterministic analysis from explicit thesis assumptions; trade judgment remains with the user and persistence remains opt-in."
       },
@@ -106,7 +106,7 @@
         "Complete explicit thesis inputs and usable Massive or stored Trade Journal options-chain data."
       ],
       "limitations": [
-        "The governed adapter is staged; the authored Claude skill remains a migration input until final discovery cutover.",
+        "The governed adapter is authoritative; the authored Claude skill remains a non-authoritative rollback input.",
         "Analysis values are chain-derived model values, not executable quotes; the separately governed Radon quote Capability remains unavailable."
       ],
       "operational_consumers": [
@@ -122,7 +122,7 @@
       },
       "j2_disposition": {
         "action": "migrate",
-        "rationale": "The governed adapter is current and staged; retain the authored workflow as a migration input until final discovery cutover."
+        "rationale": "The governed adapter is current and authoritative; retain the authored workflow as a non-authoritative rollback input."
       },
       "migration_input": {
         "ownership": "repository:njabrooks/trade-journal",
@@ -133,7 +133,7 @@
         "package_path": "capabilities/options-vol-analysis/capability-package.json",
         "adapter_id": "options-vol-analysis-claude",
         "evidence_path": "capabilities/options-vol-analysis/evidence/claude.json",
-        "staged_entry_point": "docs/agents/provider-entry-points/staging/claude.md"
+        "entry_point": "docs/agents/provider-entry-points/claude.md"
       }
     },
     {
@@ -257,7 +257,7 @@
       "packaging": "governed-provider-adapter",
       "invocation": {
         "mode": "interactive",
-        "entry_point": "docs/agents/provider-entry-points/staging/claude.md",
+        "entry_point": "docs/agents/provider-entry-points/claude.md",
         "unattended_eligibility": "conditional",
         "rationale": "Classifies provenance-bearing evidence against a bound governed underwriting target without resolving investment decisions."
       },
@@ -275,7 +275,7 @@
         "Remote database access, readable provenance-bearing source content, an explicit thesis and assessment request, and the governed thesis-underwriting dependency."
       ],
       "limitations": [
-        "The governed adapter is staged; the authored Claude skill remains a migration input until final discovery cutover.",
+        "The governed adapter is authoritative; the authored Claude skill remains a non-authoritative rollback input.",
         "No provider invocation or database-writing canary was authorized; unavailable inputs or a stale target must fail without writes."
       ],
       "operational_consumers": [
@@ -291,7 +291,7 @@
       },
       "j2_disposition": {
         "action": "migrate",
-        "rationale": "The governed adapter is current and staged; retain the authored workflow as a migration input until final discovery cutover."
+        "rationale": "The governed adapter is current and authoritative; retain the authored workflow as a non-authoritative rollback input."
       },
       "migration_input": {
         "ownership": "repository:njabrooks/trade-journal",
@@ -302,7 +302,7 @@
         "package_path": "capabilities/belief-evidence-assessment/capability-package.json",
         "adapter_id": "belief-evidence-assessment-claude",
         "evidence_path": "capabilities/belief-evidence-assessment/evidence/claude.json",
-        "staged_entry_point": "docs/agents/provider-entry-points/staging/claude.md"
+        "entry_point": "docs/agents/provider-entry-points/claude.md"
       }
     },
     {
@@ -322,7 +322,7 @@
       "packaging": "governed-provider-adapter",
       "invocation": {
         "mode": "interactive",
-        "entry_point": "docs/agents/provider-entry-points/staging/claude.md",
+        "entry_point": "docs/agents/provider-entry-points/claude.md",
         "unattended_eligibility": "conditional",
         "rationale": "May auto-link only clear matches and must surface ambiguous judgment."
       },
@@ -341,7 +341,7 @@
       ],
       "limitations": [
         "Historical volume and ambiguity require bounded execution.",
-        "The governed Provider Entry Point is staged; the authored Claude skill remains the active migration input until an explicitly approved operational or final discovery cutover."
+        "The governed Provider Entry Point is authoritative; the authored Claude skill remains a delegated operational source only where a separately governed operational consumer still delegates to it."
       ],
       "operational_consumers": [
         "Interactive Trade Journal maintainer or delegated agent"
@@ -356,7 +356,7 @@
       },
       "j2_disposition": {
         "action": "migrate",
-        "rationale": "The governed adapter is current and staged; retain the existing Claude discovery input and live invocation until its separately approved cutover."
+        "rationale": "The governed adapter is current and authoritative; retain the existing Claude discovery input and live invocation only where a separately governed operational consumer still delegates to it."
       },
       "migration_input": {
         "ownership": "repository:njabrooks/trade-journal",
@@ -367,7 +367,7 @@
         "package_path": "capabilities/belief-maintenance/capability-package.json",
         "adapter_id": "belief-maintenance-claude",
         "evidence_path": "capabilities/belief-maintenance/evidence/claude.json",
-        "staged_entry_point": "docs/agents/provider-entry-points/staging/claude.md"
+        "entry_point": "docs/agents/provider-entry-points/claude.md"
       }
     },
     {
@@ -387,7 +387,7 @@
       "packaging": "governed-provider-adapter",
       "invocation": {
         "mode": "interactive",
-        "entry_point": "docs/agents/provider-entry-points/staging/claude.md",
+        "entry_point": "docs/agents/provider-entry-points/claude.md",
         "unattended_eligibility": "conditional",
         "rationale": "Performs underwriting synthesis but cannot fabricate owner conviction."
       },
@@ -405,7 +405,7 @@
         "Remote database access, a specified thesis, and an explicit delegated underwriting request."
       ],
       "limitations": [
-        "The governed adapter is staged; the authored Claude skill remains a migration input until final discovery cutover.",
+        "The governed adapter is authoritative; the authored Claude skill remains a non-authoritative rollback input.",
         "Database or provider unavailability must be reported explicitly and cannot be substituted with invented underwriting state."
       ],
       "operational_consumers": [
@@ -421,7 +421,7 @@
       },
       "j2_disposition": {
         "action": "migrate",
-        "rationale": "The governed adapter is current and staged; retain the authored workflow as a migration input until final discovery cutover."
+        "rationale": "The governed adapter is current and authoritative; retain the authored workflow as a non-authoritative rollback input."
       },
       "migration_input": {
         "ownership": "repository:njabrooks/trade-journal",
@@ -432,7 +432,7 @@
         "package_path": "capabilities/thesis-underwriting/capability-package.json",
         "adapter_id": "thesis-underwriting-claude",
         "evidence_path": "capabilities/thesis-underwriting/evidence/claude.json",
-        "staged_entry_point": "docs/agents/provider-entry-points/staging/claude.md"
+        "entry_point": "docs/agents/provider-entry-points/claude.md"
       }
     },
     {
@@ -505,7 +505,7 @@
       "packaging": "governed-provider-adapter",
       "invocation": {
         "mode": "interactive",
-        "entry_point": "docs/agents/provider-entry-points/staging/claude.md",
+        "entry_point": "docs/agents/provider-entry-points/claude.md",
         "unattended_eligibility": "ineligible",
         "rationale": "The current user's exact action is mandatory; headless, autonomous, scheduled, background, and inferred resolution are prohibited."
       },
@@ -523,7 +523,7 @@
         "Complete unresolved Decision Item packet and remote database access through approved ops scripts"
       ],
       "limitations": [
-        "The governed adapter is staged; the canonical decisions skill remains a migration input until final discovery cutover.",
+        "The governed adapter is authoritative; the canonical decisions skill remains a non-authoritative rollback input.",
         "No unattended mode, schedule, default, prior preference, or agent inference may establish user judgment."
       ],
       "operational_consumers": [
@@ -539,7 +539,7 @@
       },
       "j2_disposition": {
         "action": "migrate",
-        "rationale": "The governed adapter is current and staged; retain the authored interactive workflow as a migration input until final discovery cutover."
+        "rationale": "The governed adapter is current and authoritative; retain the authored interactive workflow as a non-authoritative rollback input."
       },
       "migration_input": {
         "ownership": "repository:njabrooks/trade-journal",
@@ -550,7 +550,7 @@
         "package_path": "capabilities/decision-resolution/capability-package.json",
         "adapter_id": "decision-resolution-claude",
         "evidence_path": "capabilities/decision-resolution/evidence/claude.json",
-        "staged_entry_point": "docs/agents/provider-entry-points/staging/claude.md"
+        "entry_point": "docs/agents/provider-entry-points/claude.md"
       }
     },
     {
@@ -570,7 +570,7 @@
       "packaging": "governed-provider-adapter",
       "invocation": {
         "mode": "interactive",
-        "entry_point": "docs/agents/provider-entry-points/staging/claude.md",
+        "entry_point": "docs/agents/provider-entry-points/claude.md",
         "unattended_eligibility": "ineligible",
         "rationale": "Exact claim and thesis-bearing acceptance requires a current user's explicit judgment; unattended use may prepare or validate only."
       },
@@ -604,7 +604,7 @@
       },
       "j2_disposition": {
         "action": "migrate",
-        "rationale": "The governed adapter is current and staged; retain the modernized interactive skill as a migration input until final discovery cutover."
+        "rationale": "The governed adapter is current and authoritative; retain the modernized interactive skill as a non-authoritative rollback input."
       },
       "migration_input": {
         "ownership": "repository:njabrooks/trade-journal",
@@ -615,7 +615,7 @@
         "package_path": "capabilities/research-publication/capability-package.json",
         "adapter_id": "research-publication-claude",
         "evidence_path": "capabilities/research-publication/evidence/claude.json",
-        "staged_entry_point": "docs/agents/provider-entry-points/staging/claude.md"
+        "entry_point": "docs/agents/provider-entry-points/claude.md"
       }
     },
     {
@@ -689,7 +689,7 @@
       "packaging": "governed-provider-adapter",
       "invocation": {
         "mode": "interactive",
-        "entry_point": "docs/agents/provider-entry-points/staging/claude.md",
+        "entry_point": "docs/agents/provider-entry-points/claude.md",
         "unattended_eligibility": "ineligible",
         "rationale": "Graduation acceptance and every eventual persistence action remain user-controlled."
       },
@@ -735,7 +735,7 @@
         "package_path": "capabilities/research-pipeline/capability-package.json",
         "adapter_id": "research-pipeline-claude",
         "evidence_path": "capabilities/research-pipeline/evidence/claude.json",
-        "staged_entry_point": "docs/agents/provider-entry-points/staging/claude.md"
+        "entry_point": "docs/agents/provider-entry-points/claude.md"
       }
     },
     {
@@ -809,7 +809,7 @@
       "packaging": "governed-provider-adapter",
       "invocation": {
         "mode": "interactive",
-        "entry_point": "docs/agents/provider-entry-points/staging/claude.md",
+        "entry_point": "docs/agents/provider-entry-points/claude.md",
         "unattended_eligibility": "conditional",
         "rationale": "Producer only; never silently resolves genuine judgment."
       },
@@ -855,7 +855,7 @@
         "package_path": "capabilities/belief-maintenance/capability-package.json",
         "adapter_id": "belief-maintenance-claude",
         "evidence_path": "capabilities/belief-maintenance/evidence/claude.json",
-        "staged_entry_point": "docs/agents/provider-entry-points/staging/claude.md"
+        "entry_point": "docs/agents/provider-entry-points/claude.md"
       }
     },
     {
@@ -875,7 +875,7 @@
       "packaging": "governed-provider-adapter",
       "invocation": {
         "mode": "interactive",
-        "entry_point": "docs/agents/provider-entry-points/staging/claude.md",
+        "entry_point": "docs/agents/provider-entry-points/claude.md",
         "unattended_eligibility": "conditional",
         "rationale": "Ranks attention but cannot alter the belief layer or create decisions."
       },
@@ -894,7 +894,7 @@
       ],
       "limitations": [
         "The live Claude-dependent scheduled consumer invokes the governed adapter; interactive slash-command discovery remains a separate provider-owned entry path.",
-        "The governed Provider Entry Point remains staged for interactive discovery; the authored Claude skill is retained as migration history and the explicit rollback target."
+        "The governed Provider Entry Point remains authoritative for interactive discovery; the authored Claude skill is retained as migration history and the explicit rollback target."
       ],
       "operational_consumers": [
         "Interactive Trade Journal maintainer or delegated agent",
@@ -921,7 +921,7 @@
         "package_path": "capabilities/morning-attention-brief/capability-package.json",
         "adapter_id": "morning-attention-brief-claude",
         "evidence_path": "capabilities/morning-attention-brief/evidence/claude.json",
-        "staged_entry_point": "docs/agents/provider-entry-points/staging/claude.md"
+        "entry_point": "docs/agents/provider-entry-points/claude.md"
       }
     },
     {
@@ -941,7 +941,7 @@
       "packaging": "governed-provider-adapter",
       "invocation": {
         "mode": "interactive",
-        "entry_point": "docs/agents/provider-entry-points/staging/claude.md",
+        "entry_point": "docs/agents/provider-entry-points/claude.md",
         "unattended_eligibility": "conditional",
         "rationale": "Exercises investment-structure judgment within standing constraints."
       },
@@ -977,7 +977,7 @@
       },
       "j2_disposition": {
         "action": "migrate",
-        "rationale": "The governed adapter is current and live for the morning-batch and LEAP consumers under #53/#54; retain the existing interactive discovery input until its separately approved cutover."
+        "rationale": "The governed adapter is current and live for the morning-batch and LEAP consumers under #53/#54; retain the existing interactive discovery input only where a separately governed operational consumer still delegates to it."
       },
       "migration_input": {
         "ownership": "repository:njabrooks/trade-journal",
@@ -988,7 +988,7 @@
         "package_path": "capabilities/portfolio-options-advice/capability-package.json",
         "adapter_id": "portfolio-options-advice-claude",
         "evidence_path": "capabilities/portfolio-options-advice/evidence/claude.json",
-        "staged_entry_point": "docs/agents/provider-entry-points/staging/claude.md"
+        "entry_point": "docs/agents/provider-entry-points/claude.md"
       }
     },
     {
@@ -1060,7 +1060,7 @@
       "packaging": "governed-provider-adapter",
       "invocation": {
         "mode": "interactive",
-        "entry_point": "docs/agents/provider-entry-points/staging/claude.md",
+        "entry_point": "docs/agents/provider-entry-points/claude.md",
         "unattended_eligibility": "conditional",
         "rationale": "The aggregate is read-only, but genuine stage judgment and every accepted write remain interactive and stage-owned."
       },
@@ -1106,7 +1106,7 @@
         "package_path": "capabilities/research-pipeline/capability-package.json",
         "adapter_id": "research-pipeline-claude",
         "evidence_path": "capabilities/research-pipeline/evidence/claude.json",
-        "staged_entry_point": "docs/agents/provider-entry-points/staging/claude.md"
+        "entry_point": "docs/agents/provider-entry-points/claude.md"
       }
     },
     {
@@ -1131,7 +1131,7 @@
       "packaging": "governed-provider-adapter",
       "invocation": {
         "mode": "interactive",
-        "entry_point": "docs/agents/provider-entry-points/staging/claude.md",
+        "entry_point": "docs/agents/provider-entry-points/claude.md",
         "unattended_eligibility": "conditional",
         "rationale": "Read-only portfolio interpretation with optional bounded options analysis."
       },
@@ -1145,13 +1145,13 @@
         "judgment": "Evidence-grounded interpretation for the user; no user-decision resolution or order sizing."
       },
       "prerequisites": [
-        "Claude repository session with access to the staged governed Provider Entry Point.",
+        "Claude repository session with access to the governed Provider Entry Point.",
         "Current portfolio-snapshot dependency and, when requested, current options-vol-analysis dependency."
       ],
       "limitations": [
         "Snapshot quality depends on reported upstream ingestion freshness.",
         "Executable quote verification remains unavailable while Radon publishes no accepted immutable option-quote Capability.",
-        "The governed Provider Entry Point is staged; the legacy connector-era skill remains a rollback-capable migration input until final discovery cutover."
+        "The governed Provider Entry Point is authoritative; the legacy connector-era skill remains a rollback-capable migration input as a non-authoritative rollback input."
       ],
       "operational_consumers": [
         "Interactive Trade Journal maintainer; no live scheduled consumer."
@@ -1168,11 +1168,11 @@
         "package_path": "capabilities/portfolio-analysis/capability-package.json",
         "adapter_id": "portfolio-analysis-claude",
         "evidence_path": "capabilities/portfolio-analysis/evidence/claude.json",
-        "staged_entry_point": "docs/agents/provider-entry-points/staging/claude.md"
+        "entry_point": "docs/agents/provider-entry-points/claude.md"
       },
       "j2_disposition": {
         "action": "replace",
-        "rationale": "The authority-correct governed Capability replaces connector-era assumptions; retain the legacy source only as an explicit migration input until final discovery cutover."
+        "rationale": "The authority-correct governed Capability replaces connector-era assumptions; retain the legacy source only as an explicit migration input as a non-authoritative rollback input."
       }
     },
     {
@@ -1197,9 +1197,9 @@
       "packaging": "governed-provider-adapter",
       "invocation": {
         "mode": "interactive",
-        "entry_point": "docs/agents/provider-entry-points/staging/claude.md",
+        "entry_point": "docs/agents/provider-entry-points/claude.md",
         "unattended_eligibility": "conditional",
-        "rationale": "Notes-owned classification and extraction are staged; Trade Journal publication remains separately governed."
+        "rationale": "Notes-owned classification and extraction are authoritative; Trade Journal publication remains separately governed."
       },
       "lifecycle": {
         "status": "active",
@@ -1216,7 +1216,7 @@
         "TANA_API_TOKEN and an eligible Tana runtime for any live Notes write."
       ],
       "limitations": [
-        "The former Trade Journal process-note procedure remains only as a rollback-capable migration input until final discovery cutover.",
+        "The former Trade Journal process-note procedure remains only as a rollback-capable migration input as a non-authoritative rollback input.",
         "Recorded conformance proves the immutable package boundary but does not claim live Tana, provider, scheduler, credential, or Trade Journal availability."
       ],
       "operational_consumers": [
@@ -1263,9 +1263,9 @@
       "packaging": "governed-provider-adapter",
       "invocation": {
         "mode": "interactive",
-        "entry_point": "docs/agents/provider-entry-points/staging/claude.md",
+        "entry_point": "docs/agents/provider-entry-points/claude.md",
         "unattended_eligibility": "conditional",
-        "rationale": "Notes-owned classification and extraction are staged; investment promotion remains separately governed."
+        "rationale": "Notes-owned classification and extraction are authoritative; investment promotion remains separately governed."
       },
       "lifecycle": {
         "status": "active",
@@ -1282,7 +1282,7 @@
         "TANA_API_TOKEN and an eligible Tana runtime for any live Notes write."
       ],
       "limitations": [
-        "The former Trade Journal process-transcript procedure remains only as a rollback-capable migration input until final discovery cutover.",
+        "The former Trade Journal process-transcript procedure remains only as a rollback-capable migration input as a non-authoritative rollback input.",
         "Recorded conformance proves the immutable package boundary but does not claim live Tana, provider, scheduler, credential, or Trade Journal availability."
       ],
       "operational_consumers": [
@@ -1329,7 +1329,7 @@
       "packaging": "governed-provider-adapter",
       "invocation": {
         "mode": "interactive",
-        "entry_point": "docs/agents/provider-entry-points/staging/claude.md",
+        "entry_point": "docs/agents/provider-entry-points/claude.md",
         "unattended_eligibility": "eligible",
         "rationale": "Read-only portfolio reporting."
       },
@@ -1348,7 +1348,7 @@
       ],
       "limitations": [
         "Snapshot quality depends on upstream ingestion freshness.",
-        "The governed Provider Entry Point is staged; /pull-portfolio remains the active migration input until the final discovery cutover."
+        "The governed Provider Entry Point is authoritative; /pull-portfolio remains a non-authoritative rollback input."
       ],
       "operational_consumers": [
         "Interactive Trade Journal maintainer or delegated agent"
@@ -1365,11 +1365,11 @@
         "package_path": "capabilities/portfolio-snapshot/capability-package.json",
         "adapter_id": "portfolio-snapshot-claude",
         "evidence_path": "capabilities/portfolio-snapshot/evidence/claude.json",
-        "staged_entry_point": "docs/agents/provider-entry-points/staging/claude.md"
+        "entry_point": "docs/agents/provider-entry-points/claude.md"
       },
       "j2_disposition": {
         "action": "migrate",
-        "rationale": "The governed adapter is current and staged; retain the legacy discovery input until the final provider-discovery cutover."
+        "rationale": "The governed adapter is current and authoritative; retain the legacy discovery input as a non-authoritative rollback input."
       }
     },
     {
@@ -1444,7 +1444,7 @@
       "packaging": "governed-provider-adapter",
       "invocation": {
         "mode": "interactive",
-        "entry_point": "docs/agents/provider-entry-points/staging/claude.md",
+        "entry_point": "docs/agents/provider-entry-points/claude.md",
         "unattended_eligibility": "ineligible",
         "rationale": "Exact relation and Decision Item persistence requires a current user's explicit judgment; preparation remains non-mutating."
       },
@@ -1479,7 +1479,7 @@
       },
       "j2_disposition": {
         "action": "migrate",
-        "rationale": "The governed adapter is current and staged; retain the canonical interactive skill as a migration input until final discovery cutover."
+        "rationale": "The governed adapter is current and authoritative; retain the canonical interactive skill as a non-authoritative rollback input."
       },
       "migration_input": {
         "ownership": "repository:njabrooks/trade-journal",
@@ -1490,7 +1490,7 @@
         "package_path": "capabilities/belief-research-relation/capability-package.json",
         "adapter_id": "belief-research-relation-claude",
         "evidence_path": "capabilities/belief-research-relation/evidence/claude.json",
-        "staged_entry_point": "docs/agents/provider-entry-points/staging/claude.md"
+        "entry_point": "docs/agents/provider-entry-points/claude.md"
       }
     },
     {
@@ -1510,7 +1510,7 @@
       "packaging": "governed-provider-adapter",
       "invocation": {
         "mode": "interactive",
-        "entry_point": "docs/agents/provider-entry-points/staging/claude.md",
+        "entry_point": "docs/agents/provider-entry-points/claude.md",
         "unattended_eligibility": "ineligible",
         "rationale": "Idea selection and thesis classification require genuine user judgment."
       },
@@ -1556,7 +1556,7 @@
         "package_path": "capabilities/research-pipeline/capability-package.json",
         "adapter_id": "research-pipeline-claude",
         "evidence_path": "capabilities/research-pipeline/evidence/claude.json",
-        "staged_entry_point": "docs/agents/provider-entry-points/staging/claude.md"
+        "entry_point": "docs/agents/provider-entry-points/claude.md"
       }
     },
     {
@@ -1576,7 +1576,7 @@
       "packaging": "governed-provider-adapter",
       "invocation": {
         "mode": "interactive",
-        "entry_point": "docs/agents/provider-entry-points/staging/claude.md",
+        "entry_point": "docs/agents/provider-entry-points/claude.md",
         "unattended_eligibility": "ineligible",
         "rationale": "Thesis framing, failure modes, and the gate decision require genuine user judgment."
       },
@@ -1622,7 +1622,7 @@
         "package_path": "capabilities/research-pipeline/capability-package.json",
         "adapter_id": "research-pipeline-claude",
         "evidence_path": "capabilities/research-pipeline/evidence/claude.json",
-        "staged_entry_point": "docs/agents/provider-entry-points/staging/claude.md"
+        "entry_point": "docs/agents/provider-entry-points/claude.md"
       }
     },
     {
@@ -1642,7 +1642,7 @@
       "packaging": "governed-provider-adapter",
       "invocation": {
         "mode": "interactive",
-        "entry_point": "docs/agents/provider-entry-points/staging/claude.md",
+        "entry_point": "docs/agents/provider-entry-points/claude.md",
         "unattended_eligibility": "ineligible",
         "rationale": "Research priority and the gate decision require genuine user judgment."
       },
@@ -1688,7 +1688,7 @@
         "package_path": "capabilities/research-pipeline/capability-package.json",
         "adapter_id": "research-pipeline-claude",
         "evidence_path": "capabilities/research-pipeline/evidence/claude.json",
-        "staged_entry_point": "docs/agents/provider-entry-points/staging/claude.md"
+        "entry_point": "docs/agents/provider-entry-points/claude.md"
       }
     },
     {
@@ -1708,7 +1708,7 @@
       "packaging": "governed-provider-adapter",
       "invocation": {
         "mode": "interactive",
-        "entry_point": "docs/agents/provider-entry-points/staging/claude.md",
+        "entry_point": "docs/agents/provider-entry-points/claude.md",
         "unattended_eligibility": "conditional",
         "rationale": "Deterministic preparation is read-only after the user-selected unknown and track."
       },
@@ -1754,7 +1754,7 @@
         "package_path": "capabilities/research-pipeline/capability-package.json",
         "adapter_id": "research-pipeline-claude",
         "evidence_path": "capabilities/research-pipeline/evidence/claude.json",
-        "staged_entry_point": "docs/agents/provider-entry-points/staging/claude.md"
+        "entry_point": "docs/agents/provider-entry-points/claude.md"
       }
     },
     {
@@ -1774,7 +1774,7 @@
       "packaging": "governed-provider-adapter",
       "invocation": {
         "mode": "interactive",
-        "entry_point": "docs/agents/provider-entry-points/staging/claude.md",
+        "entry_point": "docs/agents/provider-entry-points/claude.md",
         "unattended_eligibility": "conditional",
         "rationale": "Research may run only with declared source access and honest unavailable behavior."
       },
@@ -1820,7 +1820,7 @@
         "package_path": "capabilities/research-pipeline/capability-package.json",
         "adapter_id": "research-pipeline-claude",
         "evidence_path": "capabilities/research-pipeline/evidence/claude.json",
-        "staged_entry_point": "docs/agents/provider-entry-points/staging/claude.md"
+        "entry_point": "docs/agents/provider-entry-points/claude.md"
       }
     },
     {
@@ -1840,7 +1840,7 @@
       "packaging": "governed-provider-adapter",
       "invocation": {
         "mode": "interactive",
-        "entry_point": "docs/agents/provider-entry-points/staging/claude.md",
+        "entry_point": "docs/agents/provider-entry-points/claude.md",
         "unattended_eligibility": "conditional",
         "rationale": "Synthesis is recommendation-only and every user gate remains separate."
       },
@@ -1886,7 +1886,7 @@
         "package_path": "capabilities/research-pipeline/capability-package.json",
         "adapter_id": "research-pipeline-claude",
         "evidence_path": "capabilities/research-pipeline/evidence/claude.json",
-        "staged_entry_point": "docs/agents/provider-entry-points/staging/claude.md"
+        "entry_point": "docs/agents/provider-entry-points/claude.md"
       }
     },
     {
@@ -1906,7 +1906,7 @@
       "packaging": "governed-provider-adapter",
       "invocation": {
         "mode": "interactive",
-        "entry_point": "docs/agents/provider-entry-points/staging/claude.md",
+        "entry_point": "docs/agents/provider-entry-points/claude.md",
         "unattended_eligibility": "conditional",
         "rationale": "Analysis may run only after an audited user Stage 5 entry decision; final action remains user judgment."
       },
@@ -1952,7 +1952,7 @@
         "package_path": "capabilities/research-pipeline/capability-package.json",
         "adapter_id": "research-pipeline-claude",
         "evidence_path": "capabilities/research-pipeline/evidence/claude.json",
-        "staged_entry_point": "docs/agents/provider-entry-points/staging/claude.md"
+        "entry_point": "docs/agents/provider-entry-points/claude.md"
       }
     },
     {
@@ -1972,7 +1972,7 @@
       "packaging": "governed-provider-adapter",
       "invocation": {
         "mode": "interactive",
-        "entry_point": "docs/agents/provider-entry-points/staging/claude.md",
+        "entry_point": "docs/agents/provider-entry-points/claude.md",
         "unattended_eligibility": "conditional",
         "rationale": "Produces bounded, validated recommendations while preserving exact provenance reuse and explicit ambiguity under a zero-write contract."
       },
@@ -1990,7 +1990,7 @@
         "Remote database read access and an explicit Notes-owned research insight ID."
       ],
       "limitations": [
-        "The governed adapter is staged; the authored Claude skill remains a migration input until final discovery cutover.",
+        "The governed adapter is authoritative; the authored Claude skill remains a non-authoritative rollback input.",
         "No live provider invocation was used for semantic evidence; the representative result fixture is bound to the exact adapter bytes."
       ],
       "operational_consumers": [
@@ -2006,7 +2006,7 @@
       },
       "j2_disposition": {
         "action": "migrate",
-        "rationale": "The governed adapter is current and staged; retain the authored workflow as a migration input until final discovery cutover."
+        "rationale": "The governed adapter is current and authoritative; retain the authored workflow as a non-authoritative rollback input."
       },
       "migration_input": {
         "ownership": "repository:njabrooks/trade-journal",
@@ -2017,7 +2017,7 @@
         "package_path": "capabilities/claims-synthesis/capability-package.json",
         "adapter_id": "claims-synthesis-claude",
         "evidence_path": "capabilities/claims-synthesis/evidence/claude.json",
-        "staged_entry_point": "docs/agents/provider-entry-points/staging/claude.md"
+        "entry_point": "docs/agents/provider-entry-points/claude.md"
       }
     },
     {
@@ -2037,7 +2037,7 @@
       "packaging": "governed-provider-adapter",
       "invocation": {
         "mode": "interactive",
-        "entry_point": "docs/agents/provider-entry-points/staging/claude.md",
+        "entry_point": "docs/agents/provider-entry-points/claude.md",
         "unattended_eligibility": "ineligible",
         "rationale": "The foreground conversation and every evidence-recording or re-underwriting choice require the current user's participation."
       },
@@ -2055,7 +2055,7 @@
         "Current user participation, one explicit thesis and verb, database read access, and exact Registry-resolved observation, underwriting, and evidence-assessment dependencies."
       ],
       "limitations": [
-        "The governed Provider Entry Point remains staged; the authored /thesis skill remains the active migration input until final discovery cutover.",
+        "The governed Provider Entry Point remains authoritative; the authored /thesis skill remains a non-authoritative rollback input.",
         "Current Adapter Conformance proves interactive semantics and refusal, not unattended execution or scheduling eligibility.",
         "Fresh observation remains limited to the thesis-observation dependency's Tier-1 monitoring and active-signal contract; unsupported targets are unavailable."
       ],
@@ -2072,7 +2072,7 @@
       },
       "j2_disposition": {
         "action": "migrate",
-        "rationale": "The governed adapter is current and staged; retain the authored /thesis skill as a migration input until final discovery cutover."
+        "rationale": "The governed adapter is current and authoritative; retain the authored /thesis skill as a non-authoritative rollback input."
       },
       "migration_input": {
         "ownership": "repository:njabrooks/trade-journal",
@@ -2083,7 +2083,7 @@
         "package_path": "capabilities/thesis-foreground/capability-package.json",
         "adapter_id": "thesis-foreground-claude",
         "evidence_path": "capabilities/thesis-foreground/evidence/claude.json",
-        "staged_entry_point": "docs/agents/provider-entry-points/staging/claude.md"
+        "entry_point": "docs/agents/provider-entry-points/claude.md"
       }
     },
     {
@@ -2103,7 +2103,7 @@
       "packaging": "governed-provider-adapter",
       "invocation": {
         "mode": "interactive",
-        "entry_point": "docs/agents/provider-entry-points/staging/claude.md",
+        "entry_point": "docs/agents/provider-entry-points/claude.md",
         "unattended_eligibility": "conditional",
         "rationale": "Sensing producer only."
       },
@@ -2149,7 +2149,7 @@
         "package_path": "capabilities/thesis-observation/capability-package.json",
         "adapter_id": "thesis-observation-claude",
         "evidence_path": "capabilities/thesis-observation/evidence/claude.json",
-        "staged_entry_point": "docs/agents/provider-entry-points/staging/claude.md"
+        "entry_point": "docs/agents/provider-entry-points/claude.md"
       }
     },
     {
@@ -2169,7 +2169,7 @@
       "packaging": "governed-provider-adapter",
       "invocation": {
         "mode": "interactive",
-        "entry_point": "docs/agents/provider-entry-points/staging/claude.md",
+        "entry_point": "docs/agents/provider-entry-points/claude.md",
         "unattended_eligibility": "conditional",
         "rationale": "Surfaces weakening or ambiguity rather than deciding silently."
       },
@@ -2188,7 +2188,7 @@
       ],
       "limitations": [
         "Multiple modes have different judgment and write boundaries.",
-        "The governed Provider Entry Point is staged; the authored Claude skill remains the active migration input until an explicitly approved operational or final discovery cutover."
+        "The governed Provider Entry Point is authoritative; the authored Claude skill remains a delegated operational source only where a separately governed operational consumer still delegates to it."
       ],
       "operational_consumers": [
         "Interactive Trade Journal maintainer or delegated agent",
@@ -2204,7 +2204,7 @@
       },
       "j2_disposition": {
         "action": "migrate",
-        "rationale": "The governed adapter is current and staged; retain the existing Claude discovery input and live invocation until its separately approved cutover."
+        "rationale": "The governed adapter is current and authoritative; retain the existing Claude discovery input and live invocation only where a separately governed operational consumer still delegates to it."
       },
       "migration_input": {
         "ownership": "repository:njabrooks/trade-journal",
@@ -2215,7 +2215,7 @@
         "package_path": "capabilities/belief-maintenance/capability-package.json",
         "adapter_id": "belief-maintenance-claude",
         "evidence_path": "capabilities/belief-maintenance/evidence/claude.json",
-        "staged_entry_point": "docs/agents/provider-entry-points/staging/claude.md"
+        "entry_point": "docs/agents/provider-entry-points/claude.md"
       }
     },
     {
@@ -2289,7 +2289,7 @@
       "packaging": "governed-provider-adapter",
       "invocation": {
         "mode": "interactive",
-        "entry_point": "docs/agents/provider-entry-points/staging/claude.md",
+        "entry_point": "docs/agents/provider-entry-points/claude.md",
         "unattended_eligibility": "ineligible",
         "rationale": "Workflow selection is an interactive read-only routing step; selected workflow execution is separately authorized."
       },
@@ -2308,7 +2308,7 @@
         "Selected workflow prerequisites are checked separately before execution"
       ],
       "limitations": [
-        "The governed whole-file Provider Entry Point remains staged rather than installed as the active root manual.",
+        "The governed whole-file Provider Entry Point remains authoritative rather than installed as the active root manual.",
         "Claude skill and SessionStart packaging remains provider-specific and does not override the selected workflow authority.",
         "A successfully discovered workflow may still be unavailable because its own evidence or environmental prerequisites are not current."
       ],
@@ -2327,7 +2327,7 @@
         "package_path": "capabilities/workflow-discovery/capability-package.json",
         "adapter_id": "workflow-discovery-claude",
         "evidence_path": "capabilities/workflow-discovery/evidence/claude.json",
-        "staged_entry_point": "docs/agents/provider-entry-points/staging/claude.md"
+        "entry_point": "docs/agents/provider-entry-points/claude.md"
       },
       "j2_disposition": {
         "action": "migrate",
@@ -2351,7 +2351,7 @@
       "packaging": "governed-provider-adapter",
       "invocation": {
         "mode": "interactive",
-        "entry_point": "docs/agents/provider-entry-points/staging/codex.md",
+        "entry_point": "docs/agents/provider-entry-points/codex.md",
         "unattended_eligibility": "ineligible",
         "rationale": "Workflow selection is an interactive read-only routing step; selected workflow execution is separately authorized."
       },
@@ -2370,7 +2370,7 @@
         "Selected workflow prerequisites are checked separately before execution"
       ],
       "limitations": [
-        "The governed whole-file Provider Entry Point remains staged rather than installed globally.",
+        "The governed whole-file Provider Entry Point remains authoritative rather than installed globally.",
         "The installed Home Hub bridge remains an active legacy competing router whose external bytes are not repository authority or conformance evidence.",
         "A successfully discovered workflow may still be unavailable because its own evidence or environmental prerequisites are not current."
       ],
@@ -2389,7 +2389,7 @@
         "package_path": "capabilities/workflow-discovery/capability-package.json",
         "adapter_id": "workflow-discovery-codex",
         "evidence_path": "capabilities/workflow-discovery/evidence/codex.json",
-        "staged_entry_point": "docs/agents/provider-entry-points/staging/codex.md"
+        "entry_point": "docs/agents/provider-entry-points/codex.md"
       },
       "j2_disposition": {
         "action": "replace",
@@ -2427,11 +2427,11 @@
       "coverage": "Exact governed router over the complete validated interactive inventory; delegates workflow semantics to their authoritative sources."
     },
     {
-      "id": "codex-generated-staging",
+      "id": "codex-generated-governed",
       "provider": "codex",
       "location_class": "repository",
-      "path": "docs/agents/provider-entry-points/staging/codex.md",
-      "coverage": "Whole-file governed staging output containing the locked workflow-discovery Capability and exact Codex adapter."
+      "path": "docs/agents/provider-entry-points/codex.md",
+      "coverage": "Whole-file governed governed output containing the locked workflow-discovery Capability and exact Codex adapter."
     },
     {
       "id": "codex-exhaustive-inventory",

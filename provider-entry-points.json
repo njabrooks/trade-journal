@@ -7,11 +7,11 @@
   "providers": [
     {
       "provider": "claude",
-      "output": "docs/agents/provider-entry-points/staging/claude.md"
+      "output": "docs/agents/provider-entry-points/claude.md"
     },
     {
       "provider": "codex",
-      "output": "docs/agents/provider-entry-points/staging/codex.md"
+      "output": "docs/agents/provider-entry-points/codex.md"
     }
   ]
 }

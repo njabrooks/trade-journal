@@ -20,15 +20,15 @@
 2. **[CLAUDE.md](CLAUDE.md)** — detailed architecture, schema, ingestion, state machines, and conventions.
 3. **`docs/v2/`** — product direction + the loose-agent model. Most relevant: `03-v2-spec.md`,
    `07-belief-maintenance-loop.md`, `10` (decision/loose-agent model), `14` (thesis-observe), `15` (self-improving loop).
-4. **Governed discovery adapter** `capabilities/workflow-discovery/adapters/codex.md` — route through the
-   repository inventory without copying workflow semantics.
+4. **Governed Codex Provider Entry Point** `docs/agents/provider-entry-points/codex.md` — the complete,
+   generated discovery authority over the repository inventory and exact locked adapters.
 5. **Optional machine bootstrap** `~/.codex/skills/trade-journal-workflows/SKILL.md` — useful when installed,
    but external to this repository and never semantic or Adapter Conformance authority.
 6. **This file** — Codex deltas + fast-start.
 
 ## Codex deltas (the Claude → Codex translation)
 
-- **No slash commands.** Route with `capabilities/workflow-discovery/adapters/codex.md`. For a retained
+- **No slash commands.** Route with `docs/agents/provider-entry-points/codex.md`. For a retained
   repository-authored migration input, read `.claude/skills/<name>/SKILL.md` and map its procedure to Codex;
   for current evidence, use the exact locked Codex adapter. Keep workflow intent, authority, and safeguards,
   not Claude invocation syntax.

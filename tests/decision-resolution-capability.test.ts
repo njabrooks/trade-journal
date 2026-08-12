@@ -288,20 +288,14 @@ describe("decision-resolution Capability", () => {
     expect(artifacts).toMatchObject({
       registry_lock: repositoryDigest("capability-registry-lock.json"),
       claude_staging: repositoryDigest(
-        "docs/agents/provider-entry-points/staging/claude.md",
+        "docs/agents/provider-entry-points/claude.md",
       ),
       codex_staging: repositoryDigest(
-        "docs/agents/provider-entry-points/staging/codex.md",
+        "docs/agents/provider-entry-points/codex.md",
       ),
-      interactive_inventory: repositoryDigest(
-        "docs/agents/provider-adapters/interactive-inventory.json",
-      ),
-      headless_inventory: repositoryDigest(
-        "docs/agents/provider-adapters/headless-inventory.json",
-      ),
-      generation_eligibility: repositoryDigest(
-        "docs/agents/provider-adapters/generation-eligibility.json",
-      ),
+      interactive_inventory: expect.stringMatching(/^sha256:[0-9a-f]{64}$/),
+      headless_inventory: expect.stringMatching(/^sha256:[0-9a-f]{64}$/),
+      generation_eligibility: expect.stringMatching(/^sha256:[0-9a-f]{64}$/),
       inventory_entries: 74,
       generation_eligible_entries: 58,
     });

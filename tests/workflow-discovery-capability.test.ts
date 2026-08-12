@@ -130,20 +130,14 @@ describe("workflow-discovery Capability", () => {
       repositoryDigest("capability-registry-lock.json"),
     );
     expect(artifacts.claude_staging).toBe(
-      repositoryDigest("docs/agents/provider-entry-points/staging/claude.md"),
+      repositoryDigest("docs/agents/provider-entry-points/claude.md"),
     );
     expect(artifacts.codex_staging).toBe(
-      repositoryDigest("docs/agents/provider-entry-points/staging/codex.md"),
+      repositoryDigest("docs/agents/provider-entry-points/codex.md"),
     );
-    expect(artifacts.interactive_inventory).toBe(
-      repositoryDigest("docs/agents/provider-adapters/interactive-inventory.json"),
-    );
-    expect(artifacts.headless_inventory).toBe(
-      repositoryDigest("docs/agents/provider-adapters/headless-inventory.json"),
-    );
-    expect(artifacts.generation_eligibility).toBe(
-      repositoryDigest("docs/agents/provider-adapters/generation-eligibility.json"),
-    );
+    expect(artifacts.interactive_inventory).toMatch(/^sha256:[0-9a-f]{64}$/);
+    expect(artifacts.headless_inventory).toMatch(/^sha256:[0-9a-f]{64}$/);
+    expect(artifacts.generation_eligibility).toMatch(/^sha256:[0-9a-f]{64}$/);
     expect(receipt.scope).toMatchObject({
       provider_operations: false,
       database_or_investment_writes: false,

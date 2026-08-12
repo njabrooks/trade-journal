@@ -6,11 +6,11 @@
   "outcome": "eligible-adapters-present",
   "generation_eligible_count": 58,
   "governed_outputs": [
-    "docs/agents/provider-entry-points/staging/claude.md",
-    "docs/agents/provider-entry-points/staging/codex.md"
+    "docs/agents/provider-entry-points/claude.md",
+    "docs/agents/provider-entry-points/codex.md"
   ],
   "current_entry_points": {
-    "classification": "governed-staging-with-non-governed-migration-inputs",
+    "classification": "governed-authoritative-with-explicit-non-governed-dispositions",
     "shared_guidance": "CONTEXT.md",
     "provider_specific_guidance": [
       "CLAUDE.md",
@@ -18,11 +18,11 @@
     ],
     "authored_adapter_root": ".claude/skills",
     "generated_mirror_root": ".agents/skills",
-    "governed_staging_outputs": [
-      "docs/agents/provider-entry-points/staging/claude.md",
-      "docs/agents/provider-entry-points/staging/codex.md"
+    "governed_outputs": [
+      "docs/agents/provider-entry-points/claude.md",
+      "docs/agents/provider-entry-points/codex.md"
     ],
-    "limitation": "Governed outputs remain staged; existing handwritten and mirrored surfaces stay active migration inputs until the final J2 discovery cutover."
+    "limitation": "The complete governed outputs are authoritative for current adapters; retained, deferred, retired, tombstone, and unavailable entries keep only their declared final boundary."
   },
   "entries": [
     {
@@ -50,8 +50,8 @@
       },
       "generation_eligible": true,
       "ineligibility_reasons": [],
-      "j2_disposition": {
-        "action": "migrate",
+      "final_disposition": {
+        "state": "governed",
         "rationale": "The governed replacement is authoritative; the former legacy path is retained only as a protective tombstone with explicit rollback provenance."
       }
     },
@@ -80,9 +80,9 @@
       },
       "generation_eligible": true,
       "ineligibility_reasons": [],
-      "j2_disposition": {
-        "action": "migrate",
-        "rationale": "The governed adapter is current and staged; retain the generic headless mirror as a migration input until final discovery cutover."
+      "final_disposition": {
+        "state": "governed",
+        "rationale": "The governed adapter is current and authoritative; retain the generic headless mirror as a non-authoritative rollback input."
       }
     },
     {
@@ -115,8 +115,8 @@
         "No complete current evidence with exact Capability and adapter bindings is available.",
         "Final disposition is historical evidence only; this non-candidate has no current Capability or operational adapter."
       ],
-      "j2_disposition": {
-        "action": "retire",
+      "final_disposition": {
+        "state": "retired",
         "rationale": "Removed from active discovery and retained only as repository history under issue #75."
       }
     },
@@ -150,8 +150,8 @@
         "No complete current evidence with exact Capability and adapter bindings is available.",
         "Final disposition is historical evidence only; this non-candidate has no current Capability or operational adapter."
       ],
-      "j2_disposition": {
-        "action": "retire",
+      "final_disposition": {
+        "state": "retired",
         "rationale": "Removed from active discovery and retained only as repository history under issue #75."
       }
     },
@@ -180,9 +180,9 @@
       },
       "generation_eligible": true,
       "ineligibility_reasons": [],
-      "j2_disposition": {
-        "action": "migrate",
-        "rationale": "The governed adapter is current and staged; retain the bespoke headless mirror as a migration input until final discovery cutover."
+      "final_disposition": {
+        "state": "governed",
+        "rationale": "The governed adapter is current and authoritative; retain the bespoke headless mirror as a non-authoritative rollback input."
       }
     },
     {
@@ -210,9 +210,9 @@
       },
       "generation_eligible": true,
       "ineligibility_reasons": [],
-      "j2_disposition": {
-        "action": "migrate",
-        "rationale": "The governed adapter is current and staged; retain the existing headless mirror and live invocation until its separately approved cutover."
+      "final_disposition": {
+        "state": "governed",
+        "rationale": "The governed adapter is current and authoritative; retain the existing headless mirror and live invocation only where a separately governed operational consumer still delegates to it."
       }
     },
     {
@@ -240,9 +240,9 @@
       },
       "generation_eligible": true,
       "ineligibility_reasons": [],
-      "j2_disposition": {
-        "action": "migrate",
-        "rationale": "The governed adapter is current and staged; retain the bespoke headless mirror as a migration input until final discovery cutover."
+      "final_disposition": {
+        "state": "governed",
+        "rationale": "The governed adapter is current and authoritative; retain the bespoke headless mirror as a non-authoritative rollback input."
       }
     },
     {
@@ -275,8 +275,8 @@
         "No complete current evidence with exact Capability and adapter bindings is available.",
         "Protective retirement tombstone only; it is not a current Capability or operational adapter."
       ],
-      "j2_disposition": {
-        "action": "retire",
+      "final_disposition": {
+        "state": "tombstone",
         "rationale": "Retire the procedure permanently while retaining this no-read/no-write tombstone to prevent unsafe revival."
       }
     },
@@ -305,8 +305,8 @@
       },
       "generation_eligible": true,
       "ineligibility_reasons": [],
-      "j2_disposition": {
-        "action": "migrate",
+      "final_disposition": {
+        "state": "governed",
         "rationale": "Stage the exact governed Codex adapter while retaining the bespoke refusal mirror as the only headless migration input."
       }
     },
@@ -335,9 +335,9 @@
       },
       "generation_eligible": true,
       "ineligibility_reasons": [],
-      "j2_disposition": {
-        "action": "migrate",
-        "rationale": "The governed adapter is current and staged; retain the bespoke headless mirror as a preparation-only migration input until final discovery cutover."
+      "final_disposition": {
+        "state": "governed",
+        "rationale": "The governed adapter is current and authoritative; retain the bespoke headless mirror as a preparation-only migration input as a non-authoritative rollback input."
       }
     },
     {
@@ -368,8 +368,8 @@
         "No complete current evidence with exact Capability and adapter bindings is available.",
         "Radon publishes no accepted immutable gateway-control Capability Package or exact Adapter Conformance evidence at the reviewed revision."
       ],
-      "j2_disposition": {
-        "action": "retain-temporarily",
+      "final_disposition": {
+        "state": "retained",
         "rationale": "Retain the bounded non-governed gateway boundary until Radon publishes an accepted immutable package; do not infer support from connectivity or local files."
       }
     },
@@ -398,8 +398,8 @@
       },
       "generation_eligible": true,
       "ineligibility_reasons": [],
-      "j2_disposition": {
-        "action": "migrate",
+      "final_disposition": {
+        "state": "governed",
         "rationale": "The governed replacement is authoritative; the former legacy path is retained only as a protective tombstone with explicit rollback provenance."
       }
     },
@@ -431,8 +431,8 @@
         "No complete current evidence with exact Capability and adapter bindings is available.",
         "Radon publishes no accepted immutable option-quote Capability Package or exact Adapter Conformance evidence at the reviewed revision."
       ],
-      "j2_disposition": {
-        "action": "retain-temporarily",
+      "final_disposition": {
+        "state": "retained",
         "rationale": "Retain the bounded non-governed requested-contract quote boundary until Radon publishes an accepted immutable package; do not infer support from gateway connectivity, market-data availability, or local files."
       }
     },
@@ -461,9 +461,9 @@
       },
       "generation_eligible": true,
       "ineligibility_reasons": [],
-      "j2_disposition": {
-        "action": "migrate",
-        "rationale": "The governed adapter is current and staged; retain the existing headless mirror and live invocation until its separately approved cutover."
+      "final_disposition": {
+        "state": "governed",
+        "rationale": "The governed adapter is current and authoritative; retain the existing headless mirror and live invocation only where a separately governed operational consumer still delegates to it."
       }
     },
     {
@@ -491,9 +491,9 @@
       },
       "generation_eligible": true,
       "ineligibility_reasons": [],
-      "j2_disposition": {
-        "action": "migrate",
-        "rationale": "The governed adapter is current and staged; retain the existing headless mirror and live invocation until its separately approved cutover."
+      "final_disposition": {
+        "state": "governed",
+        "rationale": "The governed adapter is current and authoritative; retain the existing headless mirror and live invocation only where a separately governed operational consumer still delegates to it."
       }
     },
     {
@@ -521,9 +521,9 @@
       },
       "generation_eligible": true,
       "ineligibility_reasons": [],
-      "j2_disposition": {
-        "action": "migrate",
-        "rationale": "The governed adapter is current and staged; retain the existing headless mirror and live invocation until its separately approved cutover."
+      "final_disposition": {
+        "state": "governed",
+        "rationale": "The governed adapter is current and authoritative; retain the existing headless mirror and live invocation only where a separately governed operational consumer still delegates to it."
       }
     },
     {
@@ -556,8 +556,8 @@
         "No complete current evidence with exact Capability and adapter bindings is available.",
         "Final disposition is historical evidence only; this non-candidate has no current Capability or operational adapter."
       ],
-      "j2_disposition": {
-        "action": "retire",
+      "final_disposition": {
+        "state": "retired",
         "rationale": "Removed from active discovery and retained only as repository history under issue #75."
       }
     },
@@ -586,8 +586,8 @@
       },
       "generation_eligible": true,
       "ineligibility_reasons": [],
-      "j2_disposition": {
-        "action": "migrate",
+      "final_disposition": {
+        "state": "governed",
         "rationale": "The governed replacement is authoritative; the former legacy path is retained only as a protective tombstone with explicit rollback provenance."
       }
     },
@@ -616,9 +616,9 @@
       },
       "generation_eligible": true,
       "ineligibility_reasons": [],
-      "j2_disposition": {
-        "action": "replace",
-        "rationale": "The authority-correct governed Capability replaces connector-era assumptions; retain the legacy source only as an explicit migration input until final discovery cutover."
+      "final_disposition": {
+        "state": "replaced",
+        "rationale": "The authority-correct governed Capability replaces connector-era assumptions; retain the legacy source only as an explicit migration input as a non-authoritative rollback input."
       }
     },
     {
@@ -646,8 +646,8 @@
       },
       "generation_eligible": true,
       "ineligibility_reasons": [],
-      "j2_disposition": {
-        "action": "replace",
+      "final_disposition": {
+        "state": "replaced",
         "rationale": "Replace the legacy Trade Journal projection with the Registry-locked Notes-owned content-processing adapter without transferring capture or extraction authority."
       }
     },
@@ -676,8 +676,8 @@
       },
       "generation_eligible": true,
       "ineligibility_reasons": [],
-      "j2_disposition": {
-        "action": "replace",
+      "final_disposition": {
+        "state": "replaced",
         "rationale": "Replace the legacy Trade Journal projection with the Registry-locked Notes-owned content-processing adapter without transferring capture or extraction authority."
       }
     },
@@ -706,9 +706,9 @@
       },
       "generation_eligible": true,
       "ineligibility_reasons": [],
-      "j2_disposition": {
-        "action": "migrate",
-        "rationale": "The governed adapter is current and staged; retain the legacy headless mirror until the final provider-discovery cutover."
+      "final_disposition": {
+        "state": "governed",
+        "rationale": "The governed adapter is current and authoritative; retain the legacy headless mirror as a non-authoritative rollback input."
       }
     },
     {
@@ -739,8 +739,8 @@
         "No complete current evidence with exact Capability and adapter bindings is available.",
         "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
       ],
-      "j2_disposition": {
-        "action": "migrate",
+      "final_disposition": {
+        "state": "unavailable",
         "rationale": "Migrate the provider packaging in J2 without changing the underlying Trade Journal workflow semantics."
       }
     },
@@ -769,9 +769,9 @@
       },
       "generation_eligible": true,
       "ineligibility_reasons": [],
-      "j2_disposition": {
-        "action": "migrate",
-        "rationale": "The governed adapter is current and staged; retain the canonical headless mirror as a preparation-only migration input until final discovery cutover."
+      "final_disposition": {
+        "state": "governed",
+        "rationale": "The governed adapter is current and authoritative; retain the canonical headless mirror as a preparation-only migration input as a non-authoritative rollback input."
       }
     },
     {
@@ -799,8 +799,8 @@
       },
       "generation_eligible": true,
       "ineligibility_reasons": [],
-      "j2_disposition": {
-        "action": "migrate",
+      "final_disposition": {
+        "state": "governed",
         "rationale": "The governed replacement is authoritative; the former legacy path is retained only as a protective tombstone with explicit rollback provenance."
       }
     },
@@ -829,8 +829,8 @@
       },
       "generation_eligible": true,
       "ineligibility_reasons": [],
-      "j2_disposition": {
-        "action": "migrate",
+      "final_disposition": {
+        "state": "governed",
         "rationale": "The governed replacement is authoritative; the former legacy path is retained only as a protective tombstone with explicit rollback provenance."
       }
     },
@@ -859,8 +859,8 @@
       },
       "generation_eligible": true,
       "ineligibility_reasons": [],
-      "j2_disposition": {
-        "action": "migrate",
+      "final_disposition": {
+        "state": "governed",
         "rationale": "The governed replacement is authoritative; the former legacy path is retained only as a protective tombstone with explicit rollback provenance."
       }
     },
@@ -889,8 +889,8 @@
       },
       "generation_eligible": true,
       "ineligibility_reasons": [],
-      "j2_disposition": {
-        "action": "migrate",
+      "final_disposition": {
+        "state": "governed",
         "rationale": "The governed replacement is authoritative; the former legacy path is retained only as a protective tombstone with explicit rollback provenance."
       }
     },
@@ -919,8 +919,8 @@
       },
       "generation_eligible": true,
       "ineligibility_reasons": [],
-      "j2_disposition": {
-        "action": "migrate",
+      "final_disposition": {
+        "state": "governed",
         "rationale": "The governed replacement is authoritative; the former legacy path is retained only as a protective tombstone with explicit rollback provenance."
       }
     },
@@ -949,8 +949,8 @@
       },
       "generation_eligible": true,
       "ineligibility_reasons": [],
-      "j2_disposition": {
-        "action": "migrate",
+      "final_disposition": {
+        "state": "governed",
         "rationale": "The governed replacement is authoritative; the former legacy path is retained only as a protective tombstone with explicit rollback provenance."
       }
     },
@@ -979,8 +979,8 @@
       },
       "generation_eligible": true,
       "ineligibility_reasons": [],
-      "j2_disposition": {
-        "action": "migrate",
+      "final_disposition": {
+        "state": "governed",
         "rationale": "The governed replacement is authoritative; the former legacy path is retained only as a protective tombstone with explicit rollback provenance."
       }
     },
@@ -1009,9 +1009,9 @@
       },
       "generation_eligible": true,
       "ineligibility_reasons": [],
-      "j2_disposition": {
-        "action": "migrate",
-        "rationale": "The governed adapter is current and staged; retain the bespoke headless mirror as a migration input until final discovery cutover."
+      "final_disposition": {
+        "state": "governed",
+        "rationale": "The governed adapter is current and authoritative; retain the bespoke headless mirror as a non-authoritative rollback input."
       }
     },
     {
@@ -1039,9 +1039,9 @@
       },
       "generation_eligible": true,
       "ineligibility_reasons": [],
-      "j2_disposition": {
-        "action": "migrate",
-        "rationale": "The governed adapter is current and staged; retain the bespoke refusal mirror as a migration input until final discovery cutover."
+      "final_disposition": {
+        "state": "governed",
+        "rationale": "The governed adapter is current and authoritative; retain the bespoke refusal mirror as a non-authoritative rollback input."
       }
     },
     {
@@ -1069,9 +1069,9 @@
       },
       "generation_eligible": true,
       "ineligibility_reasons": [],
-      "j2_disposition": {
-        "action": "migrate",
-        "rationale": "The governed adapter is current and staged; retain the existing headless mirror and live invocation until its separately approved cutover."
+      "final_disposition": {
+        "state": "governed",
+        "rationale": "The governed adapter is current and authoritative; retain the existing headless mirror and live invocation only where a separately governed operational consumer still delegates to it."
       }
     },
     {
@@ -1099,9 +1099,9 @@
       },
       "generation_eligible": true,
       "ineligibility_reasons": [],
-      "j2_disposition": {
-        "action": "migrate",
-        "rationale": "The governed adapter is current and staged; retain the existing headless mirror and live invocation until its separately approved cutover."
+      "final_disposition": {
+        "state": "governed",
+        "rationale": "The governed adapter is current and authoritative; retain the existing headless mirror and live invocation only where a separately governed operational consumer still delegates to it."
       }
     },
     {
@@ -1132,8 +1132,8 @@
         "No complete current evidence with exact Capability and adapter bindings is available.",
         "File presence, mirror parity, and machine-local Notes data do not establish current Adapter Conformance."
       ],
-      "j2_disposition": {
-        "action": "defer",
+      "final_disposition": {
+        "state": "deferred",
         "rationale": "Keep only the existing pull-only manual boundary as a non-governed migration input; do not route, schedule, or represent it as current support."
       }
     },
@@ -1162,8 +1162,8 @@
       },
       "generation_eligible": true,
       "ineligibility_reasons": [],
-      "j2_disposition": {
-        "action": "migrate",
+      "final_disposition": {
+        "state": "governed",
         "rationale": "The governed replacement is authoritative; the former legacy path is retained only as a protective tombstone with explicit rollback provenance."
       }
     },
@@ -1192,9 +1192,9 @@
       },
       "generation_eligible": true,
       "ineligibility_reasons": [],
-      "j2_disposition": {
-        "action": "migrate",
-        "rationale": "The governed adapter is current and staged; retain the authored workflow as a migration input until final discovery cutover."
+      "final_disposition": {
+        "state": "governed",
+        "rationale": "The governed adapter is current and authoritative; retain the authored workflow as a non-authoritative rollback input."
       }
     },
     {
@@ -1227,8 +1227,8 @@
         "No complete current evidence with exact Capability and adapter bindings is available.",
         "Final disposition is historical evidence only; this non-candidate has no current Capability or operational adapter."
       ],
-      "j2_disposition": {
-        "action": "retire",
+      "final_disposition": {
+        "state": "retired",
         "rationale": "Removed from active discovery and retained only as repository history under issue #75."
       }
     },
@@ -1262,8 +1262,8 @@
         "No complete current evidence with exact Capability and adapter bindings is available.",
         "Final disposition is historical evidence only; this non-candidate has no current Capability or operational adapter."
       ],
-      "j2_disposition": {
-        "action": "retire",
+      "final_disposition": {
+        "state": "retired",
         "rationale": "Removed from active discovery and retained only as repository history under issue #75."
       }
     },
@@ -1292,9 +1292,9 @@
       },
       "generation_eligible": true,
       "ineligibility_reasons": [],
-      "j2_disposition": {
-        "action": "migrate",
-        "rationale": "The governed adapter is current and staged; retain the authored workflow as a migration input until final discovery cutover."
+      "final_disposition": {
+        "state": "governed",
+        "rationale": "The governed adapter is current and authoritative; retain the authored workflow as a non-authoritative rollback input."
       }
     },
     {
@@ -1322,9 +1322,9 @@
       },
       "generation_eligible": true,
       "ineligibility_reasons": [],
-      "j2_disposition": {
-        "action": "migrate",
-        "rationale": "The governed adapter is current and staged; retain the existing Claude discovery input and live invocation until its separately approved cutover."
+      "final_disposition": {
+        "state": "governed",
+        "rationale": "The governed adapter is current and authoritative; retain the existing Claude discovery input and live invocation only where a separately governed operational consumer still delegates to it."
       }
     },
     {
@@ -1352,9 +1352,9 @@
       },
       "generation_eligible": true,
       "ineligibility_reasons": [],
-      "j2_disposition": {
-        "action": "migrate",
-        "rationale": "The governed adapter is current and staged; retain the authored workflow as a migration input until final discovery cutover."
+      "final_disposition": {
+        "state": "governed",
+        "rationale": "The governed adapter is current and authoritative; retain the authored workflow as a non-authoritative rollback input."
       }
     },
     {
@@ -1387,8 +1387,8 @@
         "No complete current evidence with exact Capability and adapter bindings is available.",
         "Protective retirement tombstone only; it is not a current Capability or operational adapter."
       ],
-      "j2_disposition": {
-        "action": "retire",
+      "final_disposition": {
+        "state": "tombstone",
         "rationale": "Retire the procedure permanently while retaining this no-read/no-write tombstone to prevent unsafe revival."
       }
     },
@@ -1417,9 +1417,9 @@
       },
       "generation_eligible": true,
       "ineligibility_reasons": [],
-      "j2_disposition": {
-        "action": "migrate",
-        "rationale": "The governed adapter is current and staged; retain the authored interactive workflow as a migration input until final discovery cutover."
+      "final_disposition": {
+        "state": "governed",
+        "rationale": "The governed adapter is current and authoritative; retain the authored interactive workflow as a non-authoritative rollback input."
       }
     },
     {
@@ -1447,9 +1447,9 @@
       },
       "generation_eligible": true,
       "ineligibility_reasons": [],
-      "j2_disposition": {
-        "action": "migrate",
-        "rationale": "The governed adapter is current and staged; retain the modernized interactive skill as a migration input until final discovery cutover."
+      "final_disposition": {
+        "state": "governed",
+        "rationale": "The governed adapter is current and authoritative; retain the modernized interactive skill as a non-authoritative rollback input."
       }
     },
     {
@@ -1480,8 +1480,8 @@
         "No complete current evidence with exact Capability and adapter bindings is available.",
         "Radon publishes no accepted immutable gateway-control Capability Package or exact Adapter Conformance evidence at the reviewed revision."
       ],
-      "j2_disposition": {
-        "action": "retain-temporarily",
+      "final_disposition": {
+        "state": "retained",
         "rationale": "Retain the bounded non-governed gateway boundary until Radon publishes an accepted immutable package; do not infer support from connectivity or local files."
       }
     },
@@ -1510,8 +1510,8 @@
       },
       "generation_eligible": true,
       "ineligibility_reasons": [],
-      "j2_disposition": {
-        "action": "migrate",
+      "final_disposition": {
+        "state": "governed",
         "rationale": "The governed replacement is authoritative; the former legacy path is retained only as a protective tombstone with explicit rollback provenance."
       }
     },
@@ -1543,8 +1543,8 @@
         "No complete current evidence with exact Capability and adapter bindings is available.",
         "Radon publishes no accepted immutable option-quote Capability Package or exact Adapter Conformance evidence at the reviewed revision."
       ],
-      "j2_disposition": {
-        "action": "retain-temporarily",
+      "final_disposition": {
+        "state": "retained",
         "rationale": "Retain the bounded non-governed requested-contract quote boundary until Radon publishes an accepted immutable package; do not infer support from gateway connectivity, market-data availability, or local files."
       }
     },
@@ -1573,8 +1573,8 @@
       },
       "generation_eligible": true,
       "ineligibility_reasons": [],
-      "j2_disposition": {
-        "action": "migrate",
+      "final_disposition": {
+        "state": "governed",
         "rationale": "The governed adapter is current and the maintenance scheduler cutover completed under issue #49 approval; retain the authored skill only as the delegated workflow source."
       }
     },
@@ -1603,8 +1603,8 @@
       },
       "generation_eligible": true,
       "ineligibility_reasons": [],
-      "j2_disposition": {
-        "action": "migrate",
+      "final_disposition": {
+        "state": "governed",
         "rationale": "The governed adapter is current and the scheduled morning-brief consumer cutover completed under issue #56 approval; retain interactive discovery and the authored skill outside that bounded live invocation change."
       }
     },
@@ -1633,9 +1633,9 @@
       },
       "generation_eligible": true,
       "ineligibility_reasons": [],
-      "j2_disposition": {
-        "action": "migrate",
-        "rationale": "The governed adapter is current and live for the morning-batch and LEAP consumers under #53/#54; retain the existing interactive discovery input until its separately approved cutover."
+      "final_disposition": {
+        "state": "governed",
+        "rationale": "The governed adapter is current and live for the morning-batch and LEAP consumers under #53/#54; retain the existing interactive discovery input only where a separately governed operational consumer still delegates to it."
       }
     },
     {
@@ -1668,8 +1668,8 @@
         "No complete current evidence with exact Capability and adapter bindings is available.",
         "Final disposition is historical evidence only; this non-candidate has no current Capability or operational adapter."
       ],
-      "j2_disposition": {
-        "action": "retire",
+      "final_disposition": {
+        "state": "retired",
         "rationale": "Removed from active discovery and retained only as repository history under issue #75."
       }
     },
@@ -1698,8 +1698,8 @@
       },
       "generation_eligible": true,
       "ineligibility_reasons": [],
-      "j2_disposition": {
-        "action": "migrate",
+      "final_disposition": {
+        "state": "governed",
         "rationale": "The governed replacement is authoritative; the former legacy path is retained only as a protective tombstone with explicit rollback provenance."
       }
     },
@@ -1728,9 +1728,9 @@
       },
       "generation_eligible": true,
       "ineligibility_reasons": [],
-      "j2_disposition": {
-        "action": "replace",
-        "rationale": "The authority-correct governed Capability replaces connector-era assumptions; retain the legacy source only as an explicit migration input until final discovery cutover."
+      "final_disposition": {
+        "state": "replaced",
+        "rationale": "The authority-correct governed Capability replaces connector-era assumptions; retain the legacy source only as an explicit migration input as a non-authoritative rollback input."
       }
     },
     {
@@ -1758,8 +1758,8 @@
       },
       "generation_eligible": true,
       "ineligibility_reasons": [],
-      "j2_disposition": {
-        "action": "replace",
+      "final_disposition": {
+        "state": "replaced",
         "rationale": "Replace the legacy Trade Journal projection with the Registry-locked Notes-owned content-processing adapter without transferring capture or extraction authority."
       }
     },
@@ -1788,8 +1788,8 @@
       },
       "generation_eligible": true,
       "ineligibility_reasons": [],
-      "j2_disposition": {
-        "action": "replace",
+      "final_disposition": {
+        "state": "replaced",
         "rationale": "Replace the legacy Trade Journal projection with the Registry-locked Notes-owned content-processing adapter without transferring capture or extraction authority."
       }
     },
@@ -1818,9 +1818,9 @@
       },
       "generation_eligible": true,
       "ineligibility_reasons": [],
-      "j2_disposition": {
-        "action": "migrate",
-        "rationale": "The governed adapter is current and staged; retain the legacy discovery input until the final provider-discovery cutover."
+      "final_disposition": {
+        "state": "governed",
+        "rationale": "The governed adapter is current and authoritative; retain the legacy discovery input as a non-authoritative rollback input."
       }
     },
     {
@@ -1851,8 +1851,8 @@
         "No complete current evidence with exact Capability and adapter bindings is available.",
         "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
       ],
-      "j2_disposition": {
-        "action": "migrate",
+      "final_disposition": {
+        "state": "unavailable",
         "rationale": "Migrate the provider packaging in J2 without changing the underlying Trade Journal workflow semantics."
       }
     },
@@ -1881,9 +1881,9 @@
       },
       "generation_eligible": true,
       "ineligibility_reasons": [],
-      "j2_disposition": {
-        "action": "migrate",
-        "rationale": "The governed adapter is current and staged; retain the canonical interactive skill as a migration input until final discovery cutover."
+      "final_disposition": {
+        "state": "governed",
+        "rationale": "The governed adapter is current and authoritative; retain the canonical interactive skill as a non-authoritative rollback input."
       }
     },
     {
@@ -1911,8 +1911,8 @@
       },
       "generation_eligible": true,
       "ineligibility_reasons": [],
-      "j2_disposition": {
-        "action": "migrate",
+      "final_disposition": {
+        "state": "governed",
         "rationale": "The governed replacement is authoritative; the former legacy path is retained only as a protective tombstone with explicit rollback provenance."
       }
     },
@@ -1941,8 +1941,8 @@
       },
       "generation_eligible": true,
       "ineligibility_reasons": [],
-      "j2_disposition": {
-        "action": "migrate",
+      "final_disposition": {
+        "state": "governed",
         "rationale": "The governed replacement is authoritative; the former legacy path is retained only as a protective tombstone with explicit rollback provenance."
       }
     },
@@ -1971,8 +1971,8 @@
       },
       "generation_eligible": true,
       "ineligibility_reasons": [],
-      "j2_disposition": {
-        "action": "migrate",
+      "final_disposition": {
+        "state": "governed",
         "rationale": "The governed replacement is authoritative; the former legacy path is retained only as a protective tombstone with explicit rollback provenance."
       }
     },
@@ -2001,8 +2001,8 @@
       },
       "generation_eligible": true,
       "ineligibility_reasons": [],
-      "j2_disposition": {
-        "action": "migrate",
+      "final_disposition": {
+        "state": "governed",
         "rationale": "The governed replacement is authoritative; the former legacy path is retained only as a protective tombstone with explicit rollback provenance."
       }
     },
@@ -2031,8 +2031,8 @@
       },
       "generation_eligible": true,
       "ineligibility_reasons": [],
-      "j2_disposition": {
-        "action": "migrate",
+      "final_disposition": {
+        "state": "governed",
         "rationale": "The governed replacement is authoritative; the former legacy path is retained only as a protective tombstone with explicit rollback provenance."
       }
     },
@@ -2061,8 +2061,8 @@
       },
       "generation_eligible": true,
       "ineligibility_reasons": [],
-      "j2_disposition": {
-        "action": "migrate",
+      "final_disposition": {
+        "state": "governed",
         "rationale": "The governed replacement is authoritative; the former legacy path is retained only as a protective tombstone with explicit rollback provenance."
       }
     },
@@ -2091,8 +2091,8 @@
       },
       "generation_eligible": true,
       "ineligibility_reasons": [],
-      "j2_disposition": {
-        "action": "migrate",
+      "final_disposition": {
+        "state": "governed",
         "rationale": "The governed replacement is authoritative; the former legacy path is retained only as a protective tombstone with explicit rollback provenance."
       }
     },
@@ -2121,9 +2121,9 @@
       },
       "generation_eligible": true,
       "ineligibility_reasons": [],
-      "j2_disposition": {
-        "action": "migrate",
-        "rationale": "The governed adapter is current and staged; retain the authored workflow as a migration input until final discovery cutover."
+      "final_disposition": {
+        "state": "governed",
+        "rationale": "The governed adapter is current and authoritative; retain the authored workflow as a non-authoritative rollback input."
       }
     },
     {
@@ -2151,9 +2151,9 @@
       },
       "generation_eligible": true,
       "ineligibility_reasons": [],
-      "j2_disposition": {
-        "action": "migrate",
-        "rationale": "The governed adapter is current and staged; retain the authored /thesis skill as a migration input until final discovery cutover."
+      "final_disposition": {
+        "state": "governed",
+        "rationale": "The governed adapter is current and authoritative; retain the authored /thesis skill as a non-authoritative rollback input."
       }
     },
     {
@@ -2181,8 +2181,8 @@
       },
       "generation_eligible": true,
       "ineligibility_reasons": [],
-      "j2_disposition": {
-        "action": "migrate",
+      "final_disposition": {
+        "state": "governed",
         "rationale": "The governed adapter is current and the thesis-observe scheduler cutover completed under issue #51 approval; retain the authored skill only as the delegated workflow source."
       }
     },
@@ -2211,9 +2211,9 @@
       },
       "generation_eligible": true,
       "ineligibility_reasons": [],
-      "j2_disposition": {
-        "action": "migrate",
-        "rationale": "The governed adapter is current and staged; retain the existing Claude discovery input and live invocation until its separately approved cutover."
+      "final_disposition": {
+        "state": "governed",
+        "rationale": "The governed adapter is current and authoritative; retain the existing Claude discovery input and live invocation only where a separately governed operational consumer still delegates to it."
       }
     },
     {
@@ -2244,8 +2244,8 @@
         "No complete current evidence with exact Capability and adapter bindings is available.",
         "File presence, mirror parity, and machine-local Notes data do not establish current Adapter Conformance."
       ],
-      "j2_disposition": {
-        "action": "defer",
+      "final_disposition": {
+        "state": "deferred",
         "rationale": "Keep only the existing pull-only manual boundary as a non-governed migration input; do not route, schedule, or represent it as current support."
       }
     },
@@ -2274,8 +2274,8 @@
       },
       "generation_eligible": true,
       "ineligibility_reasons": [],
-      "j2_disposition": {
-        "action": "migrate",
+      "final_disposition": {
+        "state": "governed",
         "rationale": "Stage exact inventory-based Claude routing without changing any authored workflow procedure or active execution consumer."
       }
     },
@@ -2304,8 +2304,8 @@
       },
       "generation_eligible": true,
       "ineligibility_reasons": [],
-      "j2_disposition": {
-        "action": "replace",
+      "final_disposition": {
+        "state": "replaced",
         "rationale": "Repository inventory and exact governed adapters own routing authority; retain the unchanged machine-local bridge as an explicitly limited active legacy competing router with unavailable evidence."
       }
     }
