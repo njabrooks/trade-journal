@@ -2,11 +2,12 @@
 
 ## Purpose
 
-The **pull, curious foreground** for a fresh context: one command that answers *"what needs
-me right now?"* and then helps you resolve it conversationally. It is the agent-side
+The **pull, curious foreground** for a fresh context: one command that answers _"what needs
+me right now?"_ and then helps you resolve it conversationally. It is the agent-side
 counterpart to the web **DecisionStrip**.
 
 It reads two layers and keeps them distinct:
+
 1. **Open Decision Items** — already-raised, typed `DecisionPacket`s (`journal_entries`,
    `action_type='decision_required'`, `status='active'`/expired-snooze). These are the
    things to **resolve now**.
@@ -17,11 +18,12 @@ It reads two layers and keeps them distinct:
 
 **Relationship to `/maintenance`:** `/maintenance` is the background freshness-keeper
 (drains worklists, advances cursors, performs agent upkeep, and raises packets only when
-judgment is needed). `/decisions` is the *consumer/resolver* for packets already raised.
+judgment is needed). `/decisions` is the _consumer/resolver_ for packets already raised.
 Use `/decisions` to act on current decisions; use `/maintenance` to refresh or drain
 agent work. They share the same packet model only where work becomes a real decision.
 
 ## Principles
+
 - **Resolve genuine decisions, don't manufacture them.** A raised packet already passed the
   "needs judgment" bar — present it with its `default_recommendation`, then let the user
   choose. Never auto-resolve a judgment call silently.
@@ -37,26 +39,29 @@ agent work. They share the same packet model only where work becomes a real deci
 ## Workflow
 
 **Step 0 — Environment**
+
 ```bash
 cd /Users/home-hub/projects/trade-journal
 ```
 
 **Step 1 — Read both layers**
+
 ```bash
 npx tsx scripts/ops/list-decisions.ts --json     # open packets, ranked (the resolve-now set)
 npx tsx scripts/ops/maintenance-status.ts --json # agent worklists (not all are user decisions)
 ```
 
 **Step 2 — Present the brief**
-Lead with a one-line headline: *"N open decisions · M maintenance work items."*
-If useful, add a short qualifier such as: *"maintenance work is agent-run; it may emit
-new decisions only on ambiguity, weakening, or a required owner call."*
+Lead with a one-line headline: _"N open decisions · M maintenance work items."_
+If useful, add a short qualifier such as: _"maintenance work is agent-run; it may emit
+new decisions only on ambiguity, weakening, or a required owner call."_
 Then list the open decisions in ranked order — for each: the type label, the subject
 (`objectTitle`), `whyRaised`, age/×occurrence, and the `default_recommendation` if present.
 Keep it scannable; don't dump JSON.
 
 **Step 3 — Work through them (one at a time, user-led)**
 For each open decision, surface its `recommended_actions` + default, get the user's pick, then:
+
 - **Built-in mechanical types** (`frame_asset_under_macro`, `classify_macro_link`,
   `link_strategy_to_thesis`, `resolve_proxy_underlying`, plus `confirm_claim_link`
   with `--action sever` — deletes the claim↔thesis mapping directly) —
@@ -69,21 +74,23 @@ For each open decision, surface its `recommended_actions` + default, get the use
   `confirm_claim_link`) — do the real work in the **runbook** skill first (see table), then
   close + record:
   ```bash
-  npx tsx scripts/ops/resolve-decision.ts --id <decisionId> --action acknowledge \
+  npx tsx scripts/ops/resolve-decision.ts --id <decisionId> --action <selected-action> \
     --notes "<what was done>" --writes '[{"table":"...","op":"update","ids":["<id>"]}]' --by user
   ```
 - **Defer** — dismiss (`--action dismiss`) or let the user snooze it on the web strip.
 
 Preview anything ambiguous with `--dry-run` before applying.
 
-**Step 3b — Expression follow-on (docs/v2/21 Phase 5).** When a resolution *changes a
-belief about a name* — a re-underwrite lands, a direction/conviction flips, refuting
+**Step 3b — Expression follow-on (docs/v2/21 Phase 5).** When a resolution _changes a
+belief about a name_ — a re-underwrite lands, a direction/conviction flips, refuting
 evidence is accepted, a weakening signal is acted on — offer, in one line, to look at the
-expression consequences before moving to the next packet: *"conviction on X changed —
-want to look at expressing/protecting it?"* If yes:
+expression consequences before moving to the next packet: _"conviction on X changed —
+want to look at expressing/protecting it?"_ If yes:
+
 ```bash
 npx tsx scripts/options-advisor.ts --underlying <TICKER>
 ```
+
 then judge conversationally per the `/options-advisor` doctrine (regime first,
 live-verify before acting, standing constraints bind; if the user acts, save a one-rec
 batch + mark it acted so Lane C scores it). A decision that changes a belief is exactly
@@ -100,21 +107,23 @@ If both are `0` and `newInsights === 0`, report "belief layer up to date — not
 what latent work remains — so the next context knows where to pick up.
 
 ## Runbook by decision_type (from `DECISION_RUNBOOKS`, docs/v2/09 §7)
-| decision_type | resolve via |
-|---|---|
-| `re_underwrite_due` | `/thesis <X>` re-underwrite (new evidence since last version) |
-| `review_refuting_claim` · `confirm_claim_link` · `cluster_claims_to_thesis` | `/relate-research` |
-| `develop_thin_thesis` | `/thesis-review research-gap` (Tana-first) |
-| `weakening_signal_action` | `/thesis-review health` |
-| `frame_asset_under_macro` · `classify_macro_link` | link asset→macro (built-in handler) |
-| `link_strategy_to_thesis` | link strategy→thesis (built-in handler) |
-| `resolve_proxy_underlying` | create-underlying + `parent_underlying_id` (built-in handler) |
-| `classify_exposure` | `update-entity-status` (tactical vs belief) |
-| `run_deep_dive` | governed `research-pipeline` stages through `npx tsx scripts/research-pipeline.ts` (zero-write results; any accepted persistence stays with the separately governed recorder) |
+
+| decision_type                                                               | resolve via                                                                                                                                                                   |
+| --------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `re_underwrite_due`                                                         | `/thesis <X>` re-underwrite (new evidence since last version)                                                                                                                 |
+| `review_refuting_claim` · `confirm_claim_link` · `cluster_claims_to_thesis` | `/relate-research`                                                                                                                                                            |
+| `develop_thin_thesis`                                                       | `/thesis-review research-gap` (Tana-first)                                                                                                                                    |
+| `weakening_signal_action`                                                   | `/thesis-review health`                                                                                                                                                       |
+| `frame_asset_under_macro` · `classify_macro_link`                           | link asset→macro (built-in handler)                                                                                                                                           |
+| `link_strategy_to_thesis`                                                   | link strategy→thesis (built-in handler)                                                                                                                                       |
+| `resolve_proxy_underlying`                                                  | create-underlying + `parent_underlying_id` (built-in handler)                                                                                                                 |
+| `classify_exposure`                                                         | `update-entity-status` (tactical vs belief)                                                                                                                                   |
+| `run_deep_dive`                                                             | governed `research-pipeline` stages through `npx tsx scripts/research-pipeline.ts` (zero-write results; any accepted persistence stays with the separately governed recorder) |
 
 ## Common mistakes
-1. ❌ Auto-resolving a packet without the user's pick — they exist *because* they need judgment.
+
+1. ❌ Auto-resolving a packet without the user's pick — they exist _because_ they need judgment.
 2. ❌ Closing a decision by editing the journal row — always go through `resolve-decision.ts`.
 3. ❌ Making a status change inside the resolution without `update-entity-status.ts` (skips transition validation).
-4. ❌ Confusing this with `/maintenance` — that one *raises* decisions; this one *resolves* them. If the queue is empty, point at `/maintenance`, don't re-drain here.
+4. ❌ Confusing this with `/maintenance` — that one _raises_ decisions; this one _resolves_ them. If the queue is empty, point at `/maintenance`, don't re-drain here.
 5. ❌ Dumping raw JSON at the user — present a ranked, scannable brief.
