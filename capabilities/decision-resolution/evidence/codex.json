@@ -1,0 +1,42 @@
+{
+  "capability_id": "capability:scope:trade-journal/decision-resolution",
+  "capability_version": "1.0.0",
+  "package_digest": "sha256:66158ba085f39170be27eea5b1b7180dfc872ced87a4b5f134cfdd56729e64d8",
+  "adapter_id": "decision-resolution-codex",
+  "adapter_digest": "sha256:4618d8ca2d232fda1490ebb53309d787bfcaedafb9e8f7bb5f94f397c3986f44",
+  "support_state": "current",
+  "validated_at": "2026-08-12",
+  "results": {
+    "adapter-entry-point": {
+      "status": "passed",
+      "method": "Accepted Workspace CLI Capability validation and clean staged Codex Provider Entry Point generation"
+    },
+    "interactive-only-boundary": {
+      "status": "passed",
+      "method": "Repository contract tests prove the exact adapter and bespoke mirror refuse headless, autonomous, scheduled, background, batch, CI, and missing-user-presence invocation before reads or writes"
+    },
+    "explicit-user-judgment": {
+      "status": "passed",
+      "method": "The shared resolver authority guard rejects missing and agent-authored authority and accepts only explicit current-user --by user selection before Decision Item access"
+    },
+    "auditable-resolution": {
+      "status": "passed",
+      "method": "Repository contract tests bind every close to scripts/ops/resolve-decision.ts --by user and its resolution metadata plus decision_resolved journal audit"
+    },
+    "validated-status-transition": {
+      "status": "passed",
+      "method": "Repository contract tests require status-changing resolutions to complete through scripts/ops/update-entity-status.ts transition validation and status_change audit before the Decision Item is closed"
+    },
+    "provider-semantic-equivalence": {
+      "status": "passed",
+      "reviewer": "J2 implementation review",
+      "method": "Compared the exact Codex and Claude adapters with issue #60, parent #46, accepted blockers #47/#48, the Decision Item model, the decisions workflow, and approved repository operations",
+      "evidence_link": "https://github.com/njabrooks/trade-journal/issues/60",
+      "expires_at": "2026-09-11"
+    },
+    "eligible-environment": {
+      "status": "passed",
+      "method": "The configured interactive Trade Journal runtime completed non-mutating operation preflight and credential-free authority-guard tests on 2026-08-12; sandbox, database, or user-presence absence remains refused or unavailable"
+    }
+  }
+}

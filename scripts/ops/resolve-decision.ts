@@ -3,6 +3,9 @@
  * Resolve a Decision Item (docs/v2/09 §8.3–§8.4) — the agent path that closes a
  * decision and captures the judgment back into the graph.
  *
+ * INTERACTIVE-ONLY AUTHORITY: every close requires an explicit `--by user`. Missing
+ * or agent-authored judgment is refused before the Decision Item is read or mutated.
+ *
  * GENERIC CLOSE (any decision_type): set status (resolved|dismissed), record a
  * resolution into the packet (action_taken/chosen_by/at/notes/writes), and journal a
  * 'decision_resolved' audit entry.
@@ -36,6 +39,7 @@ import { db, closeDb, schema, logToJournal } from '../lib/db.js';
 import { and, eq } from 'drizzle-orm';
 import { getDecisionPacket, type DecisionResolution, type DecisionPacket } from '@/lib/types/decisions';
 import { linkAssetMacro, unlinkAssetMacro } from '../lib/linkAssetMacro.js';
+import { assertExplicitUserJudgment } from '../lib/decisionResolutionAuthority.js';
 
 const { journalEntries, strategies, underlyings, mainClaims, claimThesisMappings } = schema;
 
@@ -84,7 +88,7 @@ async function readInput(): Promise<Input> {
     id: a.id as string,
     action: a.action as string,
     notes: a.notes as string | undefined,
-    by: (a.by as Input['by']) || 'agent',
+    by: a.by as Input['by'],
     status: a.status as Input['status'],
     writes: a.writes ? (JSON.parse(a.writes as string) as GraphWrite[]) : undefined,
     macroId: a.macroid as string | undefined,
@@ -231,6 +235,7 @@ async function main() {
     console.error('Required: --id <decisionId> --action <actionKey> (use --action dismiss to dismiss)');
     process.exit(1);
   }
+  assertExplicitUserJudgment(input);
 
   const rows = await db
     .select({
@@ -259,7 +264,7 @@ async function main() {
 
   const resolution: DecisionResolution = {
     action_taken: input.action,
-    chosen_by: input.by ?? 'agent',
+    chosen_by: input.by,
     at: new Date().toISOString(),
     ...(input.notes ? { notes: input.notes } : {}),
     ...(writes.length ? { writes } : {}),
