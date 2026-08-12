@@ -445,8 +445,21 @@
     "production_build": "passed",
     "service_restart": "com.tradej restarted after the build",
     "smoke": "HTTP 307 from / and HTTP 200 from /claims",
-    "review": "initial Standards and Spec findings were corrected; final no-finding reviews are required on the corrected commit before PR publication",
-    "github_ci": "the exact accepted PR revision and run URL are added after the first clean PR workflow passes; the subsequent workflow validates that publication update",
+    "review": {
+      "fixed_point": "283e27bbed7dbbcbfe814cce41424e7e5b5bb282",
+      "reviewed_revision": "5a5fc8836bbcb05611a7caca5fd35be4f294e9b4",
+      "standards": "passed with no findings after review corrections",
+      "spec": "passed with no findings after review corrections"
+    },
+    "github_ci": {
+      "pull_request": "https://github.com/njabrooks/trade-journal/pull/113",
+      "validated_revision": "5a5fc8836bbcb05611a7caca5fd35be4f294e9b4",
+      "run": "https://github.com/njabrooks/trade-journal/actions/runs/31613346995",
+      "run_id": 31613346995,
+      "job": "Workspace governance",
+      "conclusion": "success",
+      "publication_follow_up": "The receipt-only commit adding this immutable run is validated by the subsequent required PR workflow before merge."
+    },
     "application_safeguard": "Any production build is followed by restart of the existing com.tradej service and HTTP smoke; no second development server is started."
   },
   "completion_claim": "J2 establishes the exact locked Trade Journal and adopted Notes Capability releases, digest-bound Claude and Codex adapters, two generated governed Provider Entry Points, exhaustive 74-entry final dispositions, and safeguarded migration evidence for five live provider-dependent consumers. It does not define Workspace distribution, transfer Notes or Radon authority, claim unavailable Radon support, make machine-local state repository-owned, broaden any adapter write set, authorize trade execution, or change the Trade Journal investment domain model."
