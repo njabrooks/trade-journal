@@ -1,4 +1,5 @@
 import { createHash } from "node:crypto";
+import { execFileSync } from "node:child_process";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
@@ -8,6 +9,8 @@ import {
 } from "../scripts/lib/decisionResolutionAuthority";
 
 const capabilityRoot = resolve(process.cwd(), "capabilities/decision-resolution");
+const workspaceRoot = process.env.WORKSPACE_REPOSITORY_ROOT;
+const governanceIt = workspaceRoot ? it : it.skip;
 
 function read(path: string): string {
   return readFileSync(resolve(capabilityRoot, path), "utf8");
@@ -19,6 +22,19 @@ function readJson(path: string): Record<string, unknown> {
 
 function digest(path: string): string {
   return `sha256:${createHash("sha256").update(read(path)).digest("hex")}`;
+}
+
+function repositoryDigest(path: string): string {
+  return `sha256:${createHash("sha256")
+    .update(readFileSync(resolve(process.cwd(), path)))
+    .digest("hex")}`;
+}
+
+function inventoryEntry(path: string, id: string): Record<string, unknown> {
+  const inventory = JSON.parse(
+    readFileSync(resolve(process.cwd(), path), "utf8"),
+  ) as { entries: Array<Record<string, unknown>> };
+  return inventory.entries.find((entry) => entry.id === id)!;
 }
 
 describe("decision-resolution Capability", () => {
@@ -100,5 +116,137 @@ describe("decision-resolution Capability", () => {
       expect(adapter).toContain("refuse immediately before reading Decision Items");
       expect(adapter).toContain("must never be declared unattended-current, scheduled, or eligible for headless execution");
     }
+  });
+
+  it("reconciles current inventory evidence without granting unattended eligibility", () => {
+    const interactive = inventoryEntry(
+      "docs/agents/provider-adapters/interactive-inventory.json",
+      "interactive-claude-decisions",
+    );
+    const headless = inventoryEntry(
+      "docs/agents/provider-adapters/headless-inventory.json",
+      "headless-codex-decisions",
+    );
+
+    expect(interactive).toMatchObject({
+      source: { path: "capabilities/decision-resolution/adapters/claude.md" },
+      packaging: "governed-provider-adapter",
+      invocation: {
+        mode: "interactive",
+        unattended_eligibility: "ineligible",
+      },
+      evidence: { state: "current", capability_version: "1.0.0" },
+    });
+    expect(headless).toMatchObject({
+      source: { path: "capabilities/decision-resolution/adapters/codex.md" },
+      packaging: "governed-provider-adapter",
+      execution_contract: {
+        class: "bespoke",
+        preamble_path: ".claude/skills/decisions/HEADLESS_PREAMBLE.md",
+      },
+      invocation: {
+        mode: "headless",
+        unattended_eligibility: "ineligible",
+      },
+      authority_and_write_scope: {
+        reads: expect.stringContaining("No unattended reads"),
+        writes: expect.stringContaining("No unattended writes"),
+      },
+      evidence: { state: "current", capability_version: "1.0.0" },
+    });
+  });
+
+  it("records exact deterministic publication artifacts and unchanged operational scope", () => {
+    const receipt = JSON.parse(
+      readFileSync(
+        resolve(process.cwd(), "evidence/issue-60-decision-resolution.json"),
+        "utf8",
+      ),
+    ) as Record<string, Record<string, unknown>>;
+    const artifacts = receipt.published_artifacts;
+
+    expect(artifacts).toMatchObject({
+      registry_lock: repositoryDigest("capability-registry-lock.json"),
+      claude_staging: repositoryDigest(
+        "docs/agents/provider-entry-points/staging/claude.md",
+      ),
+      codex_staging: repositoryDigest(
+        "docs/agents/provider-entry-points/staging/codex.md",
+      ),
+      interactive_inventory: repositoryDigest(
+        "docs/agents/provider-adapters/interactive-inventory.json",
+      ),
+      headless_inventory: repositoryDigest(
+        "docs/agents/provider-adapters/headless-inventory.json",
+      ),
+      generation_eligibility: repositoryDigest(
+        "docs/agents/provider-adapters/generation-eligibility.json",
+      ),
+      inventory_entries: 74,
+      generation_eligible_entries: 56,
+    });
+    expect(receipt.scope).toMatchObject({
+      active_discovery_changed: false,
+      scheduler_or_launchd_changed: false,
+      live_provider_invoked: false,
+      database_or_investment_state_changed: false,
+      credentials_changed: false,
+      cross_repository_write: false,
+      trade_or_order_authority: false,
+    });
+  });
+
+  governanceIt("validates the exact package and staged projections through the public Workspace CLI", () => {
+    const environment = {
+      ...process.env,
+      WORKSPACE_REPOSITORY_ROOT: workspaceRoot,
+    };
+    const capability = JSON.parse(
+      execFileSync(
+        "./workspace",
+        [
+          "validate",
+          "capability",
+          "capabilities/decision-resolution",
+          "--evidence-time",
+          "2026-08-12",
+          "--format",
+          "json",
+        ],
+        { cwd: process.cwd(), encoding: "utf8", env: environment },
+      ),
+    ) as { outcome: string; adapters: Array<{ state: string }> };
+    const entryPoints = JSON.parse(
+      execFileSync(
+        "./workspace",
+        [
+          "validate",
+          "provider-entry-points",
+          ".",
+          "--registry",
+          "capability-registry.json",
+          "--lock",
+          "capability-registry-lock.json",
+          "--mode",
+          "published",
+          "--evidence-time",
+          "2026-08-12",
+          "--format",
+          "json",
+        ],
+        { cwd: process.cwd(), encoding: "utf8", env: environment },
+      ),
+    ) as { outcome: string; outputs: Array<{ provider: string }> };
+
+    expect(capability.outcome).toBe("valid");
+    expect(capability.adapters.map(({ state }) => state)).toEqual([
+      "current",
+      "current",
+    ]);
+    expect(entryPoints.outcome).toBe("valid");
+    expect(entryPoints.outputs.map(({ provider }) => provider)).toEqual([
+      "claude",
+      "codex",
+    ]);
   });
 });

@@ -68,6 +68,10 @@
       "path": "capabilities/belief-research-relation/capability-package.json"
     },
     {
+      "id": "capability:scope:trade-journal/decision-resolution",
+      "path": "capabilities/decision-resolution/capability-package.json"
+    },
+    {
       "id": "capability:scope:trade-journal/claims-synthesis",
       "path": "capabilities/claims-synthesis/capability-package.json"
     },
@@ -147,7 +151,7 @@
       "id": "headless-codex-decisions",
       "capability": "capability:scope:trade-journal/decision-resolution",
       "provider": "codex",
-      "path": ".agents/skills/decisions/SKILL.md"
+      "path": "capabilities/decision-resolution/adapters/codex.md"
     },
     {
       "id": "headless-codex-finalize-for-upload",
@@ -339,7 +343,7 @@
       "id": "interactive-claude-decisions",
       "capability": "capability:scope:trade-journal/decision-resolution",
       "provider": "claude",
-      "path": ".claude/skills/decisions/SKILL.md"
+      "path": "capabilities/decision-resolution/adapters/claude.md"
     },
     {
       "id": "interactive-claude-finalize-for-upload",
@@ -573,7 +577,7 @@
       },
       "generation_eligibility": {
         "artifact": "docs/agents/provider-adapters/generation-eligibility.json",
-        "eligible_adapters": 52,
+        "eligible_adapters": 56,
         "governed_outputs": [
           "docs/agents/provider-entry-points/staging/claude.md",
           "docs/agents/provider-entry-points/staging/codex.md"
@@ -665,7 +669,7 @@
   },
   "deviations": "none",
   "validation_evidence": {
-    "as_of": "2026-08-11",
+    "as_of": "2026-08-12",
     "records": [
       {
         "id": "j1-execution-gate",
@@ -686,6 +690,11 @@
         "id": "headless-provider-inventory",
         "method": "repository-supporting-validator",
         "path": "docs/agents/provider-adapters/headless-inventory.json"
+      },
+      {
+        "id": "decision-resolution-capability",
+        "method": "interactive-only-judgment-refusal-and-approved-operation-conformance",
+        "path": "capabilities/decision-resolution/capability-package.json"
       },
       {
         "id": "provider-generation-eligibility",

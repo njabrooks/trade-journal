@@ -1,7 +1,7 @@
 {
   "schema_version": "1.0.0",
   "inventory_kind": "interactive",
-  "as_of": "2026-08-11",
+  "as_of": "2026-08-12",
   "accepted_workspace_revision": "2b6ea3e02ff5ba114b0f91dd779c4afb26181358",
   "authority": "repository:njabrooks/trade-journal",
   "entries": [
@@ -490,7 +490,7 @@
     },
     {
       "id": "interactive-claude-decisions",
-      "ability": "Present and resolve Decision Items that require the user.",
+      "ability": "Present one unresolved Decision Item at a time and record only the current user's exact selected action through approved audited operations.",
       "candidate_capability": {
         "status": "candidate",
         "id": "capability:scope:trade-journal/decision-resolution",
@@ -500,46 +500,57 @@
       "source": {
         "ownership": "repository:njabrooks/trade-journal",
         "location_class": "repository",
-        "path": ".claude/skills/decisions/SKILL.md"
+        "path": "capabilities/decision-resolution/adapters/claude.md"
       },
-      "packaging": "authored-provider-entry-point",
+      "packaging": "governed-provider-adapter",
       "invocation": {
         "mode": "interactive",
-        "entry_point": "/decisions",
+        "entry_point": "docs/agents/provider-entry-points/staging/claude.md",
         "unattended_eligibility": "ineligible",
-        "rationale": "Explicit resolver for genuine user judgment."
+        "rationale": "The current user's exact action is mandatory; headless, autonomous, scheduled, background, and inferred resolution are prohibited."
       },
       "lifecycle": {
         "status": "active",
         "protective_tombstone": false
       },
       "authority_and_write_scope": {
-        "reads": "Open Decision Items and maintenance worklists.",
-        "writes": "User-authorized resolutions through resolve-decision and governed runbooks.",
-        "judgment": "Explicit resolver for genuine user judgment."
+        "reads": "Unresolved Decision Items through list-decisions and maintenance status only to keep resolver and producer work distinct.",
+        "writes": "Only the selected runbook writes, validated entity transition through update-entity-status, and exact Decision Item close/audit through resolve-decision --by user.",
+        "judgment": "The current user must select the exact bounded action for the exact packet; defaults, silence, ambiguity, and agent inference are not authority."
       },
       "prerequisites": [
-        "Claude Code repository session",
-        "User participation and remote database access through ops scripts."
+        "Interactive Claude Code repository session with the current user actively participating",
+        "Complete unresolved Decision Item packet and remote database access through approved ops scripts"
       ],
       "limitations": [
-        "Generic headless packaging does not make decision resolution autonomous.",
-        "No evidence is bound to an exact W1 Capability version, package digest, and adapter digest."
+        "The governed adapter is staged; the canonical decisions skill remains a migration input until final discovery cutover.",
+        "No unattended mode, schedule, default, prior preference, or agent inference may establish user judgment."
       ],
       "operational_consumers": [
         "Interactive Trade Journal maintainer or delegated agent"
       ],
       "evidence": {
-        "state": "unavailable",
-        "as_of": "2026-08-04",
-        "capability_version": null,
-        "package_digest": null,
-        "adapter_digest": null,
-        "reason": "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
+        "state": "current",
+        "as_of": "2026-08-12",
+        "capability_version": "1.0.0",
+        "package_digest": "sha256:66158ba085f39170be27eea5b1b7180dfc872ced87a4b5f134cfdd56729e64d8",
+        "adapter_digest": "sha256:2536391fdd71e813c3fc3ea7771cf07c69ee9717ae4a3931501ecb8c3eb48d2a",
+        "reason": "Exact current evidence binds decision-resolution 1.0.0 and its interactive-only Claude adapter; unattended and scheduling eligibility remain prohibited."
       },
       "j2_disposition": {
         "action": "migrate",
-        "rationale": "Migrate the provider packaging in J2 without changing the underlying Trade Journal workflow semantics."
+        "rationale": "The governed adapter is current and staged; retain the authored interactive workflow as a migration input until final discovery cutover."
+      },
+      "migration_input": {
+        "ownership": "repository:njabrooks/trade-journal",
+        "location_class": "repository",
+        "path": ".claude/skills/decisions/SKILL.md"
+      },
+      "governed_binding": {
+        "package_path": "capabilities/decision-resolution/capability-package.json",
+        "adapter_id": "decision-resolution-claude",
+        "evidence_path": "capabilities/decision-resolution/evidence/claude.json",
+        "staged_entry_point": "docs/agents/provider-entry-points/staging/claude.md"
       }
     },
     {
@@ -2599,7 +2610,7 @@
     {
       "id": "no-exact-adapter-evidence",
       "classification": "evidence",
-      "detail": "At issue #75 acceptance, Twenty-four interactive inventory entries have current evidence. Of thirteen unavailable entries, nine await J2 disposition and four non-candidates have completed final retire dispositions. After issues #71, #64, and #65 add governed workflow discovery, options-vol-analysis, and portfolio-analysis adapters, the current totals are twenty-eight current and ten unavailable; the same four non-candidate dispositions remain unchanged."
+      "detail": "At issue #75 acceptance, Twenty-four interactive inventory entries have current evidence. Of thirteen unavailable entries, nine await J2 disposition and four non-candidates have completed final retire dispositions. After issues #71, #64, and #65 add governed workflow discovery, options-vol-analysis, and portfolio-analysis adapters, the totals were twenty-eight current and ten unavailable. Issue #60 adds governed interactive-only decision resolution, making the current totals twenty-nine current and nine unavailable; the same four non-candidate dispositions remain unchanged."
     },
     {
       "id": "external-codex-legacy-router",

@@ -1,10 +1,10 @@
 {
   "kind": "ProviderAdapterGenerationEligibility",
   "schema_version": "1.0.0",
-  "as_of": "2026-08-11",
+  "as_of": "2026-08-12",
   "accepted_workspace_revision": "2b6ea3e02ff5ba114b0f91dd779c4afb26181358",
   "outcome": "eligible-adapters-present",
-  "generation_eligible_count": 54,
+  "generation_eligible_count": 56,
   "governed_outputs": [
     "docs/agents/provider-entry-points/staging/claude.md",
     "docs/agents/provider-entry-points/staging/codex.md"
@@ -286,7 +286,7 @@
       "source": {
         "ownership": "repository:njabrooks/trade-journal",
         "location_class": "repository",
-        "path": ".agents/skills/decisions/SKILL.md"
+        "path": "capabilities/decision-resolution/adapters/codex.md"
       },
       "lifecycle_status": "active",
       "capability": {
@@ -296,21 +296,18 @@
         "reason": null
       },
       "evidence": {
-        "state": "unavailable",
-        "as_of": "2026-08-04",
-        "capability_version": null,
-        "package_digest": null,
-        "adapter_digest": null,
-        "reason": "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
+        "state": "current",
+        "as_of": "2026-08-12",
+        "capability_version": "1.0.0",
+        "package_digest": "sha256:66158ba085f39170be27eea5b1b7180dfc872ced87a4b5f134cfdd56729e64d8",
+        "adapter_digest": "sha256:4618d8ca2d232fda1490ebb53309d787bfcaedafb9e8f7bb5f94f397c3986f44",
+        "reason": "Exact current evidence binds the Codex adapter's interactive-only semantics and unconditional headless refusal; unattended execution remains ineligible."
       },
-      "generation_eligible": false,
-      "ineligibility_reasons": [
-        "No complete current evidence with exact Capability and adapter bindings is available.",
-        "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
-      ],
+      "generation_eligible": true,
+      "ineligibility_reasons": [],
       "j2_disposition": {
         "action": "migrate",
-        "rationale": "Migrate the provider packaging in J2 without changing the underlying Trade Journal workflow semantics."
+        "rationale": "Stage the exact governed Codex adapter while retaining the bespoke refusal mirror as the only headless migration input."
       }
     },
     {
@@ -1404,7 +1401,7 @@
       "source": {
         "ownership": "repository:njabrooks/trade-journal",
         "location_class": "repository",
-        "path": ".claude/skills/decisions/SKILL.md"
+        "path": "capabilities/decision-resolution/adapters/claude.md"
       },
       "lifecycle_status": "active",
       "capability": {
@@ -1414,21 +1411,18 @@
         "reason": null
       },
       "evidence": {
-        "state": "unavailable",
-        "as_of": "2026-08-04",
-        "capability_version": null,
-        "package_digest": null,
-        "adapter_digest": null,
-        "reason": "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
+        "state": "current",
+        "as_of": "2026-08-12",
+        "capability_version": "1.0.0",
+        "package_digest": "sha256:66158ba085f39170be27eea5b1b7180dfc872ced87a4b5f134cfdd56729e64d8",
+        "adapter_digest": "sha256:2536391fdd71e813c3fc3ea7771cf07c69ee9717ae4a3931501ecb8c3eb48d2a",
+        "reason": "Exact current evidence binds decision-resolution 1.0.0 and its interactive-only Claude adapter; unattended and scheduling eligibility remain prohibited."
       },
-      "generation_eligible": false,
-      "ineligibility_reasons": [
-        "No complete current evidence with exact Capability and adapter bindings is available.",
-        "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
-      ],
+      "generation_eligible": true,
+      "ineligibility_reasons": [],
       "j2_disposition": {
         "action": "migrate",
-        "rationale": "Migrate the provider packaging in J2 without changing the underlying Trade Journal workflow semantics."
+        "rationale": "The governed adapter is current and staged; retain the authored interactive workflow as a migration input until final discovery cutover."
       }
     },
     {

@@ -1,0 +1,82 @@
+{
+  "kind": "DecisionResolutionCapabilityEvidence",
+  "issue": "njabrooks/trade-journal#60",
+  "parent": "njabrooks/trade-journal#46",
+  "accepted_blockers": [
+    "njabrooks/trade-journal#47",
+    "njabrooks/trade-journal#48"
+  ],
+  "fixed_point": "c3a6ef1516f5a13c45b0b5dcc5d99528645329dc",
+  "release_revision": "5e4ec4682d571ccd518e78128acab8077f68851e",
+  "evidence_time": "2026-08-12",
+  "capability": {
+    "id": "capability:scope:trade-journal/decision-resolution",
+    "authority": "scope:trade-journal",
+    "version": "1.0.0",
+    "package_digest": "sha256:66158ba085f39170be27eea5b1b7180dfc872ced87a4b5f134cfdd56729e64d8",
+    "claude_adapter_digest": "sha256:2536391fdd71e813c3fc3ea7771cf07c69ee9717ae4a3931501ecb8c3eb48d2a",
+    "codex_adapter_digest": "sha256:4618d8ca2d232fda1490ebb53309d787bfcaedafb9e8f7bb5f94f397c3986f44",
+    "dependency": "capability:scope:trade-journal/belief-maintenance@>=1.0.0 <2.0.0"
+  },
+  "interactive_judgment_boundary": {
+    "current_user_exact_action_required": true,
+    "default_is_advice_only": true,
+    "missing_or_agent_judgment_refused": true,
+    "headless_reads_permitted": false,
+    "headless_writes_permitted": false,
+    "unattended_eligible": false,
+    "scheduled_eligible": false,
+    "headless_refusal_digest": "sha256:11c932d6ca9fc4c6329137ff3a52e08fa3bec79c37083f6733c4f316379e998c",
+    "headless_refusal_result": {
+      "success": false,
+      "skill": "decisions",
+      "status": "refused",
+      "reason": "interactive_user_judgment_required",
+      "writes": []
+    }
+  },
+  "approved_operations": {
+    "resolution": "scripts/ops/resolve-decision.ts --by user",
+    "status_transition": "scripts/ops/update-entity-status.ts",
+    "direct_journal_mutation": false,
+    "ad_hoc_sql": false,
+    "audit_records": [
+      "decision resolution metadata",
+      "journal_entries:decision_resolved",
+      "journal_entries:status_change when applicable"
+    ]
+  },
+  "published_artifacts": {
+    "registry_lock": "sha256:e86c3eba76665667a2797d97535441476ff30309d56ac3eced6720ff90525c41",
+    "claude_staging": "sha256:bb2cc2a64fc4dde5cca096e7f220ba51f83f7aae033de2b7fe5a1de23d56edd9",
+    "codex_staging": "sha256:54fec6d70d5f7ea22cf31b7b20e23c6e6119a51e436ea775f6f5cde1a8781d39",
+    "interactive_inventory": "sha256:b610c0dc497d991749c309d92fa963eaac116160554666ef00d07bf8bd95361c",
+    "headless_inventory": "sha256:b8f05d946241c9d1579eebc84e6cb9e88a151d6586e7f2d7c81fbadf4d73aa53",
+    "generation_eligibility": "sha256:0a9f612a5f2a0b557cfa48cd8288049864bb2f37860a540eb08fed2282489887",
+    "inventory_entries": 74,
+    "generation_eligible_entries": 56
+  },
+  "validation": {
+    "workspace_repository": "passed",
+    "capability": "passed",
+    "registry_lock": "passed",
+    "provider_entry_points": "passed",
+    "inventory_reconciliation": "passed",
+    "deterministic_eligibility": "passed",
+    "missing_judgment_refusal": "passed",
+    "unattended_refusal": "passed",
+    "workspace_unavailable_support_refusal": "passed",
+    "workspace_expired_evidence_refusal": "passed",
+    "clean_regeneration": "passed"
+  },
+  "scope": {
+    "active_discovery_changed": false,
+    "scheduler_or_launchd_changed": false,
+    "live_provider_invoked": false,
+    "database_or_investment_state_changed": false,
+    "credentials_changed": false,
+    "cross_repository_write": false,
+    "trade_or_order_authority": false
+  },
+  "rollback": "Revert the merge commit while preserving Registry release history, resolve a new published Lock, and regenerate both staged Provider Entry Points. No operational or data rollback is required because issue #60 changes no live consumer or production state."
+}

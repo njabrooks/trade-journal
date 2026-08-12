@@ -254,6 +254,43 @@
         {
           "id": "capability:scope:trade-journal/belief-maintenance",
           "version_constraint": ">=1.0.0 <2.0.0"
+        }
+      ],
+      "id": "capability:scope:trade-journal/decision-resolution",
+      "package_digest": "sha256:66158ba085f39170be27eea5b1b7180dfc872ced87a4b5f134cfdd56729e64d8",
+      "provider_adapters": [
+        {
+          "evidence": "evidence/claude.json",
+          "id": "decision-resolution-claude",
+          "provider": "claude",
+          "source": "adapters/claude.md",
+          "state": "current",
+          "validated_at": "2026-08-12"
+        },
+        {
+          "evidence": "evidence/codex.json",
+          "id": "decision-resolution-codex",
+          "provider": "codex",
+          "source": "adapters/codex.md",
+          "state": "current",
+          "validated_at": "2026-08-12"
+        }
+      ],
+      "repository": "github:njabrooks/trade-journal",
+      "source": {
+        "development_digest": null,
+        "package_path": "capabilities/decision-resolution",
+        "release_reference": "5e4ec4682d571ccd518e78128acab8077f68851e",
+        "revision": "5e4ec4682d571ccd518e78128acab8077f68851e"
+      }
+    },
+    {
+      "approved_version": "1.0.0",
+      "authority": "scope:trade-journal",
+      "dependencies": [
+        {
+          "id": "capability:scope:trade-journal/belief-maintenance",
+          "version_constraint": ">=1.0.0 <2.0.0"
         },
         {
           "id": "capability:scope:trade-journal/portfolio-options-advice",
@@ -621,10 +658,10 @@
       }
     }
   ],
-  "evidence_time": "2026-08-11",
+  "evidence_time": "2026-08-12",
   "kind": "CapabilityRegistryLock",
   "mode": "published",
   "publication_eligible": true,
-  "registry_digest": "sha256:0aaf09ac25ab823a5822a39e403169ad6b4790f2234d8516da2b934143ca2fa2",
+  "registry_digest": "sha256:7dd066b0618b7088c6370728e5ce1325765da86a5a32a1bb2233118f7e8972f4",
   "schema_version": "1.0.0"
 }
