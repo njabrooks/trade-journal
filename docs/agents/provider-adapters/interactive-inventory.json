@@ -2371,7 +2371,7 @@
       ],
       "limitations": [
         "The governed whole-file Provider Entry Point remains authoritative rather than installed globally.",
-        "The installed Home Hub bridge remains an active legacy competing router whose external bytes are not repository authority or conformance evidence.",
+        "The installed Home Hub bridge remains an optional non-authoritative machine-local bootstrap whose external bytes are not repository authority or conformance evidence.",
         "A successfully discovered workflow may still be unavailable because its own evidence or environmental prerequisites are not current."
       ],
       "operational_consumers": [
@@ -2383,7 +2383,7 @@
         "capability_version": "1.0.0",
         "package_digest": "sha256:7d6e82ace6a60ccd997b47af759b5345783580eccb903007872c2f3c0f9bc5d6",
         "adapter_digest": "sha256:b39e462bd35a94522f912bfea7792918d55a08955759898708b2cc0e7be2a887",
-        "reason": "Exact current evidence binds repository-owned workflow-discovery 1.0.0 and its Codex adapter; the active legacy external router remains separately unavailable for Adapter Conformance."
+        "reason": "Exact current evidence binds repository-owned workflow-discovery 1.0.0 and its Codex adapter; the optional non-authoritative machine-local bootstrap remains separately unavailable for Adapter Conformance."
       },
       "governed_binding": {
         "package_path": "capabilities/workflow-discovery/capability-package.json",
@@ -2393,7 +2393,7 @@
       },
       "j2_disposition": {
         "action": "replace",
-        "rationale": "Repository inventory and exact governed adapters own routing authority; retain the unchanged machine-local bridge as an explicitly limited active legacy competing router with unavailable evidence."
+        "rationale": "Repository inventory and exact governed adapters own routing authority; retain the unchanged machine-local bridge as an explicitly limited optional non-authoritative machine-local bootstrap with unavailable evidence."
       }
     }
   ],
@@ -2445,7 +2445,7 @@
       "provider": "codex",
       "location_class": "external-bridge",
       "path": "~/.codex/skills/trade-journal-workflows/SKILL.md",
-      "coverage": "Active legacy Home Hub router whose curated map can compete with governed routing; external bytes are non-gating and have unavailable Adapter Conformance evidence."
+      "coverage": "Active legacy Home Hub router whose curated map cannot override governed routing; external bytes are non-gating and have unavailable Adapter Conformance evidence."
     }
   ],
   "session_hooks": [
@@ -2627,7 +2627,7 @@
     {
       "id": "external-codex-legacy-router",
       "classification": "environment",
-      "detail": "The installed Home Hub Codex bridge remains an active legacy competing router; it is never read by repository parity gates and its external bytes have unavailable semantic and Adapter Conformance authority."
+      "detail": "The installed Home Hub Codex bridge remains an optional non-authoritative machine-local bootstrap; it is never read by repository parity gates and its external bytes have unavailable semantic and Adapter Conformance authority."
     },
     {
       "id": "connector-era-assumptions",

@@ -1,7 +1,7 @@
 {
   "capability_id": "capability:scope:trade-journal/thesis-foreground",
-  "capability_version": "1.0.0",
-  "package_digest": "sha256:41eae671d367800c55fd35fd1cad21ab022faa18a9310db84f6de0a70f4cfae5",
+  "capability_version": "1.0.1",
+  "package_digest": "sha256:ba06f98a1639b18b499efe2b198a911deaf17e8452b17b7438a5ae2b5be0f8fd",
   "adapter_id": "thesis-foreground-codex",
   "adapter_digest": "sha256:9e0452709adb108dcf8baf307608d21e9a09973faab11c0d538a4d2c28be893d",
   "support_state": "current",
@@ -9,7 +9,7 @@
   "results": {
     "adapter-entry-point": {
       "status": "passed",
-      "method": "Accepted Workspace CLI Capability validation and clean staged Codex Provider Entry Point generation"
+      "method": "Accepted Workspace CLI Capability validation and clean canonical Codex Provider Entry Point generation"
     },
     "interactive-only-refusal": {
       "status": "passed",

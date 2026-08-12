@@ -107,6 +107,12 @@ function projectEntry(entry: JsonObject): JsonObject {
             ? "tombstone"
             : "retired"
           : "unavailable";
+  const finalRationale = generationEligible
+    ? evidence.reason
+    : [evidence.reason, disposition.rationale]
+        .filter(nonempty)
+        .filter((value, index, values) => values.indexOf(value) === index)
+        .join(" Final boundary: ");
   const ineligibilityReasons: string[] = [];
   if (candidateStatus !== "candidate") {
     ineligibilityReasons.push(
@@ -152,7 +158,7 @@ function projectEntry(entry: JsonObject): JsonObject {
     ineligibility_reasons: ineligibilityReasons,
     final_disposition: {
       state: finalDisposition,
-      rationale: disposition.rationale,
+      rationale: finalRationale,
     },
   };
 }

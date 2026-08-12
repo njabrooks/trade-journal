@@ -1,7 +1,7 @@
 {
   "capability_id": "capability:scope:trade-journal/claims-synthesis",
-  "capability_version": "1.0.0",
-  "package_digest": "sha256:33b24164d37a548e5b5683694c375f724f5e8c756d7a366d48ca923c4461d942",
+  "capability_version": "1.0.1",
+  "package_digest": "sha256:b20b92a6e66de2281074813c60672daf0e985520d355e5a2ffa56f383cc99b52",
   "adapter_id": "claims-synthesis-codex",
   "adapter_digest": "sha256:18ff6b767b4e501bbf97930ec803dedb787fe767b0ffc57f0b5cf4bed86f9a99",
   "support_state": "current",
@@ -9,7 +9,7 @@
   "results": {
     "adapter-entry-point": {
       "status": "passed",
-      "method": "Accepted Workspace CLI Capability validation and clean staged Provider Entry Point generation"
+      "method": "Accepted Workspace CLI Capability validation and clean canonical Provider Entry Point generation"
     },
     "complete-provenance-context": {
       "status": "passed",

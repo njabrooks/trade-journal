@@ -1,7 +1,7 @@
 {
   "id": "capability:scope:trade-journal/thesis-foreground",
   "authority": "scope:trade-journal",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "intent": "Interactively query, observe, explain what changed for, and re-underwrite one Trade Journal thesis without fabricating user judgment or broadening any governed dependency's write authority.",
   "contract": "Given a live interactive Trade Journal repository session, one explicit macro or asset thesis, and one explicit foreground request, return a conversational query, what-changed, observation, evidence-assessment, or re-underwriting result grounded in the current living underwriting, linked provenance-bearing evidence, resolution signals, portfolio context, and governed dependencies. Query and what-changed are read-only. Observation, optional evidence recording, and re-underwriting delegate only to the Registry-resolved thesis-observation, belief-evidence-assessment, and thesis-underwriting Capabilities and cannot exceed their write sets. Re-underwriting requires the current user's explicit request and complete evidence inputs; recording evidence requires the current user's explicit recording choice. Missing or ambiguous target, missing intent, incomplete evidence, absent current underwriting where required, missing user judgment, unavailable prerequisites, headless or unattended execution, and every scheduling request are refused or unavailable before any write. This Capability is interactive-only and has no unattended or scheduling eligibility.",
   "instructions": [
@@ -23,7 +23,7 @@
       {
         "id": "adapter-entry-point",
         "category": "structural",
-        "description": "Each exact provider adapter is present in the staged governed Provider Entry Point generated from this package.",
+        "description": "Each exact provider adapter is present in the governed Provider Entry Point generated from this package.",
         "evidence_type": "automated"
       },
       {

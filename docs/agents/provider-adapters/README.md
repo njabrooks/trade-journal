@@ -33,7 +33,7 @@ Adapter Conformance. The accepted Workspace CLI remains authoritative for those 
 
 - all 36 repository-origin Claude records: 33 discovery paths and three issue #75 historical-only records;
 - repository-owned governed Claude and Codex workflow-discovery adapters;
-- the active legacy machine-local Codex router as an environmental surface with unavailable conformance evidence, not an adapter authority;
+- the optional non-authoritative machine-local Codex bootstrap as an environmental surface with unavailable conformance evidence, not an adapter authority;
 - repository and external discovery surfaces;
 - all four Claude `SessionStart` hooks;
 - concrete mappings from Claude shell, web, Supabase, Tana, Massive, IBKR, Skill, and Agent surfaces to
@@ -162,7 +162,7 @@ zero-write refusal, so current Adapter Conformance never implies unattended or s
 Workflow discovery adds current Claude and Codex interactive adapters. Each selects from this validated
 inventory and delegates to the selected provider's exact locked adapter or an honestly unavailable repository-authored
 migration input; it does not reproduce workflow procedures or execute the selected workflow. `AGENTS.md`
-provides repository-native activation. The installed Home Hub bridge remains an active legacy competing router,
+provides repository-native activation. The installed Home Hub bridge remains an optional non-authoritative machine-local bootstrap,
 but its absence or drift cannot fail repository parity and its bytes have unavailable Adapter Conformance evidence. Exact release, artifact, observed
 environmental-bootstrap digests, scope, and rollback are recorded in
 `evidence/issue-71-workflow-discovery.json`.

@@ -1,7 +1,7 @@
 {
   "capability_id": "capability:scope:trade-journal/workflow-discovery",
-  "capability_version": "1.0.0",
-  "package_digest": "sha256:7d6e82ace6a60ccd997b47af759b5345783580eccb903007872c2f3c0f9bc5d6",
+  "capability_version": "1.0.1",
+  "package_digest": "sha256:238471af4b82e2ab8cf29016c15ac3b7d8ee93d1a36b5d5dbb031b289f809ff4",
   "adapter_id": "workflow-discovery-claude",
   "adapter_digest": "sha256:82ee574c9e1e4c2bce81a425775a5de45ba350350f8589c3f9ff60d8f945b82b",
   "support_state": "current",
@@ -9,7 +9,7 @@
   "results": {
     "adapter-entry-point": {
       "status": "passed",
-      "method": "Accepted Workspace CLI Capability validation and clean staged Claude Provider Entry Point generation"
+      "method": "Accepted Workspace CLI Capability validation and clean canonical Claude Provider Entry Point generation"
     },
     "inventory-routing": {
       "status": "passed",

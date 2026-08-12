@@ -1,7 +1,7 @@
 {
   "capability_id": "capability:scope:trade-journal/thesis-underwriting",
-  "capability_version": "1.0.0",
-  "package_digest": "sha256:de419b2f068c31343cf0267e208d0594ac72bd61eb3276b2b61bccf1fc73fccb",
+  "capability_version": "1.0.1",
+  "package_digest": "sha256:57a65268ae6033915b2ae1401b15551949dda8336e1a5f510e8c1a89cc646e7e",
   "adapter_id": "thesis-underwriting-claude",
   "adapter_digest": "sha256:58ec39a1d27c3a184e5cc7624ba4e95ffcf96a289318352555f2e1826ddd490d",
   "support_state": "current",
@@ -9,7 +9,7 @@
   "results": {
     "adapter-entry-point": {
       "status": "passed",
-      "method": "Accepted Workspace CLI Capability validation and clean staged Provider Entry Point generation"
+      "method": "Accepted Workspace CLI Capability validation and clean canonical Provider Entry Point generation"
     },
     "underwriting-contract": {
       "status": "passed",

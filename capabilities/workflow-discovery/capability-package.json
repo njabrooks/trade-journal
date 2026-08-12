@@ -1,7 +1,7 @@
 {
   "id": "capability:scope:trade-journal/workflow-discovery",
   "authority": "scope:trade-journal",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "intent": "Route an interactive Trade Journal request to the authoritative current workflow source without executing the workflow or duplicating its semantics.",
   "contract": "Given an interactive request in a Trade Journal checkout, identify the applicable workflow from the validated repository inventory, report ambiguity or unavailable support honestly, and return the exact governed adapter or retained repository-authored migration input that owns the workflow procedure; discovery itself performs no provider, database, investment, tracker, scheduler, or cross-repository operation.",
   "instructions": [

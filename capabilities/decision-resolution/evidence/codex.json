@@ -1,7 +1,7 @@
 {
   "capability_id": "capability:scope:trade-journal/decision-resolution",
-  "capability_version": "1.0.0",
-  "package_digest": "sha256:66158ba085f39170be27eea5b1b7180dfc872ced87a4b5f134cfdd56729e64d8",
+  "capability_version": "1.0.1",
+  "package_digest": "sha256:0761d66e9ce3e9e77ff2d71e8c8b304e5b354f06542378155e3c1641b1f62bb4",
   "adapter_id": "decision-resolution-codex",
   "adapter_digest": "sha256:4618d8ca2d232fda1490ebb53309d787bfcaedafb9e8f7bb5f94f397c3986f44",
   "support_state": "current",
@@ -9,7 +9,7 @@
   "results": {
     "adapter-entry-point": {
       "status": "passed",
-      "method": "Accepted Workspace CLI Capability validation and clean staged Codex Provider Entry Point generation"
+      "method": "Accepted Workspace CLI Capability validation and clean canonical Codex Provider Entry Point generation"
     },
     "interactive-only-boundary": {
       "status": "passed",

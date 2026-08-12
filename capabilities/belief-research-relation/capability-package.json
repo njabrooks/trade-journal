@@ -1,7 +1,7 @@
 {
   "id": "capability:scope:trade-journal/belief-research-relation",
   "authority": "scope:trade-journal",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "intent": "Relate Notes-owned research to developing or monitoring theses by direct semantic bearing while preserving exact promoted-claim provenance and unresolved judgment boundaries.",
   "contract": "Given one complete current Notes-owned research insight, the complete Trade Journal promoted-claim identity catalog, current developing and monitoring macro and asset thesis arguments, existing governed relationships, and validated Registry-resolved claims-synthesis and research-publication facts where needed, deterministically prepare a provider-neutral recommendation-only bearing result. Reuse exact provenance-bearing claims regardless of lifecycle status; never duplicate or directly publish a Notes source claim. A relation requires direct semantic proof between an exact source claim assertion and a governed thesis argument; holdings, tickers, keywords, and provider recommendations are never proof. Preserve evidence, reasoning, backing, qualifier, every rebuttal, time horizon, relationship rationale, audit context, and explicit ambiguity. Genuine claim-identity or thesis-bearing judgment, every refuting relation, and each tentative supporting or foundational relation becomes an unresolved Decision Item candidate and is never silently resolved. Persistence requires a short-lived exact user authorization and the sole serializable recorder, which may only reuse or insert exact claim_thesis_mappings and insert unresolved Decision Items plus one complete journal audit. Refuse unavailable, stale, malformed, ambiguous, conflicting, expired, or authority-expanding input without partial writes.",
   "instructions": [
@@ -22,7 +22,7 @@
   "conformance": {
     "evidence_validity_days": 30,
     "requirements": [
-      { "id": "adapter-entry-point", "category": "structural", "description": "Each exact provider adapter is present in the staged governed Provider Entry Point generated from this package.", "evidence_type": "automated" },
+      { "id": "adapter-entry-point", "category": "structural", "description": "Each exact provider adapter is present in the governed Provider Entry Point generated from this package.", "evidence_type": "automated" },
       { "id": "repository-read-contract", "category": "behavioural", "description": "The deterministic read boundary accepts complete Notes provenance, exact claim identity, developing and monitoring thesis arguments, and existing relationships while refusing unavailable, malformed, stale, or authority-ambiguous state.", "evidence_type": "automated" },
       { "id": "semantic-bearing-and-provenance", "category": "behavioural", "description": "Only direct semantic bearing can produce a relation; holdings, tickers, keywords, and provider recommendations are rejected as proof, and exact provenance forces reuse without claim duplication.", "evidence_type": "automated" },
       { "id": "decision-boundary", "category": "behavioural", "description": "Claim-identity and thesis-bearing ambiguity remain explicit, every refuting relation surfaces review_refuting_claim, tentative supporting or foundational relations surface confirm_claim_link, and persistence can only create unresolved Decision Items without resolving them.", "evidence_type": "automated" },
