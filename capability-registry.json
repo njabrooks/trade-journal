@@ -99,7 +99,7 @@
       "approved_version": "1.0.0",
       "release": {
         "source": ".",
-        "revision": "5e4ec4682d571ccd518e78128acab8077f68851e"
+        "revision": "f1ea377ec9d4c3c7d470c541fcdd2b3fd4f06987"
       },
       "development": {
         "enabled": true,
