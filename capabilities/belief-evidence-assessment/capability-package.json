@@ -1,7 +1,7 @@
 {
   "id": "capability:scope:trade-journal/belief-evidence-assessment",
   "authority": "scope:trade-journal",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "intent": "Assess provenance-bearing evidence against governed thesis underwriting without changing investment state or fabricating owner judgment.",
   "contract": "Given an explicit macro or asset thesis identifier, an explicit assessment request, provenance-bearing evidence, and the Registry-resolved thesis-underwriting dependency, bind analysis to the latest versioned thesis articulation and its complete active, thesis-linked, auto-derived resolution-signal set as { thesisId, thesisType, articulationId, articulationVersion, signalIds }; return a thesis-centric assessment for every bound signal with source provenance, direct semantic bearing, findings, quotations, limitations, recommendation, overall summary, and recording disposition; keep analysis read-only unless recording is explicitly delegated; if recording is delegated, persist atomically only through the deterministic repository recorder; and report unavailable, stale, malformed, or failed outcomes without partial writes or invented state.",
   "instructions": [
@@ -23,7 +23,7 @@
       {
         "id": "adapter-entry-point",
         "category": "structural",
-        "description": "Each exact provider adapter is present in the staged governed Provider Entry Point generated from this package.",
+        "description": "Each exact provider adapter is present in the governed Provider Entry Point generated from this package.",
         "evidence_type": "automated"
       },
       {

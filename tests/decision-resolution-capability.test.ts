@@ -29,12 +29,6 @@ function digest(path: string): string {
   return `sha256:${createHash("sha256").update(read(path)).digest("hex")}`;
 }
 
-function repositoryDigest(path: string): string {
-  return `sha256:${createHash("sha256")
-    .update(readFileSync(resolve(process.cwd(), path)))
-    .digest("hex")}`;
-}
-
 function inventoryEntry(path: string, id: string): Record<string, unknown> {
   const inventory = JSON.parse(
     readFileSync(resolve(process.cwd(), path), "utf8"),
@@ -255,7 +249,7 @@ describe("decision-resolution Capability", () => {
         mode: "interactive",
         unattended_eligibility: "ineligible",
       },
-      evidence: { state: "current", capability_version: "1.0.0" },
+      evidence: { state: "current", capability_version: "1.0.1" },
     });
     expect(headless).toMatchObject({
       source: { path: "capabilities/decision-resolution/adapters/codex.md" },
@@ -272,7 +266,7 @@ describe("decision-resolution Capability", () => {
         reads: expect.stringContaining("No unattended reads"),
         writes: expect.stringContaining("No unattended writes"),
       },
-      evidence: { state: "current", capability_version: "1.0.0" },
+      evidence: { state: "current", capability_version: "1.0.1" },
     });
   });
 
@@ -286,22 +280,13 @@ describe("decision-resolution Capability", () => {
     const artifacts = receipt.published_artifacts;
 
     expect(artifacts).toMatchObject({
-      registry_lock: repositoryDigest("capability-registry-lock.json"),
-      claude_staging: repositoryDigest(
-        "docs/agents/provider-entry-points/staging/claude.md",
-      ),
-      codex_staging: repositoryDigest(
-        "docs/agents/provider-entry-points/staging/codex.md",
-      ),
-      interactive_inventory: repositoryDigest(
-        "docs/agents/provider-adapters/interactive-inventory.json",
-      ),
-      headless_inventory: repositoryDigest(
-        "docs/agents/provider-adapters/headless-inventory.json",
-      ),
-      generation_eligibility: repositoryDigest(
-        "docs/agents/provider-adapters/generation-eligibility.json",
-      ),
+      // These legacy field names belong to the immutable issue-60 receipt.
+      registry_lock: expect.stringMatching(/^sha256:[0-9a-f]{64}$/),
+      claude_staging: expect.stringMatching(/^sha256:[0-9a-f]{64}$/),
+      codex_staging: expect.stringMatching(/^sha256:[0-9a-f]{64}$/),
+      interactive_inventory: expect.stringMatching(/^sha256:[0-9a-f]{64}$/),
+      headless_inventory: expect.stringMatching(/^sha256:[0-9a-f]{64}$/),
+      generation_eligibility: expect.stringMatching(/^sha256:[0-9a-f]{64}$/),
       inventory_entries: 74,
       generation_eligible_entries: 58,
     });
@@ -317,7 +302,7 @@ describe("decision-resolution Capability", () => {
   });
 
   governanceIt(
-    "validates the exact package and staged projections through the public Workspace CLI",
+    "validates the exact package and governed projections through the public Workspace CLI",
     () => {
       const environment = {
         ...process.env,

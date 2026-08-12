@@ -1,7 +1,7 @@
 {
   "id": "capability:scope:trade-journal/research-publication",
   "authority": "scope:trade-journal",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "intent": "Publish explicitly accepted research claims and governed thesis relationships without duplicating Notes-owned provenance or expanding publication into investment-state authority.",
   "contract": "Given a validated recommendation-only result from the Registry-resolved claims-synthesis Capability, re-read the complete current Notes-owned source and Trade Journal claim/thesis context; preserve the exact distinction between source evidence, synthesis recommendations, existing promoted claims, an explicit user publication decision, and governed claim-thesis relationships; deterministically prepare only unambiguous thesis-related candidates; require a short-lived user authorization token cryptographically bound to the exact prepared publication digest and naming every accepted claim and relationship; and, only through the purpose-built repository recorder, atomically reuse exact provenance claims, create accepted draft investment claims, create accepted claim-thesis relationships, and record one complete journal audit. Refuse unavailable, stale, malformed, ambiguous, conflicting, expired, or authority-expanding input without partial writes.",
   "instructions": [
@@ -24,7 +24,7 @@
       {
         "id": "adapter-entry-point",
         "category": "structural",
-        "description": "Each exact provider adapter is present in the staged governed Provider Entry Point generated from this package.",
+        "description": "Each exact provider adapter is present in the governed Provider Entry Point generated from this package.",
         "evidence_type": "automated"
       },
       {

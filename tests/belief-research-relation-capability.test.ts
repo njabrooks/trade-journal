@@ -35,7 +35,7 @@ describe('belief-research-relation Capability', () => {
     const capability = readJson('capability-package.json');
     expect(capability).toMatchObject({
       id: 'capability:scope:trade-journal/belief-research-relation',
-      authority: 'scope:trade-journal', version: '1.0.0',
+      authority: 'scope:trade-journal', version: '1.0.1',
       dependencies: [
         { id: 'capability:scope:trade-journal/claims-synthesis', version_constraint: '>=1.0.0 <2.0.0' },
         { id: 'capability:scope:trade-journal/research-publication', version_constraint: '>=1.0.0 <2.0.0' },

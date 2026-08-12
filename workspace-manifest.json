@@ -581,10 +581,10 @@
       },
       "generation_eligibility": {
         "artifact": "docs/agents/provider-adapters/generation-eligibility.json",
-        "eligible_adapters": 56,
+        "eligible_adapters": 58,
         "governed_outputs": [
-          "docs/agents/provider-entry-points/staging/claude.md",
-          "docs/agents/provider-entry-points/staging/codex.md"
+          "docs/agents/provider-entry-points/claude.md",
+          "docs/agents/provider-entry-points/codex.md"
         ],
         "refusal_proof": "scripts/ops/prove-provider-entry-point-refusal.ts"
       },
@@ -593,14 +593,14 @@
         {
           "id": "interactive-claude-archived-deep-dive",
           "provider": "claude",
-          "path": ".claude/skills/archived-deep-dive/SKILL.md",
+          "path": "docs/archive/provider-adapters/issue-75/claude/archived-deep-dive/SKILL.md",
           "lifecycle": "archived",
           "reason": "archived artifact retained for history or protection; it is not a current Capability candidate."
         },
         {
           "id": "interactive-claude-archived-generate-summary",
           "provider": "claude",
-          "path": ".claude/skills/archived-generate-summary/SKILL.md",
+          "path": "docs/archive/provider-adapters/issue-75/claude/archived-generate-summary/SKILL.md",
           "lifecycle": "archived",
           "reason": "archived artifact retained for history or protection; it is not a current Capability candidate."
         },
@@ -614,21 +614,21 @@
         {
           "id": "interactive-claude-paperclip-backlog",
           "provider": "claude",
-          "path": ".claude/skills/paperclip-backlog/SKILL.md",
+          "path": "docs/archive/provider-adapters/issue-75/claude/paperclip-backlog/SKILL.md",
           "lifecycle": "deprecated",
           "reason": "deprecated artifact retained for history or protection; it is not a current Capability candidate."
         },
         {
           "id": "headless-codex-archived-deep-dive",
           "provider": "codex",
-          "path": ".agents/skills/archived-deep-dive/SKILL.md",
+          "path": "docs/archive/provider-adapters/issue-75/codex/archived-deep-dive/SKILL.md",
           "lifecycle": "archived",
           "reason": "archived artifact retained for history or protection; it is not a current Capability candidate."
         },
         {
           "id": "headless-codex-archived-generate-summary",
           "provider": "codex",
-          "path": ".agents/skills/archived-generate-summary/SKILL.md",
+          "path": "docs/archive/provider-adapters/issue-75/codex/archived-generate-summary/SKILL.md",
           "lifecycle": "archived",
           "reason": "archived artifact retained for history or protection; it is not a current Capability candidate."
         },
@@ -642,7 +642,7 @@
         {
           "id": "headless-codex-paperclip-backlog",
           "provider": "codex",
-          "path": ".agents/skills/paperclip-backlog/SKILL.md",
+          "path": "docs/archive/provider-adapters/issue-75/codex/paperclip-backlog/SKILL.md",
           "lifecycle": "deprecated",
           "reason": "deprecated artifact retained for history or protection; it is not a current Capability candidate."
         }
@@ -749,6 +749,11 @@
         "id": "issue-71-workflow-discovery",
         "method": "authority-boundary-and-deterministic-publication-receipt",
         "path": "evidence/issue-71-workflow-discovery.json"
+      },
+      {
+        "id": "issue-76-provider-discovery-cutover",
+        "method": "blocker-verification-canonical-generation-and-74-entry-final-disposition-receipt",
+        "path": "evidence/issue-76-provider-discovery-cutover.json"
       },
       {
         "id": "published-capability-registry-lock",

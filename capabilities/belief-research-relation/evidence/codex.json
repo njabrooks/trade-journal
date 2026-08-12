@@ -1,13 +1,13 @@
 {
   "capability_id": "capability:scope:trade-journal/belief-research-relation",
-  "capability_version": "1.0.0",
-  "package_digest": "sha256:cb22d7d213b258674df7990a78c75362a9a271def943929a8ee01636f53406f8",
+  "capability_version": "1.0.1",
+  "package_digest": "sha256:ad7bf0f89879faf4c38e10aa7de0009d429034843e009e3eab12a15b808ba149",
   "adapter_id": "belief-research-relation-codex",
   "adapter_digest": "sha256:339b828b0b2a0649339657da16c8f20188adbabdf08215a2868e92f06cc3ef74",
   "support_state": "current",
   "validated_at": "2026-08-09",
   "results": {
-    "adapter-entry-point": { "status": "passed", "method": "Accepted Workspace CLI Capability validation and byte-identical staged Provider Entry Point generation" },
+    "adapter-entry-point": { "status": "passed", "method": "Accepted Workspace CLI Capability validation and byte-identical canonical Provider Entry Point generation" },
     "repository-read-contract": { "status": "passed", "method": "Repository behavioral tests prove complete Notes-owned Toulmin input, exact promoted-claim identity, developing and monitoring thesis arguments, existing relationships, deterministic digests, approved reads only, and unavailable, malformed, stale, or authority-ambiguous refusal" },
     "semantic-bearing-and-provenance": { "status": "passed", "method": "Repository contract tests prove exact provenance reuse regardless of lifecycle status, duplicate and ambiguous identity refusal, bounded complete coverage, exact anchors, and explicit rejection of holdings, ticker overlap, keyword overlap, and provider recommendation as semantic proof" },
     "decision-boundary": { "status": "passed", "method": "Repository contract and recorder tests prove claim-identity and thesis-bearing ambiguity remains explicit, every refuting relation yields review_refuting_claim, tentative supporting or foundational relations yield confirm_claim_link, authorized Decision Items remain unresolved with resolution null, and coupled authorization prevents a required Decision Item from being omitted" },

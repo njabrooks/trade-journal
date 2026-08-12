@@ -28,11 +28,11 @@
       "execution_contract": {
         "class": "bespoke",
         "preamble_path": ".claude/skills/advance-or-kill/HEADLESS_PREAMBLE.md",
-        "readiness": "The protective tombstone preamble refuses legacy execution; unattended eligibility applies only through the exact staged governed adapter and its declared zero-write modes."
+        "readiness": "The protective tombstone preamble refuses legacy execution; unattended eligibility applies only through the exact governed adapter and its declared zero-write modes."
       },
       "invocation": {
         "mode": "headless",
-        "entry_point": "docs/agents/provider-entry-points/staging/codex.md",
+        "entry_point": "docs/agents/provider-entry-points/codex.md",
         "unattended_eligibility": "ineligible",
         "rationale": "The final investment-research disposition is genuine user judgment."
       },
@@ -65,10 +65,10 @@
       "evidence": {
         "state": "current",
         "as_of": "2026-08-10",
-        "capability_version": "1.3.1",
-        "package_digest": "sha256:5fe78a3a67c2ce2756c37cdc6052523012835d5068cc29992e98158dd591e039",
+        "capability_version": "1.3.2",
+        "package_digest": "sha256:95a0ab405433e250bb08b19a0d282518633852bf816b6520ff817a97b04210d0",
         "adapter_digest": "sha256:746ca82d4717d721c30377cb023585dc4c94689e93c1a0118b37942053388a53",
-        "reason": "Exact current evidence binds the research-pipeline 1.3.1 codex adapter, its zero-write boundary, and the protective tombstone for headless-codex-advance-or-kill."
+        "reason": "Exact current evidence binds capability:scope:trade-journal/research-pipeline 1.3.2 and its codex adapter to the canonical governed Provider Entry Point."
       },
       "j2_disposition": {
         "action": "migrate",
@@ -83,7 +83,7 @@
         "package_path": "capabilities/research-pipeline/capability-package.json",
         "adapter_id": "research-pipeline-codex",
         "evidence_path": "capabilities/research-pipeline/evidence/codex.json",
-        "staged_entry_point": "docs/agents/provider-entry-points/staging/codex.md"
+        "entry_point": "docs/agents/provider-entry-points/codex.md"
       }
     },
     {
@@ -109,11 +109,11 @@
       "execution_contract": {
         "class": "generic",
         "preamble_path": ".agents/skills/analyze-vol-curve/HEADLESS_PREAMBLE.md",
-        "readiness": "The generic headless mirror remains a migration input; the exact governed adapter carries the explicit-input, no-inferred-judgment, opt-in persistence, and unavailable-quote contract for staged discovery."
+        "readiness": "The generic headless mirror remains a migration input; the exact governed adapter carries the explicit-input, no-inferred-judgment, opt-in persistence, and unavailable-quote contract for governed discovery."
       },
       "invocation": {
         "mode": "headless",
-        "entry_point": "docs/agents/provider-entry-points/staging/codex.md",
+        "entry_point": "docs/agents/provider-entry-points/codex.md",
         "unattended_eligibility": "conditional",
         "rationale": "Runs deterministic analysis only from complete explicit inputs; trade judgment remains with the user and persistence remains opt-in."
       },
@@ -131,7 +131,7 @@
         "Complete explicit thesis inputs, usable Massive or stored Trade Journal options-chain data, and explicit persistence disposition."
       ],
       "limitations": [
-        "The governed Provider Entry Point is staged; the generic headless mirror remains the active migration input until final discovery cutover.",
+        "The governed Provider Entry Point is authoritative; the generic headless mirror remains a non-authoritative rollback input.",
         "Analysis values are chain-derived model values, not executable quotes; the separately governed Radon quote Capability remains unavailable."
       ],
       "operational_consumers": [
@@ -152,7 +152,7 @@
       },
       "j2_disposition": {
         "action": "migrate",
-        "rationale": "The governed adapter is current and staged; retain the generic headless mirror as a migration input until final discovery cutover."
+        "rationale": "The governed adapter is current and authoritative; retain the generic headless mirror as a non-authoritative rollback input."
       },
       "migration_input": {
         "ownership": "repository:njabrooks/trade-journal",
@@ -163,7 +163,7 @@
         "package_path": "capabilities/options-vol-analysis/capability-package.json",
         "adapter_id": "options-vol-analysis-codex",
         "evidence_path": "capabilities/options-vol-analysis/evidence/codex.json",
-        "staged_entry_point": "docs/agents/provider-entry-points/staging/codex.md"
+        "entry_point": "docs/agents/provider-entry-points/codex.md"
       }
     },
     {
@@ -323,11 +323,11 @@
       "execution_contract": {
         "class": "bespoke",
         "preamble_path": ".claude/skills/assess-validation-evidence/HEADLESS_PREAMBLE.md",
-        "readiness": "The bespoke headless preamble remains a migration input; the exact governed adapter carries the target-bound delegated-assessment and recorder contract for staged discovery."
+        "readiness": "The bespoke headless preamble remains a migration input; the exact governed adapter carries the target-bound delegated-assessment and recorder contract for governed discovery."
       },
       "invocation": {
         "mode": "headless",
-        "entry_point": "docs/agents/provider-entry-points/staging/codex.md",
+        "entry_point": "docs/agents/provider-entry-points/codex.md",
         "unattended_eligibility": "conditional",
         "rationale": "Classifies provenance-bearing evidence against a bound governed underwriting target without resolving investment decisions."
       },
@@ -345,7 +345,7 @@
         "Remote database access, readable provenance-bearing source content, explicit thesis and assessment parameters, explicit recording disposition, and the governed thesis-underwriting dependency."
       ],
       "limitations": [
-        "The governed Provider Entry Point is staged; the bespoke headless mirror remains the active migration input until final discovery cutover.",
+        "The governed Provider Entry Point is authoritative; the bespoke headless mirror remains a non-authoritative rollback input.",
         "No provider invocation or database-writing canary was authorized; unavailable inputs or a stale target must fail without writes."
       ],
       "operational_consumers": [
@@ -359,14 +359,14 @@
       "evidence": {
         "state": "current",
         "as_of": "2026-08-08",
-        "capability_version": "1.0.0",
-        "package_digest": "sha256:a500733334c51f739511621d90bc53e0489137a3dedc3889264ccc05ea1a77df",
+        "capability_version": "1.0.1",
+        "package_digest": "sha256:758d4f0c233c7479f62daf6cc8fa4221b4379eb2dd517a258a0f2feeded805e7",
         "adapter_digest": "sha256:0fb1750bc026e48370d4e0d193b0e90213974b87009731cc699f856c3d078adb",
-        "reason": "Exact current evidence is bound to belief-evidence-assessment 1.0.0 and the governed Codex adapter."
+        "reason": "Exact current evidence binds capability:scope:trade-journal/belief-evidence-assessment 1.0.1 and its codex adapter to the canonical governed Provider Entry Point."
       },
       "j2_disposition": {
         "action": "migrate",
-        "rationale": "The governed adapter is current and staged; retain the bespoke headless mirror as a migration input until final discovery cutover."
+        "rationale": "The governed adapter is current and authoritative; retain the bespoke headless mirror as a non-authoritative rollback input."
       },
       "migration_input": {
         "ownership": "repository:njabrooks/trade-journal",
@@ -377,7 +377,7 @@
         "package_path": "capabilities/belief-evidence-assessment/capability-package.json",
         "adapter_id": "belief-evidence-assessment-codex",
         "evidence_path": "capabilities/belief-evidence-assessment/evidence/codex.json",
-        "staged_entry_point": "docs/agents/provider-entry-points/staging/codex.md"
+        "entry_point": "docs/agents/provider-entry-points/codex.md"
       }
     },
     {
@@ -403,11 +403,11 @@
       "execution_contract": {
         "class": "generic",
         "preamble_path": ".agents/skills/backfill-claims/HEADLESS_PREAMBLE.md",
-        "readiness": "The legacy mirror remains a migration input; the exact governed adapter carries the bounded execution and result contract for staged discovery."
+        "readiness": "The legacy mirror remains a migration input; the exact governed adapter carries the bounded execution and result contract for governed discovery."
       },
       "invocation": {
         "mode": "headless",
-        "entry_point": "docs/agents/provider-entry-points/staging/codex.md",
+        "entry_point": "docs/agents/provider-entry-points/codex.md",
         "unattended_eligibility": "conditional",
         "rationale": "May auto-link only clear matches and must surface ambiguous judgment."
       },
@@ -426,7 +426,7 @@
       ],
       "limitations": [
         "Historical volume and ambiguity require bounded execution.",
-        "The governed Provider Entry Point is staged; the generic headless mirror remains the active migration input until an explicitly approved operational or final discovery cutover."
+        "The governed Provider Entry Point is authoritative; the generic headless mirror remains a delegated operational source only where a separately governed operational consumer still delegates to it."
       ],
       "operational_consumers": [
         "No live operational consumer; current repository automation does not invoke this Codex projection."
@@ -446,7 +446,7 @@
       },
       "j2_disposition": {
         "action": "migrate",
-        "rationale": "The governed adapter is current and staged; retain the existing headless mirror and live invocation until its separately approved cutover."
+        "rationale": "The governed adapter is current and authoritative; retain the existing headless mirror and live invocation only where a separately governed operational consumer still delegates to it."
       },
       "migration_input": {
         "ownership": "repository:njabrooks/trade-journal",
@@ -457,7 +457,7 @@
         "package_path": "capabilities/belief-maintenance/capability-package.json",
         "adapter_id": "belief-maintenance-codex",
         "evidence_path": "capabilities/belief-maintenance/evidence/codex.json",
-        "staged_entry_point": "docs/agents/provider-entry-points/staging/codex.md"
+        "entry_point": "docs/agents/provider-entry-points/codex.md"
       }
     },
     {
@@ -483,11 +483,11 @@
       "execution_contract": {
         "class": "bespoke",
         "preamble_path": ".claude/skills/build-core-argument/HEADLESS_PREAMBLE.md",
-        "readiness": "The bespoke headless preamble remains a migration input; the exact governed adapter carries the bounded delegated-underwriting contract for staged discovery."
+        "readiness": "The bespoke headless preamble remains a migration input; the exact governed adapter carries the bounded delegated-underwriting contract for governed discovery."
       },
       "invocation": {
         "mode": "headless",
-        "entry_point": "docs/agents/provider-entry-points/staging/codex.md",
+        "entry_point": "docs/agents/provider-entry-points/codex.md",
         "unattended_eligibility": "conditional",
         "rationale": "Performs underwriting synthesis but cannot fabricate owner conviction."
       },
@@ -505,7 +505,7 @@
         "Remote database access, a specified thesis, and an explicit delegated underwriting request."
       ],
       "limitations": [
-        "The governed Provider Entry Point is staged; the bespoke headless mirror remains the active migration input until final discovery cutover.",
+        "The governed Provider Entry Point is authoritative; the bespoke headless mirror remains a non-authoritative rollback input.",
         "Database, provider, sandbox, or network unavailability must be reported explicitly and cannot be substituted with invented underwriting state."
       ],
       "operational_consumers": [
@@ -519,14 +519,14 @@
       "evidence": {
         "state": "current",
         "as_of": "2026-08-07",
-        "capability_version": "1.0.0",
-        "package_digest": "sha256:de419b2f068c31343cf0267e208d0594ac72bd61eb3276b2b61bccf1fc73fccb",
+        "capability_version": "1.0.1",
+        "package_digest": "sha256:57a65268ae6033915b2ae1401b15551949dda8336e1a5f510e8c1a89cc646e7e",
         "adapter_digest": "sha256:f5067026d7a81aa37de1d1ddc78d9c80511112b6e28e59f15851ed033b887a45",
-        "reason": "Exact current evidence is bound to thesis-underwriting 1.0.0 and the governed Codex adapter."
+        "reason": "Exact current evidence binds capability:scope:trade-journal/thesis-underwriting 1.0.1 and its codex adapter to the canonical governed Provider Entry Point."
       },
       "j2_disposition": {
         "action": "migrate",
-        "rationale": "The governed adapter is current and staged; retain the bespoke headless mirror as a migration input until final discovery cutover."
+        "rationale": "The governed adapter is current and authoritative; retain the bespoke headless mirror as a non-authoritative rollback input."
       },
       "migration_input": {
         "ownership": "repository:njabrooks/trade-journal",
@@ -537,7 +537,7 @@
         "package_path": "capabilities/thesis-underwriting/capability-package.json",
         "adapter_id": "thesis-underwriting-codex",
         "evidence_path": "capabilities/thesis-underwriting/evidence/codex.json",
-        "staged_entry_point": "docs/agents/provider-entry-points/staging/codex.md"
+        "entry_point": "docs/agents/provider-entry-points/codex.md"
       }
     },
     {
@@ -636,7 +636,7 @@
       },
       "invocation": {
         "mode": "headless",
-        "entry_point": "docs/agents/provider-entry-points/staging/codex.md",
+        "entry_point": "docs/agents/provider-entry-points/codex.md",
         "unattended_eligibility": "ineligible",
         "rationale": "Interactive-only resolution requires a current user's exact action; mirror and governed-adapter presence authorize refusal only."
       },
@@ -668,10 +668,10 @@
       "evidence": {
         "state": "current",
         "as_of": "2026-08-12",
-        "capability_version": "1.0.0",
-        "package_digest": "sha256:66158ba085f39170be27eea5b1b7180dfc872ced87a4b5f134cfdd56729e64d8",
+        "capability_version": "1.0.1",
+        "package_digest": "sha256:0761d66e9ce3e9e77ff2d71e8c8b304e5b354f06542378155e3c1641b1f62bb4",
         "adapter_digest": "sha256:4618d8ca2d232fda1490ebb53309d787bfcaedafb9e8f7bb5f94f397c3986f44",
-        "reason": "Exact current evidence binds the Codex adapter's interactive-only semantics and unconditional headless refusal; unattended execution remains ineligible."
+        "reason": "Exact current evidence binds capability:scope:trade-journal/decision-resolution 1.0.1 and its codex adapter to the canonical governed Provider Entry Point."
       },
       "j2_disposition": {
         "action": "migrate",
@@ -686,7 +686,7 @@
         "package_path": "capabilities/decision-resolution/capability-package.json",
         "adapter_id": "decision-resolution-codex",
         "evidence_path": "capabilities/decision-resolution/evidence/codex.json",
-        "staged_entry_point": "docs/agents/provider-entry-points/staging/codex.md"
+        "entry_point": "docs/agents/provider-entry-points/codex.md"
       }
     },
     {
@@ -716,7 +716,7 @@
       },
       "invocation": {
         "mode": "headless",
-        "entry_point": "docs/agents/provider-entry-points/staging/codex.md",
+        "entry_point": "docs/agents/provider-entry-points/codex.md",
         "unattended_eligibility": "ineligible",
         "rationale": "Exact claim and thesis-bearing acceptance requires a current user's explicit judgment; unattended use may prepare or validate only."
       },
@@ -748,14 +748,14 @@
       "evidence": {
         "state": "current",
         "as_of": "2026-08-08",
-        "capability_version": "1.0.0",
-        "package_digest": "sha256:da0148b289c422cdbab90905b00bf03f767f201c5d193f5ec2411b77ef99d8f6",
+        "capability_version": "1.0.1",
+        "package_digest": "sha256:72eaaf59988b176adf331564775420e89fc80d234e97fd64788c3972eba8ef21",
         "adapter_digest": "sha256:e89e187bc4e509f3fa1e56cf2f27d2da85c65113bc5c93fe2e0d43a2ab8118e0",
-        "reason": "Exact current evidence is bound to research-publication 1.0.0 and the governed Codex adapter."
+        "reason": "Exact current evidence binds capability:scope:trade-journal/research-publication 1.0.1 and its codex adapter to the canonical governed Provider Entry Point."
       },
       "j2_disposition": {
         "action": "migrate",
-        "rationale": "The governed adapter is current and staged; retain the bespoke headless mirror as a preparation-only migration input until final discovery cutover."
+        "rationale": "The governed adapter is current and authoritative; retain the bespoke headless mirror as a preparation-only migration input as a non-authoritative rollback input."
       },
       "migration_input": {
         "ownership": "repository:njabrooks/trade-journal",
@@ -766,7 +766,7 @@
         "package_path": "capabilities/research-publication/capability-package.json",
         "adapter_id": "research-publication-codex",
         "evidence_path": "capabilities/research-publication/evidence/codex.json",
-        "staged_entry_point": "docs/agents/provider-entry-points/staging/codex.md"
+        "entry_point": "docs/agents/provider-entry-points/codex.md"
       }
     },
     {
@@ -862,11 +862,11 @@
       "execution_contract": {
         "class": "bespoke",
         "preamble_path": ".claude/skills/graduate-pipeline-idea/HEADLESS_PREAMBLE.md",
-        "readiness": "The protective tombstone preamble refuses legacy execution; unattended eligibility applies only through the exact staged governed adapter and its declared zero-write modes."
+        "readiness": "The protective tombstone preamble refuses legacy execution; unattended eligibility applies only through the exact governed adapter and its declared zero-write modes."
       },
       "invocation": {
         "mode": "headless",
-        "entry_point": "docs/agents/provider-entry-points/staging/codex.md",
+        "entry_point": "docs/agents/provider-entry-points/codex.md",
         "unattended_eligibility": "ineligible",
         "rationale": "Graduation acceptance and every eventual persistence action remain user-controlled."
       },
@@ -899,10 +899,10 @@
       "evidence": {
         "state": "current",
         "as_of": "2026-08-10",
-        "capability_version": "1.3.1",
-        "package_digest": "sha256:5fe78a3a67c2ce2756c37cdc6052523012835d5068cc29992e98158dd591e039",
+        "capability_version": "1.3.2",
+        "package_digest": "sha256:95a0ab405433e250bb08b19a0d282518633852bf816b6520ff817a97b04210d0",
         "adapter_digest": "sha256:746ca82d4717d721c30377cb023585dc4c94689e93c1a0118b37942053388a53",
-        "reason": "Exact current evidence binds the research-pipeline 1.3.1 codex adapter, its zero-write boundary, and the protective tombstone for headless-codex-graduate-pipeline-idea."
+        "reason": "Exact current evidence binds capability:scope:trade-journal/research-pipeline 1.3.2 and its codex adapter to the canonical governed Provider Entry Point."
       },
       "j2_disposition": {
         "action": "migrate",
@@ -917,7 +917,7 @@
         "package_path": "capabilities/research-pipeline/capability-package.json",
         "adapter_id": "research-pipeline-codex",
         "evidence_path": "capabilities/research-pipeline/evidence/codex.json",
-        "staged_entry_point": "docs/agents/provider-entry-points/staging/codex.md"
+        "entry_point": "docs/agents/provider-entry-points/codex.md"
       }
     },
     {
@@ -1013,11 +1013,11 @@
       "execution_contract": {
         "class": "generic",
         "preamble_path": ".agents/skills/maintenance/HEADLESS_PREAMBLE.md",
-        "readiness": "The legacy mirror remains a migration input; the exact governed adapter carries the bounded execution and result contract for staged discovery."
+        "readiness": "The legacy mirror remains a migration input; the exact governed adapter carries the bounded execution and result contract for governed discovery."
       },
       "invocation": {
         "mode": "headless",
-        "entry_point": "docs/agents/provider-entry-points/staging/codex.md",
+        "entry_point": "docs/agents/provider-entry-points/codex.md",
         "unattended_eligibility": "conditional",
         "rationale": "Producer only; never silently resolves genuine judgment."
       },
@@ -1036,7 +1036,7 @@
       ],
       "limitations": [
         "Live Claude-dependent scheduled consumer exists and is a high-risk J2 boundary.",
-        "The governed Provider Entry Point is staged; the generic headless mirror remains the active migration input until an explicitly approved operational or final discovery cutover."
+        "The governed Provider Entry Point is authoritative; the generic headless mirror remains a delegated operational source only where a separately governed operational consumer still delegates to it."
       ],
       "operational_consumers": [
         "J2 migration candidate corresponding to a live Claude scheduled workflow; no live job currently consumes this Codex projection."
@@ -1056,7 +1056,7 @@
       },
       "j2_disposition": {
         "action": "migrate",
-        "rationale": "The governed adapter is current and staged; retain the existing headless mirror and live invocation until its separately approved cutover."
+        "rationale": "The governed adapter is current and authoritative; retain the existing headless mirror and live invocation only where a separately governed operational consumer still delegates to it."
       },
       "migration_input": {
         "ownership": "repository:njabrooks/trade-journal",
@@ -1067,7 +1067,7 @@
         "package_path": "capabilities/belief-maintenance/capability-package.json",
         "adapter_id": "belief-maintenance-codex",
         "evidence_path": "capabilities/belief-maintenance/evidence/codex.json",
-        "staged_entry_point": "docs/agents/provider-entry-points/staging/codex.md"
+        "entry_point": "docs/agents/provider-entry-points/codex.md"
       }
     },
     {
@@ -1093,11 +1093,11 @@
       "execution_contract": {
         "class": "generic",
         "preamble_path": ".agents/skills/morning-brief/HEADLESS_PREAMBLE.md",
-        "readiness": "The legacy mirror remains a migration input; the exact governed adapter carries the bounded execution and result contract for staged discovery."
+        "readiness": "The legacy mirror remains a migration input; the exact governed adapter carries the bounded execution and result contract for governed discovery."
       },
       "invocation": {
         "mode": "headless",
-        "entry_point": "docs/agents/provider-entry-points/staging/codex.md",
+        "entry_point": "docs/agents/provider-entry-points/codex.md",
         "unattended_eligibility": "conditional",
         "rationale": "Ranks attention but cannot alter the belief layer or create decisions."
       },
@@ -1116,7 +1116,7 @@
       ],
       "limitations": [
         "Live Claude-dependent scheduled consumer exists.",
-        "The governed Provider Entry Point is staged; the generic headless mirror remains the active migration input until an explicitly approved operational or final discovery cutover."
+        "The governed Provider Entry Point is authoritative; the generic headless mirror remains a delegated operational source only where a separately governed operational consumer still delegates to it."
       ],
       "operational_consumers": [
         "J2 migration candidate corresponding to a live Claude scheduled workflow; no live job currently consumes this Codex projection."
@@ -1136,7 +1136,7 @@
       },
       "j2_disposition": {
         "action": "migrate",
-        "rationale": "The governed adapter is current and staged; retain the existing headless mirror and live invocation until its separately approved cutover."
+        "rationale": "The governed adapter is current and authoritative; retain the existing headless mirror and live invocation only where a separately governed operational consumer still delegates to it."
       },
       "migration_input": {
         "ownership": "repository:njabrooks/trade-journal",
@@ -1147,7 +1147,7 @@
         "package_path": "capabilities/morning-attention-brief/capability-package.json",
         "adapter_id": "morning-attention-brief-codex",
         "evidence_path": "capabilities/morning-attention-brief/evidence/codex.json",
-        "staged_entry_point": "docs/agents/provider-entry-points/staging/codex.md"
+        "entry_point": "docs/agents/provider-entry-points/codex.md"
       }
     },
     {
@@ -1173,11 +1173,11 @@
       "execution_contract": {
         "class": "generic",
         "preamble_path": ".agents/skills/options-advisor/HEADLESS_PREAMBLE.md",
-        "readiness": "The legacy mirror remains a migration input; the exact governed adapter carries the bounded execution and result contract for staged discovery."
+        "readiness": "The legacy mirror remains a migration input; the exact governed adapter carries the bounded execution and result contract for governed discovery."
       },
       "invocation": {
         "mode": "headless",
-        "entry_point": "docs/agents/provider-entry-points/staging/codex.md",
+        "entry_point": "docs/agents/provider-entry-points/codex.md",
         "unattended_eligibility": "conditional",
         "rationale": "Exercises investment-structure judgment within standing constraints."
       },
@@ -1196,7 +1196,7 @@
       ],
       "limitations": [
         "Live Claude-dependent scheduled consumers exist; connector and host availability vary.",
-        "The governed Provider Entry Point is staged; the generic headless mirror remains the active migration input until an explicitly approved operational or final discovery cutover."
+        "The governed Provider Entry Point is authoritative; the generic headless mirror remains a delegated operational source only where a separately governed operational consumer still delegates to it."
       ],
       "operational_consumers": [
         "J2 migration candidate corresponding to a live Claude scheduled workflow; no live job currently consumes this Codex projection."
@@ -1216,7 +1216,7 @@
       },
       "j2_disposition": {
         "action": "migrate",
-        "rationale": "The governed adapter is current and staged; retain the existing headless mirror and live invocation until its separately approved cutover."
+        "rationale": "The governed adapter is current and authoritative; retain the existing headless mirror and live invocation only where a separately governed operational consumer still delegates to it."
       },
       "migration_input": {
         "ownership": "repository:njabrooks/trade-journal",
@@ -1227,7 +1227,7 @@
         "package_path": "capabilities/portfolio-options-advice/capability-package.json",
         "adapter_id": "portfolio-options-advice-codex",
         "evidence_path": "capabilities/portfolio-options-advice/evidence/codex.json",
-        "staged_entry_point": "docs/agents/provider-entry-points/staging/codex.md"
+        "entry_point": "docs/agents/provider-entry-points/codex.md"
       }
     },
     {
@@ -1320,11 +1320,11 @@
       "execution_contract": {
         "class": "bespoke",
         "preamble_path": ".claude/skills/pipeline-status/HEADLESS_PREAMBLE.md",
-        "readiness": "The protective tombstone preamble refuses legacy execution; unattended eligibility applies only through the exact staged governed adapter and its declared zero-write modes."
+        "readiness": "The protective tombstone preamble refuses legacy execution; unattended eligibility applies only through the exact governed adapter and its declared zero-write modes."
       },
       "invocation": {
         "mode": "headless",
-        "entry_point": "docs/agents/provider-entry-points/staging/codex.md",
+        "entry_point": "docs/agents/provider-entry-points/codex.md",
         "unattended_eligibility": "conditional",
         "rationale": "Only read-only pipeline status and aggregate modes are eligible; genuine stage judgment and every accepted write remain interactive and stage-owned."
       },
@@ -1357,10 +1357,10 @@
       "evidence": {
         "state": "current",
         "as_of": "2026-08-10",
-        "capability_version": "1.3.1",
-        "package_digest": "sha256:5fe78a3a67c2ce2756c37cdc6052523012835d5068cc29992e98158dd591e039",
+        "capability_version": "1.3.2",
+        "package_digest": "sha256:95a0ab405433e250bb08b19a0d282518633852bf816b6520ff817a97b04210d0",
         "adapter_digest": "sha256:746ca82d4717d721c30377cb023585dc4c94689e93c1a0118b37942053388a53",
-        "reason": "Exact current evidence binds the research-pipeline 1.3.1 codex adapter, its zero-write boundary, and the protective tombstone for headless-codex-pipeline-status."
+        "reason": "Exact current evidence binds capability:scope:trade-journal/research-pipeline 1.3.2 and its codex adapter to the canonical governed Provider Entry Point."
       },
       "j2_disposition": {
         "action": "migrate",
@@ -1375,7 +1375,7 @@
         "package_path": "capabilities/research-pipeline/capability-package.json",
         "adapter_id": "research-pipeline-codex",
         "evidence_path": "capabilities/research-pipeline/evidence/codex.json",
-        "staged_entry_point": "docs/agents/provider-entry-points/staging/codex.md"
+        "entry_point": "docs/agents/provider-entry-points/codex.md"
       }
     },
     {
@@ -1406,11 +1406,11 @@
       "execution_contract": {
         "class": "generic",
         "preamble_path": ".agents/skills/portfolio-and-options-mcp/HEADLESS_PREAMBLE.md",
-        "readiness": "The legacy generic preamble remains a migration input; the exact governed Codex adapter is current, read-only, and staged for final discovery cutover."
+        "readiness": "The legacy generic preamble remains a migration input; the exact governed Codex adapter is current, read-only, and authoritative for current discovery."
       },
       "invocation": {
         "mode": "headless",
-        "entry_point": "docs/agents/provider-entry-points/staging/codex.md",
+        "entry_point": "docs/agents/provider-entry-points/codex.md",
         "unattended_eligibility": "conditional",
         "rationale": "Read-only portfolio interpretation with explicit inputs and optional bounded options analysis."
       },
@@ -1431,7 +1431,7 @@
         "Generic legacy preamble is a migration baseline, not an independent operational-readiness claim.",
         "Snapshot quality depends on reported upstream ingestion freshness.",
         "Executable quote verification remains unavailable while Radon publishes no accepted immutable option-quote Capability.",
-        "The governed Provider Entry Point is staged; the legacy headless projection remains a rollback-capable migration input until final discovery cutover."
+        "The governed Provider Entry Point is authoritative; the legacy headless projection remains a rollback-capable migration input as a non-authoritative rollback input."
       ],
       "operational_consumers": [
         "No live operational consumer; current repository automation does not invoke this Codex projection."
@@ -1453,11 +1453,11 @@
         "package_path": "capabilities/portfolio-analysis/capability-package.json",
         "adapter_id": "portfolio-analysis-codex",
         "evidence_path": "capabilities/portfolio-analysis/evidence/codex.json",
-        "staged_entry_point": "docs/agents/provider-entry-points/staging/codex.md"
+        "entry_point": "docs/agents/provider-entry-points/codex.md"
       },
       "j2_disposition": {
         "action": "replace",
-        "rationale": "The authority-correct governed Capability replaces connector-era assumptions; retain the legacy source only as an explicit migration input until final discovery cutover."
+        "rationale": "The authority-correct governed Capability replaces connector-era assumptions; retain the legacy source only as an explicit migration input as a non-authoritative rollback input."
       }
     },
     {
@@ -1492,9 +1492,9 @@
       },
       "invocation": {
         "mode": "headless",
-        "entry_point": "docs/agents/provider-entry-points/staging/codex.md",
+        "entry_point": "docs/agents/provider-entry-points/codex.md",
         "unattended_eligibility": "conditional",
-        "rationale": "Notes-owned classification and extraction are staged; Trade Journal publication remains separately governed."
+        "rationale": "Notes-owned classification and extraction are authoritative; Trade Journal publication remains separately governed."
       },
       "lifecycle": {
         "status": "active",
@@ -1511,7 +1511,7 @@
         "TANA_API_TOKEN and an eligible Tana runtime for any live Notes write."
       ],
       "limitations": [
-        "The former Trade Journal process-note projection and generic preamble remain only as rollback-capable migration inputs until final discovery cutover.",
+        "The former Trade Journal process-note projection and generic preamble remain only as rollback-capable migration inputs as a non-authoritative rollback input.",
         "Recorded conformance proves the immutable package boundary but does not claim live Tana, provider, scheduler, credential, or Trade Journal availability."
       ],
       "operational_consumers": [
@@ -1573,9 +1573,9 @@
       },
       "invocation": {
         "mode": "headless",
-        "entry_point": "docs/agents/provider-entry-points/staging/codex.md",
+        "entry_point": "docs/agents/provider-entry-points/codex.md",
         "unattended_eligibility": "conditional",
-        "rationale": "Notes-owned classification and extraction are staged; investment promotion remains separately governed."
+        "rationale": "Notes-owned classification and extraction are authoritative; investment promotion remains separately governed."
       },
       "lifecycle": {
         "status": "active",
@@ -1592,7 +1592,7 @@
         "TANA_API_TOKEN and an eligible Tana runtime for any live Notes write."
       ],
       "limitations": [
-        "The former Trade Journal process-transcript projection and generic preamble remain only as rollback-capable migration inputs until final discovery cutover.",
+        "The former Trade Journal process-transcript projection and generic preamble remain only as rollback-capable migration inputs as a non-authoritative rollback input.",
         "Recorded conformance proves the immutable package boundary but does not claim live Tana, provider, scheduler, credential, or Trade Journal availability."
       ],
       "operational_consumers": [
@@ -1650,11 +1650,11 @@
       "execution_contract": {
         "class": "generic",
         "preamble_path": ".agents/skills/pull-portfolio/HEADLESS_PREAMBLE.md",
-        "readiness": "The legacy mirror remains a generic migration input; the exact governed Codex adapter is current and staged for final discovery cutover."
+        "readiness": "The legacy mirror remains a generic migration input; the exact governed Codex adapter is current and authoritative for current discovery."
       },
       "invocation": {
         "mode": "headless",
-        "entry_point": "docs/agents/provider-entry-points/staging/codex.md",
+        "entry_point": "docs/agents/provider-entry-points/codex.md",
         "unattended_eligibility": "eligible",
         "rationale": "Read-only portfolio reporting."
       },
@@ -1673,7 +1673,7 @@
       ],
       "limitations": [
         "Snapshot quality depends on upstream ingestion freshness.",
-        "The governed Provider Entry Point is staged; the generic headless mirror remains a migration input until final discovery cutover."
+        "The governed Provider Entry Point is authoritative; the generic headless mirror remains a non-authoritative rollback input."
       ],
       "operational_consumers": [
         "No live operational consumer; current repository automation does not invoke this Codex projection."
@@ -1695,11 +1695,11 @@
         "package_path": "capabilities/portfolio-snapshot/capability-package.json",
         "adapter_id": "portfolio-snapshot-codex",
         "evidence_path": "capabilities/portfolio-snapshot/evidence/codex.json",
-        "staged_entry_point": "docs/agents/provider-entry-points/staging/codex.md"
+        "entry_point": "docs/agents/provider-entry-points/codex.md"
       },
       "j2_disposition": {
         "action": "migrate",
-        "rationale": "The governed adapter is current and staged; retain the legacy headless mirror until the final provider-discovery cutover."
+        "rationale": "The governed adapter is current and authoritative; retain the legacy headless mirror as a non-authoritative rollback input."
       }
     },
     {
@@ -1799,7 +1799,7 @@
       },
       "invocation": {
         "mode": "headless",
-        "entry_point": "docs/agents/provider-entry-points/staging/codex.md",
+        "entry_point": "docs/agents/provider-entry-points/codex.md",
         "unattended_eligibility": "conditional",
         "rationale": "Unattended use may prepare and validate only; exact relation and Decision Item persistence requires explicit current-user judgment."
       },
@@ -1831,14 +1831,14 @@
       "evidence": {
         "state": "current",
         "as_of": "2026-08-09",
-        "capability_version": "1.0.0",
-        "package_digest": "sha256:cb22d7d213b258674df7990a78c75362a9a271def943929a8ee01636f53406f8",
+        "capability_version": "1.0.1",
+        "package_digest": "sha256:ad7bf0f89879faf4c38e10aa7de0009d429034843e009e3eab12a15b808ba149",
         "adapter_digest": "sha256:339b828b0b2a0649339657da16c8f20188adbabdf08215a2868e92f06cc3ef74",
-        "reason": "Exact current evidence is bound to belief-research-relation 1.0.0 and the governed Codex adapter."
+        "reason": "Exact current evidence binds capability:scope:trade-journal/belief-research-relation 1.0.1 and its codex adapter to the canonical governed Provider Entry Point."
       },
       "j2_disposition": {
         "action": "migrate",
-        "rationale": "The governed adapter is current and staged; retain the canonical headless mirror as a preparation-only migration input until final discovery cutover."
+        "rationale": "The governed adapter is current and authoritative; retain the canonical headless mirror as a preparation-only migration input as a non-authoritative rollback input."
       },
       "migration_input": {
         "ownership": "repository:njabrooks/trade-journal",
@@ -1849,7 +1849,7 @@
         "package_path": "capabilities/belief-research-relation/capability-package.json",
         "adapter_id": "belief-research-relation-codex",
         "evidence_path": "capabilities/belief-research-relation/evidence/codex.json",
-        "staged_entry_point": "docs/agents/provider-entry-points/staging/codex.md"
+        "entry_point": "docs/agents/provider-entry-points/codex.md"
       }
     },
     {
@@ -1875,11 +1875,11 @@
       "execution_contract": {
         "class": "bespoke",
         "preamble_path": ".claude/skills/stage-1-init-idea/HEADLESS_PREAMBLE.md",
-        "readiness": "The protective tombstone preamble refuses legacy execution; unattended eligibility applies only through the exact staged governed adapter and its declared zero-write modes."
+        "readiness": "The protective tombstone preamble refuses legacy execution; unattended eligibility applies only through the exact governed adapter and its declared zero-write modes."
       },
       "invocation": {
         "mode": "headless",
-        "entry_point": "docs/agents/provider-entry-points/staging/codex.md",
+        "entry_point": "docs/agents/provider-entry-points/codex.md",
         "unattended_eligibility": "ineligible",
         "rationale": "Idea selection and thesis classification require genuine user judgment."
       },
@@ -1912,10 +1912,10 @@
       "evidence": {
         "state": "current",
         "as_of": "2026-08-10",
-        "capability_version": "1.3.1",
-        "package_digest": "sha256:5fe78a3a67c2ce2756c37cdc6052523012835d5068cc29992e98158dd591e039",
+        "capability_version": "1.3.2",
+        "package_digest": "sha256:95a0ab405433e250bb08b19a0d282518633852bf816b6520ff817a97b04210d0",
         "adapter_digest": "sha256:746ca82d4717d721c30377cb023585dc4c94689e93c1a0118b37942053388a53",
-        "reason": "Exact current evidence binds the research-pipeline 1.3.1 codex adapter, its zero-write boundary, and the protective tombstone for headless-codex-stage-1-init-idea."
+        "reason": "Exact current evidence binds capability:scope:trade-journal/research-pipeline 1.3.2 and its codex adapter to the canonical governed Provider Entry Point."
       },
       "j2_disposition": {
         "action": "migrate",
@@ -1930,7 +1930,7 @@
         "package_path": "capabilities/research-pipeline/capability-package.json",
         "adapter_id": "research-pipeline-codex",
         "evidence_path": "capabilities/research-pipeline/evidence/codex.json",
-        "staged_entry_point": "docs/agents/provider-entry-points/staging/codex.md"
+        "entry_point": "docs/agents/provider-entry-points/codex.md"
       }
     },
     {
@@ -1956,11 +1956,11 @@
       "execution_contract": {
         "class": "bespoke",
         "preamble_path": ".claude/skills/stage-2-formalize-thesis/HEADLESS_PREAMBLE.md",
-        "readiness": "The protective tombstone preamble refuses legacy execution; unattended eligibility applies only through the exact staged governed adapter and its declared zero-write modes."
+        "readiness": "The protective tombstone preamble refuses legacy execution; unattended eligibility applies only through the exact governed adapter and its declared zero-write modes."
       },
       "invocation": {
         "mode": "headless",
-        "entry_point": "docs/agents/provider-entry-points/staging/codex.md",
+        "entry_point": "docs/agents/provider-entry-points/codex.md",
         "unattended_eligibility": "ineligible",
         "rationale": "Thesis framing, failure modes, and the gate decision require genuine user judgment."
       },
@@ -1993,10 +1993,10 @@
       "evidence": {
         "state": "current",
         "as_of": "2026-08-10",
-        "capability_version": "1.3.1",
-        "package_digest": "sha256:5fe78a3a67c2ce2756c37cdc6052523012835d5068cc29992e98158dd591e039",
+        "capability_version": "1.3.2",
+        "package_digest": "sha256:95a0ab405433e250bb08b19a0d282518633852bf816b6520ff817a97b04210d0",
         "adapter_digest": "sha256:746ca82d4717d721c30377cb023585dc4c94689e93c1a0118b37942053388a53",
-        "reason": "Exact current evidence binds the research-pipeline 1.3.1 codex adapter, its zero-write boundary, and the protective tombstone for headless-codex-stage-2-formalize-thesis."
+        "reason": "Exact current evidence binds capability:scope:trade-journal/research-pipeline 1.3.2 and its codex adapter to the canonical governed Provider Entry Point."
       },
       "j2_disposition": {
         "action": "migrate",
@@ -2011,7 +2011,7 @@
         "package_path": "capabilities/research-pipeline/capability-package.json",
         "adapter_id": "research-pipeline-codex",
         "evidence_path": "capabilities/research-pipeline/evidence/codex.json",
-        "staged_entry_point": "docs/agents/provider-entry-points/staging/codex.md"
+        "entry_point": "docs/agents/provider-entry-points/codex.md"
       }
     },
     {
@@ -2037,11 +2037,11 @@
       "execution_contract": {
         "class": "bespoke",
         "preamble_path": ".claude/skills/stage-3-map-unknowns/HEADLESS_PREAMBLE.md",
-        "readiness": "The protective tombstone preamble refuses legacy execution; unattended eligibility applies only through the exact staged governed adapter and its declared zero-write modes."
+        "readiness": "The protective tombstone preamble refuses legacy execution; unattended eligibility applies only through the exact governed adapter and its declared zero-write modes."
       },
       "invocation": {
         "mode": "headless",
-        "entry_point": "docs/agents/provider-entry-points/staging/codex.md",
+        "entry_point": "docs/agents/provider-entry-points/codex.md",
         "unattended_eligibility": "ineligible",
         "rationale": "Research priority and the gate decision require genuine user judgment."
       },
@@ -2074,10 +2074,10 @@
       "evidence": {
         "state": "current",
         "as_of": "2026-08-10",
-        "capability_version": "1.3.1",
-        "package_digest": "sha256:5fe78a3a67c2ce2756c37cdc6052523012835d5068cc29992e98158dd591e039",
+        "capability_version": "1.3.2",
+        "package_digest": "sha256:95a0ab405433e250bb08b19a0d282518633852bf816b6520ff817a97b04210d0",
         "adapter_digest": "sha256:746ca82d4717d721c30377cb023585dc4c94689e93c1a0118b37942053388a53",
-        "reason": "Exact current evidence binds the research-pipeline 1.3.1 codex adapter, its zero-write boundary, and the protective tombstone for headless-codex-stage-3-map-unknowns."
+        "reason": "Exact current evidence binds capability:scope:trade-journal/research-pipeline 1.3.2 and its codex adapter to the canonical governed Provider Entry Point."
       },
       "j2_disposition": {
         "action": "migrate",
@@ -2092,7 +2092,7 @@
         "package_path": "capabilities/research-pipeline/capability-package.json",
         "adapter_id": "research-pipeline-codex",
         "evidence_path": "capabilities/research-pipeline/evidence/codex.json",
-        "staged_entry_point": "docs/agents/provider-entry-points/staging/codex.md"
+        "entry_point": "docs/agents/provider-entry-points/codex.md"
       }
     },
     {
@@ -2118,11 +2118,11 @@
       "execution_contract": {
         "class": "bespoke",
         "preamble_path": ".claude/skills/stage-4a-prep-desktop-research/HEADLESS_PREAMBLE.md",
-        "readiness": "The protective tombstone preamble refuses legacy execution; unattended eligibility applies only through the exact staged governed adapter and its declared zero-write modes."
+        "readiness": "The protective tombstone preamble refuses legacy execution; unattended eligibility applies only through the exact governed adapter and its declared zero-write modes."
       },
       "invocation": {
         "mode": "headless",
-        "entry_point": "docs/agents/provider-entry-points/staging/codex.md",
+        "entry_point": "docs/agents/provider-entry-points/codex.md",
         "unattended_eligibility": "conditional",
         "rationale": "Deterministic preparation is read-only after the user-selected unknown and track."
       },
@@ -2155,10 +2155,10 @@
       "evidence": {
         "state": "current",
         "as_of": "2026-08-10",
-        "capability_version": "1.3.1",
-        "package_digest": "sha256:5fe78a3a67c2ce2756c37cdc6052523012835d5068cc29992e98158dd591e039",
+        "capability_version": "1.3.2",
+        "package_digest": "sha256:95a0ab405433e250bb08b19a0d282518633852bf816b6520ff817a97b04210d0",
         "adapter_digest": "sha256:746ca82d4717d721c30377cb023585dc4c94689e93c1a0118b37942053388a53",
-        "reason": "Exact current evidence binds the research-pipeline 1.3.1 codex adapter, its zero-write boundary, and the protective tombstone for headless-codex-stage-4a-prep-desktop-research."
+        "reason": "Exact current evidence binds capability:scope:trade-journal/research-pipeline 1.3.2 and its codex adapter to the canonical governed Provider Entry Point."
       },
       "j2_disposition": {
         "action": "migrate",
@@ -2173,7 +2173,7 @@
         "package_path": "capabilities/research-pipeline/capability-package.json",
         "adapter_id": "research-pipeline-codex",
         "evidence_path": "capabilities/research-pipeline/evidence/codex.json",
-        "staged_entry_point": "docs/agents/provider-entry-points/staging/codex.md"
+        "entry_point": "docs/agents/provider-entry-points/codex.md"
       }
     },
     {
@@ -2199,11 +2199,11 @@
       "execution_contract": {
         "class": "bespoke",
         "preamble_path": ".claude/skills/stage-4a-research-unknown/HEADLESS_PREAMBLE.md",
-        "readiness": "The protective tombstone preamble refuses legacy execution; unattended eligibility applies only through the exact staged governed adapter and its declared zero-write modes."
+        "readiness": "The protective tombstone preamble refuses legacy execution; unattended eligibility applies only through the exact governed adapter and its declared zero-write modes."
       },
       "invocation": {
         "mode": "headless",
-        "entry_point": "docs/agents/provider-entry-points/staging/codex.md",
+        "entry_point": "docs/agents/provider-entry-points/codex.md",
         "unattended_eligibility": "conditional",
         "rationale": "Research may run only with declared source access and honest unavailable behavior."
       },
@@ -2236,10 +2236,10 @@
       "evidence": {
         "state": "current",
         "as_of": "2026-08-10",
-        "capability_version": "1.3.1",
-        "package_digest": "sha256:5fe78a3a67c2ce2756c37cdc6052523012835d5068cc29992e98158dd591e039",
+        "capability_version": "1.3.2",
+        "package_digest": "sha256:95a0ab405433e250bb08b19a0d282518633852bf816b6520ff817a97b04210d0",
         "adapter_digest": "sha256:746ca82d4717d721c30377cb023585dc4c94689e93c1a0118b37942053388a53",
-        "reason": "Exact current evidence binds the research-pipeline 1.3.1 codex adapter, its zero-write boundary, and the protective tombstone for headless-codex-stage-4a-research-unknown."
+        "reason": "Exact current evidence binds capability:scope:trade-journal/research-pipeline 1.3.2 and its codex adapter to the canonical governed Provider Entry Point."
       },
       "j2_disposition": {
         "action": "migrate",
@@ -2254,7 +2254,7 @@
         "package_path": "capabilities/research-pipeline/capability-package.json",
         "adapter_id": "research-pipeline-codex",
         "evidence_path": "capabilities/research-pipeline/evidence/codex.json",
-        "staged_entry_point": "docs/agents/provider-entry-points/staging/codex.md"
+        "entry_point": "docs/agents/provider-entry-points/codex.md"
       }
     },
     {
@@ -2280,11 +2280,11 @@
       "execution_contract": {
         "class": "bespoke",
         "preamble_path": ".claude/skills/stage-4b-synthesize-evidence/HEADLESS_PREAMBLE.md",
-        "readiness": "The protective tombstone preamble refuses legacy execution; unattended eligibility applies only through the exact staged governed adapter and its declared zero-write modes."
+        "readiness": "The protective tombstone preamble refuses legacy execution; unattended eligibility applies only through the exact governed adapter and its declared zero-write modes."
       },
       "invocation": {
         "mode": "headless",
-        "entry_point": "docs/agents/provider-entry-points/staging/codex.md",
+        "entry_point": "docs/agents/provider-entry-points/codex.md",
         "unattended_eligibility": "conditional",
         "rationale": "Synthesis is recommendation-only and every user gate remains separate."
       },
@@ -2317,10 +2317,10 @@
       "evidence": {
         "state": "current",
         "as_of": "2026-08-10",
-        "capability_version": "1.3.1",
-        "package_digest": "sha256:5fe78a3a67c2ce2756c37cdc6052523012835d5068cc29992e98158dd591e039",
+        "capability_version": "1.3.2",
+        "package_digest": "sha256:95a0ab405433e250bb08b19a0d282518633852bf816b6520ff817a97b04210d0",
         "adapter_digest": "sha256:746ca82d4717d721c30377cb023585dc4c94689e93c1a0118b37942053388a53",
-        "reason": "Exact current evidence binds the research-pipeline 1.3.1 codex adapter, its zero-write boundary, and the protective tombstone for headless-codex-stage-4b-synthesize-evidence."
+        "reason": "Exact current evidence binds capability:scope:trade-journal/research-pipeline 1.3.2 and its codex adapter to the canonical governed Provider Entry Point."
       },
       "j2_disposition": {
         "action": "migrate",
@@ -2335,7 +2335,7 @@
         "package_path": "capabilities/research-pipeline/capability-package.json",
         "adapter_id": "research-pipeline-codex",
         "evidence_path": "capabilities/research-pipeline/evidence/codex.json",
-        "staged_entry_point": "docs/agents/provider-entry-points/staging/codex.md"
+        "entry_point": "docs/agents/provider-entry-points/codex.md"
       }
     },
     {
@@ -2361,11 +2361,11 @@
       "execution_contract": {
         "class": "bespoke",
         "preamble_path": ".claude/skills/stage-5-express-thesis/HEADLESS_PREAMBLE.md",
-        "readiness": "The protective tombstone preamble refuses legacy execution; unattended eligibility applies only through the exact staged governed adapter and its declared zero-write modes."
+        "readiness": "The protective tombstone preamble refuses legacy execution; unattended eligibility applies only through the exact governed adapter and its declared zero-write modes."
       },
       "invocation": {
         "mode": "headless",
-        "entry_point": "docs/agents/provider-entry-points/staging/codex.md",
+        "entry_point": "docs/agents/provider-entry-points/codex.md",
         "unattended_eligibility": "conditional",
         "rationale": "Analysis may run only after an audited user Stage 5 entry decision; final action remains user judgment."
       },
@@ -2398,10 +2398,10 @@
       "evidence": {
         "state": "current",
         "as_of": "2026-08-10",
-        "capability_version": "1.3.1",
-        "package_digest": "sha256:5fe78a3a67c2ce2756c37cdc6052523012835d5068cc29992e98158dd591e039",
+        "capability_version": "1.3.2",
+        "package_digest": "sha256:95a0ab405433e250bb08b19a0d282518633852bf816b6520ff817a97b04210d0",
         "adapter_digest": "sha256:746ca82d4717d721c30377cb023585dc4c94689e93c1a0118b37942053388a53",
-        "reason": "Exact current evidence binds the research-pipeline 1.3.1 codex adapter, its zero-write boundary, and the protective tombstone for headless-codex-stage-5-express-thesis."
+        "reason": "Exact current evidence binds capability:scope:trade-journal/research-pipeline 1.3.2 and its codex adapter to the canonical governed Provider Entry Point."
       },
       "j2_disposition": {
         "action": "migrate",
@@ -2416,7 +2416,7 @@
         "package_path": "capabilities/research-pipeline/capability-package.json",
         "adapter_id": "research-pipeline-codex",
         "evidence_path": "capabilities/research-pipeline/evidence/codex.json",
-        "staged_entry_point": "docs/agents/provider-entry-points/staging/codex.md"
+        "entry_point": "docs/agents/provider-entry-points/codex.md"
       }
     },
     {
@@ -2446,7 +2446,7 @@
       },
       "invocation": {
         "mode": "headless",
-        "entry_point": "docs/agents/provider-entry-points/staging/codex.md",
+        "entry_point": "docs/agents/provider-entry-points/codex.md",
         "unattended_eligibility": "conditional",
         "rationale": "Eligible unattended only for bounded validated recommendations; ambiguity is preserved and the adapter has no write authority."
       },
@@ -2464,7 +2464,7 @@
         "Remote database read access and an explicit Notes-owned research insight ID."
       ],
       "limitations": [
-        "The governed Provider Entry Point is staged; the bespoke headless mirror remains the active migration input until final discovery cutover.",
+        "The governed Provider Entry Point is authoritative; the bespoke headless mirror remains a non-authoritative rollback input.",
         "No live provider invocation was used for semantic evidence; the representative result fixture is bound to the exact adapter bytes."
       ],
       "operational_consumers": [
@@ -2478,14 +2478,14 @@
       "evidence": {
         "state": "current",
         "as_of": "2026-08-08",
-        "capability_version": "1.0.0",
-        "package_digest": "sha256:33b24164d37a548e5b5683694c375f724f5e8c756d7a366d48ca923c4461d942",
+        "capability_version": "1.0.1",
+        "package_digest": "sha256:b20b92a6e66de2281074813c60672daf0e985520d355e5a2ffa56f383cc99b52",
         "adapter_digest": "sha256:18ff6b767b4e501bbf97930ec803dedb787fe767b0ffc57f0b5cf4bed86f9a99",
-        "reason": "Exact current evidence is bound to claims-synthesis 1.0.0 and the governed Codex adapter."
+        "reason": "Exact current evidence binds capability:scope:trade-journal/claims-synthesis 1.0.1 and its codex adapter to the canonical governed Provider Entry Point."
       },
       "j2_disposition": {
         "action": "migrate",
-        "rationale": "The governed adapter is current and staged; retain the bespoke headless mirror as a migration input until final discovery cutover."
+        "rationale": "The governed adapter is current and authoritative; retain the bespoke headless mirror as a non-authoritative rollback input."
       },
       "migration_input": {
         "ownership": "repository:njabrooks/trade-journal",
@@ -2496,7 +2496,7 @@
         "package_path": "capabilities/claims-synthesis/capability-package.json",
         "adapter_id": "claims-synthesis-codex",
         "evidence_path": "capabilities/claims-synthesis/evidence/codex.json",
-        "staged_entry_point": "docs/agents/provider-entry-points/staging/codex.md"
+        "entry_point": "docs/agents/provider-entry-points/codex.md"
       }
     },
     {
@@ -2526,7 +2526,7 @@
       },
       "invocation": {
         "mode": "headless",
-        "entry_point": "docs/agents/provider-entry-points/staging/codex.md",
+        "entry_point": "docs/agents/provider-entry-points/codex.md",
         "unattended_eligibility": "ineligible",
         "rationale": "Interactive-only foreground workflow; exact current adapter evidence and mirror presence do not authorize unattended execution."
       },
@@ -2544,7 +2544,7 @@
         "No repository, database, credential, provider, caller-input, or scheduler prerequisite can make unattended thesis foreground execution eligible."
       ],
       "limitations": [
-        "The governed Provider Entry Point remains staged; the mirrored skill is retained for parity and rollback only.",
+        "The governed Provider Entry Point remains authoritative; the mirrored skill is retained for parity and rollback only.",
         "The current evidence proves adapter semantics and unconditional refusal, not unattended execution support or scheduling eligibility."
       ],
       "operational_consumers": [
@@ -2558,14 +2558,14 @@
       "evidence": {
         "state": "current",
         "as_of": "2026-08-12",
-        "capability_version": "1.0.0",
-        "package_digest": "sha256:41eae671d367800c55fd35fd1cad21ab022faa18a9310db84f6de0a70f4cfae5",
+        "capability_version": "1.0.1",
+        "package_digest": "sha256:ba06f98a1639b18b499efe2b198a911deaf17e8452b17b7438a5ae2b5be0f8fd",
         "adapter_digest": "sha256:9e0452709adb108dcf8baf307608d21e9a09973faab11c0d538a4d2c28be893d",
-        "reason": "Exact current evidence binds the Codex adapter's interactive-only semantics and unconditional headless refusal; unattended execution remains ineligible."
+        "reason": "Exact current evidence binds capability:scope:trade-journal/thesis-foreground 1.0.1 and its codex adapter to the canonical governed Provider Entry Point."
       },
       "j2_disposition": {
         "action": "migrate",
-        "rationale": "The governed adapter is current and staged; retain the bespoke refusal mirror as a migration input until final discovery cutover."
+        "rationale": "The governed adapter is current and authoritative; retain the bespoke refusal mirror as a non-authoritative rollback input."
       },
       "migration_input": {
         "ownership": "repository:njabrooks/trade-journal",
@@ -2576,7 +2576,7 @@
         "package_path": "capabilities/thesis-foreground/capability-package.json",
         "adapter_id": "thesis-foreground-codex",
         "evidence_path": "capabilities/thesis-foreground/evidence/codex.json",
-        "staged_entry_point": "docs/agents/provider-entry-points/staging/codex.md"
+        "entry_point": "docs/agents/provider-entry-points/codex.md"
       }
     },
     {
@@ -2602,11 +2602,11 @@
       "execution_contract": {
         "class": "generic",
         "preamble_path": ".agents/skills/thesis-observe/HEADLESS_PREAMBLE.md",
-        "readiness": "The legacy mirror remains a migration input; the exact governed adapter carries the bounded execution and result contract for staged discovery."
+        "readiness": "The legacy mirror remains a migration input; the exact governed adapter carries the bounded execution and result contract for governed discovery."
       },
       "invocation": {
         "mode": "headless",
-        "entry_point": "docs/agents/provider-entry-points/staging/codex.md",
+        "entry_point": "docs/agents/provider-entry-points/codex.md",
         "unattended_eligibility": "conditional",
         "rationale": "Sensing producer only."
       },
@@ -2625,7 +2625,7 @@
       ],
       "limitations": [
         "Live Claude-dependent scheduled consumer exists; web evidence is environment-sensitive.",
-        "The governed Provider Entry Point is staged; the generic headless mirror remains the active migration input until an explicitly approved operational or final discovery cutover."
+        "The governed Provider Entry Point is authoritative; the generic headless mirror remains a delegated operational source only where a separately governed operational consumer still delegates to it."
       ],
       "operational_consumers": [
         "J2 migration candidate corresponding to a live Claude scheduled workflow; no live job currently consumes this Codex projection."
@@ -2645,7 +2645,7 @@
       },
       "j2_disposition": {
         "action": "migrate",
-        "rationale": "The governed adapter is current and staged; retain the existing headless mirror and live invocation until its separately approved cutover."
+        "rationale": "The governed adapter is current and authoritative; retain the existing headless mirror and live invocation only where a separately governed operational consumer still delegates to it."
       },
       "migration_input": {
         "ownership": "repository:njabrooks/trade-journal",
@@ -2656,7 +2656,7 @@
         "package_path": "capabilities/thesis-observation/capability-package.json",
         "adapter_id": "thesis-observation-codex",
         "evidence_path": "capabilities/thesis-observation/evidence/codex.json",
-        "staged_entry_point": "docs/agents/provider-entry-points/staging/codex.md"
+        "entry_point": "docs/agents/provider-entry-points/codex.md"
       }
     },
     {
@@ -2682,11 +2682,11 @@
       "execution_contract": {
         "class": "generic",
         "preamble_path": ".agents/skills/thesis-review/HEADLESS_PREAMBLE.md",
-        "readiness": "The legacy mirror remains a migration input; the exact governed adapter carries the bounded execution and result contract for staged discovery."
+        "readiness": "The legacy mirror remains a migration input; the exact governed adapter carries the bounded execution and result contract for governed discovery."
       },
       "invocation": {
         "mode": "headless",
-        "entry_point": "docs/agents/provider-entry-points/staging/codex.md",
+        "entry_point": "docs/agents/provider-entry-points/codex.md",
         "unattended_eligibility": "conditional",
         "rationale": "Surfaces weakening or ambiguity rather than deciding silently."
       },
@@ -2705,7 +2705,7 @@
       ],
       "limitations": [
         "Multiple modes have different judgment and write boundaries.",
-        "The governed Provider Entry Point is staged; the generic headless mirror remains the active migration input until an explicitly approved operational or final discovery cutover."
+        "The governed Provider Entry Point is authoritative; the generic headless mirror remains a delegated operational source only where a separately governed operational consumer still delegates to it."
       ],
       "operational_consumers": [
         "No live operational consumer; current repository automation does not invoke this Codex projection."
@@ -2725,7 +2725,7 @@
       },
       "j2_disposition": {
         "action": "migrate",
-        "rationale": "The governed adapter is current and staged; retain the existing headless mirror and live invocation until its separately approved cutover."
+        "rationale": "The governed adapter is current and authoritative; retain the existing headless mirror and live invocation only where a separately governed operational consumer still delegates to it."
       },
       "migration_input": {
         "ownership": "repository:njabrooks/trade-journal",
@@ -2736,7 +2736,7 @@
         "package_path": "capabilities/belief-maintenance/capability-package.json",
         "adapter_id": "belief-maintenance-codex",
         "evidence_path": "capabilities/belief-maintenance/evidence/codex.json",
-        "staged_entry_point": "docs/agents/provider-entry-points/staging/codex.md"
+        "entry_point": "docs/agents/provider-entry-points/codex.md"
       }
     },
     {

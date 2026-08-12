@@ -33,7 +33,7 @@ Adapter Conformance. The accepted Workspace CLI remains authoritative for those 
 
 - all 36 repository-origin Claude records: 33 discovery paths and three issue #75 historical-only records;
 - repository-owned governed Claude and Codex workflow-discovery adapters;
-- the active legacy machine-local Codex router as an environmental surface with unavailable conformance evidence, not an adapter authority;
+- the optional non-authoritative machine-local Codex bootstrap as an environmental surface with unavailable conformance evidence, not an adapter authority;
 - repository and external discovery surfaces;
 - all four Claude `SessionStart` hooks;
 - concrete mappings from Claude shell, web, Supabase, Tana, Massive, IBKR, Skill, and Agent surfaces to
@@ -120,43 +120,49 @@ The parity script gates the repository inventory and mirror only; it never reads
 machine-local bridge. It remains supporting diagnostic tooling, not Adapter Conformance evidence. Likewise, a current
 mirror and a valid rich inventory do not upgrade any W1 evidence state. J2 upgrades an inventory entry only
 when an exact source Capability version, package digest, adapter digest, complete evidence, immutable lock,
-and staged generated output bind it through W1. The remaining generic projections stay `unavailable`.
+and governed generated output bind it through W1. The remaining generic projections stay `unavailable`.
 
 ## Generation eligibility
 
-`generation-eligibility.json` is the deterministic projection of both inventories into J1's governed
-generation decision and the incremental J2 migration state. It covers all 74 inventoried entry points. The
-nineteen locked Capabilities now record 58 generation-eligible inventory entries and two whole-file governed
-staging outputs. Sixteen packages are Trade Journal-owned; the three Notes-owned content-processing dependency
-packages remain external. The other 20 entries remain non-governed migration inputs or non-candidates with
-explicit dispositions.
+`generation-eligibility.json` is the deterministic projection of both inventories into the final governed
+generation state. It covers all 74 inventoried entry points. J1 recorded 73 entries; the exhaustive validator
+now finds 74 because repository-native Codex workflow discovery was added as a separately governed entry.
+The historical requirement is therefore satisfied against the larger validated set, never by dropping the
+new entry. The nineteen locked Capabilities record 58 generation-eligible entries and two authoritative
+whole-file Provider Entry Points. Sixteen packages are Trade Journal-owned; the three Notes-owned
+content-processing dependency packages remain external.
+
+Every projected entry has one final evidence-backed disposition: `governed`, `replaced`, `retained`,
+`deferred`, `retired`, `tombstone`, or `unavailable`. Current evidence plus exact bindings yields `governed`
+or `replaced`; unavailable records retain only their explicitly bounded final state. The previous `staging/`
+outputs are absent and are not discovery authority.
 
 The portfolio-snapshot, belief-maintenance, belief-research-relation, decision-resolution, claims-synthesis, research-publication,
 thesis-foreground, thesis-observation, thesis-underwriting, belief-evidence-assessment, portfolio-options-advice,
 options-vol-analysis, portfolio-analysis, and morning-attention-brief adapters are `current` because they bind to source-owned Capability version `1.0.0`, exact package and
 adapter digests, complete current evidence, and the immutable published Registry Lock. The belief-maintenance
 package covers the maintenance, thesis-review, and claim-backfill inventory entries through one provider-
-neutral boundary. Governed outputs stay under the staging discovery surface until a separately approved live
-or final discovery cutover. File presence, mirror parity, generic packaging, or historical execution cannot
-upgrade any remaining adapter.
+neutral boundary. The governed outputs at `docs/agents/provider-entry-points/{claude,codex}.md` are now the
+authoritative discovery surface. File presence, mirror parity, generic packaging, or historical execution
+cannot upgrade any remaining adapter.
 
 Issue #60 adds `decision-resolution` as an exact interactive-only Capability. Both provider adapters require
 the current user's exact action, close only through `resolve-decision.ts --by user`, and route status mutation
 only through `update-entity-status.ts`. The Codex mirror has a bespoke unconditional refusal that performs no
-reads or writes. Its exact adapter evidence is current for interactive staged discovery, while unattended
-execution and scheduling remain ineligible and cannot be inferred from Registry, mirror, or staging presence.
+reads or writes. Its exact adapter evidence is current for interactive governed discovery, while unattended
+execution and scheduling remain ineligible and cannot be inferred from Registry or mirror presence.
 
 Issue #61 adds `thesis-foreground` as an exact interactive-only Capability over one thesis. Query and
 what-changed are read-only; fresh observation, explicitly requested evidence recording, and re-underwriting
 delegate only to the Registry-resolved thesis-observation, belief-evidence-assessment, and thesis-underwriting
 Capabilities. Missing or ambiguous targets, incomplete evidence, missing current-user judgment, headless use,
 and every scheduling request fail closed. The Codex mirror now carries a bespoke unconditional zero-read/
-zero-write refusal, so current staged Adapter Conformance never implies unattended or scheduling eligibility.
+zero-write refusal, so current Adapter Conformance never implies unattended or scheduling eligibility.
 
 Workflow discovery adds current Claude and Codex interactive adapters. Each selects from this validated
 inventory and delegates to the selected provider's exact locked adapter or an honestly unavailable repository-authored
 migration input; it does not reproduce workflow procedures or execute the selected workflow. `AGENTS.md`
-provides repository-native activation. The installed Home Hub bridge remains an active legacy competing router,
+provides repository-native activation. The installed Home Hub bridge remains an optional non-authoritative machine-local bootstrap,
 but its absence or drift cannot fail repository parity and its bytes have unavailable Adapter Conformance evidence. Exact release, artifact, observed
 environmental-bootstrap digests, scope, and rollback are recorded in
 `evidence/issue-71-workflow-discovery.json`.
@@ -187,18 +193,18 @@ added to Trade Journal.
 
 ## J2 portfolio-snapshot tracer
 
-The first J2 slice establishes the reusable governance spine without changing a live job:
+Historically, the first J2 slice established the reusable governance spine without changing a live job:
 
 - Trade Journal is the source Capability Authority for `capability:scope:trade-journal/portfolio-snapshot`;
 - its exact Claude and Codex adapters are separately authored and digest-bound;
 - the published Registry release points to the preserved source-release commit;
-- the immutable lock and complete staging outputs reproduce through the accepted Workspace CLI; and
+- the immutable lock and then-staging outputs reproduced through the accepted Workspace CLI; and
 - the original Claude skill and Codex mirror remain visible as migration inputs until final discovery cutover.
 
 CI validates the Capability, published lock, and clean regeneration in both human and JSON modes while
-retaining the J1 unavailable-input refusal proof. The repository inventory validator also checks that each
-`current` entry resolves to the exact package, adapter, evidence record, digest, staging output, and preserved
-migration input it declares.
+retaining the J1 unavailable-input refusal proof. After the final cutover, the repository inventory validator
+checks that each `current` entry resolves to the exact package, adapter, evidence record, digest, canonical
+governed output, and preserved migration input it declares.
 
 ## J2 governed operational packages
 

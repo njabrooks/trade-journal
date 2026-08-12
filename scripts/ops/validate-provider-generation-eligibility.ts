@@ -31,9 +31,19 @@ export const ACCEPTED_WORKSPACE_REVISION =
   "2b6ea3e02ff5ba114b0f91dd779c4afb26181358";
 export const GOVERNED_EVIDENCE_DATE = "2026-08-12";
 export const GOVERNED_OUTPUTS = [
-  "docs/agents/provider-entry-points/staging/claude.md",
-  "docs/agents/provider-entry-points/staging/codex.md",
+  "docs/agents/provider-entry-points/claude.md",
+  "docs/agents/provider-entry-points/codex.md",
 ];
+
+const FINAL_DISPOSITIONS = new Set([
+  "governed",
+  "replaced",
+  "retained",
+  "deferred",
+  "retired",
+  "tombstone",
+  "unavailable",
+]);
 
 function isObject(value: unknown): value is JsonObject {
   return typeof value === "object" && value !== null && !Array.isArray(value);
@@ -84,6 +94,25 @@ function projectEntry(entry: JsonObject): JsonObject {
     lifecycle.status === "active" &&
     evidence.state === "current" &&
     exactBindings;
+  const finalDisposition = generationEligible
+    ? disposition.action === "replace"
+      ? "replaced"
+      : "governed"
+    : disposition.action === "retain-temporarily"
+      ? "retained"
+      : disposition.action === "defer"
+        ? "deferred"
+        : disposition.action === "retire"
+          ? lifecycle.protective_tombstone === true
+            ? "tombstone"
+            : "retired"
+          : "unavailable";
+  const finalRationale = generationEligible
+    ? evidence.reason
+    : [evidence.reason, disposition.rationale]
+        .filter(nonempty)
+        .filter((value, index, values) => values.indexOf(value) === index)
+        .join(" Final boundary: ");
   const ineligibilityReasons: string[] = [];
   if (candidateStatus !== "candidate") {
     ineligibilityReasons.push(
@@ -127,9 +156,9 @@ function projectEntry(entry: JsonObject): JsonObject {
     },
     generation_eligible: generationEligible,
     ineligibility_reasons: ineligibilityReasons,
-    j2_disposition: {
-      action: disposition.action,
-      rationale: disposition.rationale,
+    final_disposition: {
+      state: finalDisposition,
+      rationale: finalRationale,
     },
   };
 }
@@ -165,17 +194,17 @@ export function buildExpectedEligibility(
     current_entry_points: {
       classification:
         generationEligibleCount > 0
-          ? "governed-staging-with-non-governed-migration-inputs"
+          ? "governed-authoritative-with-explicit-non-governed-dispositions"
           : "non-governed-migration-inputs",
       shared_guidance: "CONTEXT.md",
       provider_specific_guidance: ["CLAUDE.md", "AGENTS.md"],
       authored_adapter_root: ".claude/skills",
       generated_mirror_root: ".agents/skills",
-      governed_staging_outputs:
+      governed_outputs:
         generationEligibleCount > 0 ? GOVERNED_OUTPUTS : "none",
       limitation:
         generationEligibleCount > 0
-          ? "Governed outputs remain staged; existing handwritten and mirrored surfaces stay active migration inputs until the final J2 discovery cutover."
+          ? "The complete governed outputs are authoritative for current adapters; retained, deferred, retired, tombstone, and unavailable entries keep only their declared final boundary."
           : "Existing handwritten and mirrored surfaces are migration inputs, not W1-generated Provider Entry Points.",
     },
     entries,
@@ -320,6 +349,30 @@ export function validateEligibility(
           "TJ-GEN-004",
           `/entries/${id}`,
           "Eligibility entry must match its deterministic inventory projection.",
+        ),
+      );
+    }
+  }
+
+  for (const actualEntry of actualEntries) {
+    const disposition = isObject(actualEntry.final_disposition)
+      ? actualEntry.final_disposition
+      : {};
+    if (!nonempty(disposition.state) || !FINAL_DISPOSITIONS.has(disposition.state)) {
+      diagnostics.push(
+        diagnostic(
+          "TJ-GEN-007",
+          `/entries/${String(actualEntry.inventory_entry)}/final_disposition/state`,
+          "Every inventory entry must have an explicit supported final disposition.",
+        ),
+      );
+    }
+    if (!nonempty(disposition.rationale)) {
+      diagnostics.push(
+        diagnostic(
+          "TJ-GEN-007",
+          `/entries/${String(actualEntry.inventory_entry)}/final_disposition/rationale`,
+          "Every final disposition must retain its evidence-backed rationale.",
         ),
       );
     }

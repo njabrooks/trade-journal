@@ -1,15 +1,15 @@
 {
   "capability_id": "capability:scope:trade-journal/workflow-discovery",
-  "capability_version": "1.0.0",
-  "package_digest": "sha256:7d6e82ace6a60ccd997b47af759b5345783580eccb903007872c2f3c0f9bc5d6",
+  "capability_version": "1.0.2",
+  "package_digest": "sha256:01c347703cdd54dd1bb174d9372acf243cb60b191a569f112727cc726b1d5a2b",
   "adapter_id": "workflow-discovery-codex",
-  "adapter_digest": "sha256:b39e462bd35a94522f912bfea7792918d55a08955759898708b2cc0e7be2a887",
+  "adapter_digest": "sha256:b36d0c5055bf4e63f42d0407cf4349a2e4f567afb52f097aa0ece5ab4bcd39a0",
   "support_state": "current",
-  "validated_at": "2026-08-11",
+  "validated_at": "2026-08-12",
   "results": {
     "adapter-entry-point": {
       "status": "passed",
-      "method": "Accepted Workspace CLI Capability validation and clean staged Codex Provider Entry Point generation"
+      "method": "Accepted Workspace CLI Capability validation and clean canonical Codex Provider Entry Point generation"
     },
     "inventory-routing": {
       "status": "passed",
@@ -21,14 +21,14 @@
     },
     "authority-preserving-semantics": {
       "status": "passed",
-      "reviewer": "Issue #71 Spec review",
-      "method": "Compared the Codex adapter with the provider-neutral contract, repository-versus-machine authority boundary, accepted #47 migration spine, and issue #71 acceptance criteria",
-      "evidence_link": "https://github.com/njabrooks/trade-journal/issues/71",
-      "expires_at": "2026-09-10"
+      "reviewer": "Issue #76 Standards review",
+      "method": "Compared the package and Codex adapter with the provider-neutral contract, canonical discovery authority, and optional non-authoritative machine-bootstrap boundary",
+      "evidence_link": "https://github.com/njabrooks/trade-journal/issues/76",
+      "expires_at": "2026-09-11"
     },
     "eligible-interactive-environment": {
       "status": "passed",
-      "method": "Repository-native AGENTS.md resolved the governed adapter; the observed Home Hub bridge remained an unchanged active legacy competing router with unavailable conformance evidence on 2026-08-11"
+      "method": "Repository-native AGENTS.md resolved the governed adapter; the observed Home Hub bridge remained an unchanged optional non-authoritative bootstrap with unavailable conformance evidence on 2026-08-12"
     }
   }
 }

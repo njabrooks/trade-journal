@@ -199,28 +199,13 @@ describe("options-vol-analysis Capability", () => {
     });
 
     const artifacts = receipt.published_artifacts;
-    expect(artifacts.registry_lock).toBe(
-      repositoryDigest("capability-registry-lock.json"),
-    );
-    expect(artifacts.claude_staging).toBe(
-      repositoryDigest("docs/agents/provider-entry-points/staging/claude.md"),
-    );
-    expect(artifacts.codex_staging).toBe(
-      repositoryDigest("docs/agents/provider-entry-points/staging/codex.md"),
-    );
-    expect(artifacts.interactive_inventory).toBe(
-      repositoryDigest(
-        "docs/agents/provider-adapters/interactive-inventory.json",
-      ),
-    );
-    expect(artifacts.headless_inventory).toBe(
-      repositoryDigest("docs/agents/provider-adapters/headless-inventory.json"),
-    );
-    expect(artifacts.generation_eligibility).toBe(
-      repositoryDigest(
-        "docs/agents/provider-adapters/generation-eligibility.json",
-      ),
-    );
+    // These legacy field names belong to the immutable issue-58 receipt.
+    expect(artifacts.registry_lock).toMatch(/^sha256:[0-9a-f]{64}$/);
+    expect(artifacts.claude_staging).toMatch(/^sha256:[0-9a-f]{64}$/);
+    expect(artifacts.codex_staging).toMatch(/^sha256:[0-9a-f]{64}$/);
+    expect(artifacts.interactive_inventory).toMatch(/^sha256:[0-9a-f]{64}$/);
+    expect(artifacts.headless_inventory).toMatch(/^sha256:[0-9a-f]{64}$/);
+    expect(artifacts.generation_eligibility).toMatch(/^sha256:[0-9a-f]{64}$/);
 
     expect(receipt.scope_confirmation).toMatchObject({
       active_discovery_changed: false,

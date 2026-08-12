@@ -1,15 +1,15 @@
 {
   "capability_id": "capability:scope:trade-journal/workflow-discovery",
-  "capability_version": "1.0.0",
-  "package_digest": "sha256:7d6e82ace6a60ccd997b47af759b5345783580eccb903007872c2f3c0f9bc5d6",
+  "capability_version": "1.0.2",
+  "package_digest": "sha256:01c347703cdd54dd1bb174d9372acf243cb60b191a569f112727cc726b1d5a2b",
   "adapter_id": "workflow-discovery-claude",
   "adapter_digest": "sha256:82ee574c9e1e4c2bce81a425775a5de45ba350350f8589c3f9ff60d8f945b82b",
   "support_state": "current",
-  "validated_at": "2026-08-11",
+  "validated_at": "2026-08-12",
   "results": {
     "adapter-entry-point": {
       "status": "passed",
-      "method": "Accepted Workspace CLI Capability validation and clean staged Claude Provider Entry Point generation"
+      "method": "Accepted Workspace CLI Capability validation and clean canonical Claude Provider Entry Point generation"
     },
     "inventory-routing": {
       "status": "passed",
@@ -21,14 +21,14 @@
     },
     "authority-preserving-semantics": {
       "status": "passed",
-      "reviewer": "Issue #71 Spec review",
-      "method": "Compared the Claude adapter with the provider-neutral contract, repository authority boundary, accepted #47 migration spine, and issue #71 acceptance criteria",
-      "evidence_link": "https://github.com/njabrooks/trade-journal/issues/71",
-      "expires_at": "2026-09-10"
+      "reviewer": "Issue #76 Standards review",
+      "method": "Compared the package and Claude adapter with the provider-neutral contract, canonical discovery authority, and optional non-authoritative machine-bootstrap boundary",
+      "evidence_link": "https://github.com/njabrooks/trade-journal/issues/76",
+      "expires_at": "2026-09-11"
     },
     "eligible-interactive-environment": {
       "status": "passed",
-      "method": "Repository-authored CLAUDE.md and .claude/skills discovery resolved the governed adapter without provider, database, or external-system execution on 2026-08-11"
+      "method": "Repository-authored CLAUDE.md and .claude/skills discovery resolved the governed adapter without provider, database, or external-system execution on 2026-08-12"
     }
   }
 }

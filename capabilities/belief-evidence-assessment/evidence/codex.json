@@ -1,7 +1,7 @@
 {
   "capability_id": "capability:scope:trade-journal/belief-evidence-assessment",
-  "capability_version": "1.0.0",
-  "package_digest": "sha256:a500733334c51f739511621d90bc53e0489137a3dedc3889264ccc05ea1a77df",
+  "capability_version": "1.0.1",
+  "package_digest": "sha256:758d4f0c233c7479f62daf6cc8fa4221b4379eb2dd517a258a0f2feeded805e7",
   "adapter_id": "belief-evidence-assessment-codex",
   "adapter_digest": "sha256:0fb1750bc026e48370d4e0d193b0e90213974b87009731cc699f856c3d078adb",
   "support_state": "current",
@@ -9,7 +9,7 @@
   "results": {
     "adapter-entry-point": {
       "status": "passed",
-      "method": "Accepted Workspace CLI Capability validation and clean staged Provider Entry Point generation"
+      "method": "Accepted Workspace CLI Capability validation and clean canonical Provider Entry Point generation"
     },
     "governed-target": {
       "status": "passed",

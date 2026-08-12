@@ -1,7 +1,7 @@
 {
   "id": "capability:scope:trade-journal/claims-synthesis",
   "authority": "scope:trade-journal",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "intent": "Distinguish and relate Notes-owned research evidence to Trade Journal investment claims and theses without duplicating provenance-bearing claims or silently exercising investment judgment.",
   "contract": "Given an explicit Notes-owned Trade Journal research-insight handoff, load a deterministic SHA-256-bound context in which Notes/Tana owns capture, source material, and Toulmin extraction while Trade Journal owns promoted investment entities and their governed relationships; keep source evidence, existing main claims, synthesized investment claims, and proposed thesis mappings exactly distinct; deterministically reuse any existing main claim with exact (sourceInsightId, sourceClaimId) provenance; preserve counterarguments, qualifiers, and source provenance; consider direct semantic bearing across developing and monitoring asset or macro theses without treating ticker or keyword overlap as proof; return a bounded recommendation-only result with explicit ambiguity and no writes; validate the result against the exact context digest; and report unavailable source, database, environment, or provider states without invented context or mutation.",
   "instructions": [
@@ -22,7 +22,7 @@
       {
         "id": "adapter-entry-point",
         "category": "structural",
-        "description": "Each exact provider adapter is present in the staged governed Provider Entry Point generated from this package.",
+        "description": "Each exact provider adapter is present in the governed Provider Entry Point generated from this package.",
         "evidence_type": "automated"
       },
       {

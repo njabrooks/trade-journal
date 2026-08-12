@@ -8,6 +8,12 @@ must not reinterpret them.
 
 ## Agent skills
 
+The complete governed Claude discovery authority is
+`docs/agents/provider-entry-points/claude.md`. The generated file resolves the exhaustive inventory through
+the immutable Registry Lock. Individual `.claude/skills/` files remain delegated operational sources,
+protective tombstones, unavailable boundaries, or historical rollback inputs only as their inventory
+disposition declares; they are not competing discovery authority.
+
 ### Issue tracker
 
 Repository-owned issues and specifications are tracked in GitHub Issues for `njabrooks/trade-journal`. See `docs/agents/issue-tracker.md`.

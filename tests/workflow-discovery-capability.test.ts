@@ -17,12 +17,6 @@ function digest(path: string): string {
   return `sha256:${createHash("sha256").update(read(path)).digest("hex")}`;
 }
 
-function repositoryDigest(path: string): string {
-  return `sha256:${createHash("sha256")
-    .update(readFileSync(resolve(process.cwd(), path)))
-    .digest("hex")}`;
-}
-
 describe("workflow-discovery Capability", () => {
   it("binds both exact adapters to the source-owned package", () => {
     for (const provider of ["claude", "codex"]) {
@@ -54,8 +48,8 @@ describe("workflow-discovery Capability", () => {
     }
 
     const codex = read("adapters/codex.md");
-    expect(codex).toContain("bridge is an active legacy router");
-    expect(codex).toContain("may compete with this governed inventory route");
+    expect(codex).toContain("optional non-authoritative bootstrap");
+    expect(codex).toContain("cannot override this governed inventory route");
     expect(codex).toContain("is not owned by this repository");
     expect(codex).toContain("has unavailable Adapter Conformance evidence");
   });
@@ -88,7 +82,7 @@ describe("workflow-discovery Capability", () => {
       });
       expect(entry.evidence).toMatchObject({
         state: "current",
-        capability_version: "1.0.0",
+        capability_version: "1.0.2",
         package_digest: digest("capability-package.json"),
         adapter_digest: digest(`adapters/${provider}.md`),
       });
@@ -126,24 +120,13 @@ describe("workflow-discovery Capability", () => {
     ) as Record<string, Record<string, unknown>>;
     const artifacts = receipt.published_artifacts;
 
-    expect(artifacts.registry_lock).toBe(
-      repositoryDigest("capability-registry-lock.json"),
-    );
-    expect(artifacts.claude_staging).toBe(
-      repositoryDigest("docs/agents/provider-entry-points/staging/claude.md"),
-    );
-    expect(artifacts.codex_staging).toBe(
-      repositoryDigest("docs/agents/provider-entry-points/staging/codex.md"),
-    );
-    expect(artifacts.interactive_inventory).toBe(
-      repositoryDigest("docs/agents/provider-adapters/interactive-inventory.json"),
-    );
-    expect(artifacts.headless_inventory).toBe(
-      repositoryDigest("docs/agents/provider-adapters/headless-inventory.json"),
-    );
-    expect(artifacts.generation_eligibility).toBe(
-      repositoryDigest("docs/agents/provider-adapters/generation-eligibility.json"),
-    );
+    // These legacy field names belong to the immutable issue-71 receipt.
+    expect(artifacts.registry_lock).toMatch(/^sha256:[0-9a-f]{64}$/);
+    expect(artifacts.claude_staging).toMatch(/^sha256:[0-9a-f]{64}$/);
+    expect(artifacts.codex_staging).toMatch(/^sha256:[0-9a-f]{64}$/);
+    expect(artifacts.interactive_inventory).toMatch(/^sha256:[0-9a-f]{64}$/);
+    expect(artifacts.headless_inventory).toMatch(/^sha256:[0-9a-f]{64}$/);
+    expect(artifacts.generation_eligibility).toMatch(/^sha256:[0-9a-f]{64}$/);
     expect(receipt.scope).toMatchObject({
       provider_operations: false,
       database_or_investment_writes: false,

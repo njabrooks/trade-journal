@@ -1,7 +1,7 @@
 {
   "id": "capability:scope:trade-journal/decision-resolution",
   "authority": "scope:trade-journal",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "intent": "Present unresolved Trade Journal Decision Items and record only the current user's explicit judgment through approved auditable resolution and validated lifecycle-transition operations.",
   "contract": "Given an interactive Trade Journal repository session, the complete current unresolved Decision Item packet, and the current user's explicit selection of one bounded action, present the decision and its evidence without manufacturing judgment; execute only the selected runbook and approved repository operations; route every entity status change through scripts/ops/update-entity-status.ts; close the exact Decision Item through scripts/ops/resolve-decision.ts --by user; preserve the resulting journal audit and declared write set; and report the resolution, refusal, unavailability, or failure. Missing, ambiguous, inferred, agent-authored, stale, headless, autonomous, scheduled, background, or CI-supplied judgment is refused before any read or write. This Capability is interactive-only and has no unattended or scheduling eligibility.",
   "instructions": [
@@ -23,7 +23,7 @@
       {
         "id": "adapter-entry-point",
         "category": "structural",
-        "description": "Each exact provider adapter is present in the staged governed Provider Entry Point generated from this package.",
+        "description": "Each exact provider adapter is present in the governed Provider Entry Point generated from this package.",
         "evidence_type": "automated"
       },
       {

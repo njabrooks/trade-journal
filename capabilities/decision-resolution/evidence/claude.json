@@ -1,7 +1,7 @@
 {
   "capability_id": "capability:scope:trade-journal/decision-resolution",
-  "capability_version": "1.0.0",
-  "package_digest": "sha256:66158ba085f39170be27eea5b1b7180dfc872ced87a4b5f134cfdd56729e64d8",
+  "capability_version": "1.0.1",
+  "package_digest": "sha256:0761d66e9ce3e9e77ff2d71e8c8b304e5b354f06542378155e3c1641b1f62bb4",
   "adapter_id": "decision-resolution-claude",
   "adapter_digest": "sha256:2536391fdd71e813c3fc3ea7771cf07c69ee9717ae4a3931501ecb8c3eb48d2a",
   "support_state": "current",
@@ -9,7 +9,7 @@
   "results": {
     "adapter-entry-point": {
       "status": "passed",
-      "method": "Accepted Workspace CLI Capability validation and clean staged Claude Provider Entry Point generation"
+      "method": "Accepted Workspace CLI Capability validation and clean canonical Claude Provider Entry Point generation"
     },
     "interactive-only-boundary": {
       "status": "passed",

@@ -1,0 +1,100 @@
+{
+  "kind": "ProviderDiscoveryCutoverAcceptance",
+  "schema_version": "1.0.0",
+  "issue": "njabrooks/trade-journal#76",
+  "accepted_at": "2026-08-12",
+  "work_item_authority": "https://github.com/njabrooks/trade-journal/issues/76",
+  "blockers": {
+    "verified_closed": [
+      49,
+      51,
+      53,
+      54,
+      56,
+      57,
+      58,
+      59,
+      60,
+      61,
+      62,
+      63,
+      64,
+      65,
+      69,
+      70,
+      71,
+      72,
+      73,
+      74,
+      75,
+      85
+    ],
+    "verification": "GitHub issue state, including the #53 and #85 native dependency addendum, was read before implementation; every blocker was closed."
+  },
+  "inventory_reconciliation": {
+    "historical_j1_count": 73,
+    "validated_final_count": 74,
+    "difference": "Repository-native Codex workflow discovery added one governed entry after J1 acceptance. The final cutover reconciles all 74 rather than dropping the later valid entry.",
+    "interactive_entries": 38,
+    "headless_entries": 36,
+    "generation_eligible_entries": 58,
+    "final_dispositions": {
+      "governed": 51,
+      "replaced": 7,
+      "retained": 4,
+      "deferred": 2,
+      "retired": 6,
+      "tombstone": 2,
+      "unavailable": 2
+    },
+    "entry_level_authority": "docs/agents/provider-adapters/generation-eligibility.json"
+  },
+  "governed_outputs": {
+    "declaration": {
+      "path": "provider-entry-points.json",
+      "sha256": "8df553013bdc2cf9ad056e59340bc0e623ef4abce88014a96df7dcd24d7c743d"
+    },
+    "claude": {
+      "path": "docs/agents/provider-entry-points/claude.md",
+      "sha256": "e47076aab2cab1e097a20f05a4593ca45ca2b77737f32a6102780c716dcf2e52"
+    },
+    "codex": {
+      "path": "docs/agents/provider-entry-points/codex.md",
+      "sha256": "698f29fed558ee55e427b2cba175228025fa598d6de71fec708164408e247a37"
+    },
+    "removed_authority": "docs/agents/provider-entry-points/staging/"
+  },
+  "inventory_artifacts": {
+    "interactive": {
+      "path": "docs/agents/provider-adapters/interactive-inventory.json",
+      "sha256": "40a20225c1aff922b95d095f8e7453e339c36f94e079749a06481f8f24b12bb8"
+    },
+    "headless": {
+      "path": "docs/agents/provider-adapters/headless-inventory.json",
+      "sha256": "9af0d7ddbb9b90d34705932a6303d0385ee82516099ea8373db1b56cd1894a1b"
+    },
+    "final_projection": {
+      "path": "docs/agents/provider-adapters/generation-eligibility.json",
+      "sha256": "671c787422800d70d0c01d988cd4838617a3231c22bea1eb48f2bd0f97d0787f"
+    }
+  },
+  "authority_boundary": {
+    "current": "Only exact current, digest-bound adapters are generated into the authoritative whole-file Provider Entry Points.",
+    "not_current": "Retained, deferred, retired, tombstone, and unavailable entries keep only their inventory-declared boundary; file presence and historical execution do not imply conformance.",
+    "rollback": "Git history preserves the former staging outputs and migration inputs; rollback does not grant them current discovery authority."
+  },
+  "verification": {
+    "repository_conformance": "passed in human and JSON modes",
+    "capability_conformance": "all 16 repository validation targets passed in human and JSON modes",
+    "registry_lock": "published lock and freshly resolved 19-Capability lock passed",
+    "clean_regeneration": "both canonical outputs passed in human and JSON modes with exact recorded digests",
+    "inventory": "38 interactive plus 36 headless entries passed in human and JSON modes",
+    "refusal": "unavailable-input and expired-evidence no-write proofs passed in human and JSON modes",
+    "focused_tests": "255 passed, 8 skipped",
+    "full_tests": "688 passed, 8 skipped",
+    "changed_typescript_lint": "passed",
+    "production_build": "passed after granting the build network access required for Supabase-backed prerendering",
+    "service_restart": "launchctl kickstart completed for com.tradej",
+    "smoke": "HTTP 307 from / and HTTP 200 from /claims on the restarted localhost:3001 service"
+  }
+}
