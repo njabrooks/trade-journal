@@ -228,6 +228,11 @@ jobs:
           npx tsx scripts/ops/prove-evidence-freshness-refusal.ts --workspace-root "$WORKSPACE_REPOSITORY_ROOT"
           npx tsx scripts/ops/prove-evidence-freshness-refusal.ts --workspace-root "$WORKSPACE_REPOSITORY_ROOT" --format json
 
+      - name: Validate the reproducible final J2 acceptance record
+        run: |
+          npx tsx scripts/ops/validate-j2-acceptance.ts
+          npx tsx scripts/ops/validate-j2-acceptance.ts --format json
+
       - name: Run focused governance regression tests
         env:
           # These tests validate the immutable published Lock, not the separately
