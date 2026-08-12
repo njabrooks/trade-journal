@@ -82,7 +82,7 @@ describe("workflow-discovery Capability", () => {
       });
       expect(entry.evidence).toMatchObject({
         state: "current",
-        capability_version: "1.0.1",
+        capability_version: "1.0.2",
         package_digest: digest("capability-package.json"),
         adapter_digest: digest(`adapters/${provider}.md`),
       });

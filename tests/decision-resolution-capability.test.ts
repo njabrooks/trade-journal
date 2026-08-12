@@ -302,7 +302,7 @@ describe("decision-resolution Capability", () => {
   });
 
   governanceIt(
-    "validates the exact package and staged projections through the public Workspace CLI",
+    "validates the exact package and governed projections through the public Workspace CLI",
     () => {
       const environment = {
         ...process.env,

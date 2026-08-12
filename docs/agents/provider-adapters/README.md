@@ -193,18 +193,18 @@ added to Trade Journal.
 
 ## J2 portfolio-snapshot tracer
 
-The first J2 slice establishes the reusable governance spine without changing a live job:
+Historically, the first J2 slice established the reusable governance spine without changing a live job:
 
 - Trade Journal is the source Capability Authority for `capability:scope:trade-journal/portfolio-snapshot`;
 - its exact Claude and Codex adapters are separately authored and digest-bound;
 - the published Registry release points to the preserved source-release commit;
-- the immutable lock and complete staging outputs reproduce through the accepted Workspace CLI; and
+- the immutable lock and then-staging outputs reproduced through the accepted Workspace CLI; and
 - the original Claude skill and Codex mirror remain visible as migration inputs until final discovery cutover.
 
 CI validates the Capability, published lock, and clean regeneration in both human and JSON modes while
-retaining the J1 unavailable-input refusal proof. The repository inventory validator also checks that each
-`current` entry resolves to the exact package, adapter, evidence record, digest, staging output, and preserved
-migration input it declares.
+retaining the J1 unavailable-input refusal proof. After the final cutover, the repository inventory validator
+checks that each `current` entry resolves to the exact package, adapter, evidence record, digest, canonical
+governed output, and preserved migration input it declares.
 
 ## J2 governed operational packages
 

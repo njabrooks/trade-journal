@@ -73,7 +73,7 @@ describe('belief-evidence-assessment Capability', () => {
     }
   });
 
-  governanceIt('validates the package and staged projections through the public Workspace CLI', () => {
+  governanceIt('validates the package and governed projections through the public Workspace CLI', () => {
     const environment = { ...process.env, WORKSPACE_REPOSITORY_ROOT: workspaceRoot };
     const capabilityReport = JSON.parse(execFileSync(
       './workspace',
