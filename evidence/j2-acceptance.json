@@ -20,7 +20,17 @@
     "workspace_cli_git_blob": "6d35a84382ddbfa004238a61b0d6f643a57f58c0",
     "workspace_launcher_sha256": "6d52ec386022da5d6953093a66f54db655ed9cfe80ab543d23db73b4b1056f14",
     "evidence_time": "2026-08-12",
-    "method": "The clean exact revision was validated through the repository-root public ./workspace CLI in human and JSON modes before this acceptance record was authored. The PR and default-branch workflows repeat the same governed seam at their exact checked-out revisions."
+    "method": "The clean exact revision was validated through the repository-root public ./workspace CLI in human and JSON modes before this acceptance record was authored. The validator reproduces the recorded governed artifact bytes from that Git revision, and the PR workflow repeats the same governed seam at its exact checkout.",
+    "commands": [
+      "./workspace validate repository . [human and JSON]",
+      "./workspace validate repository . --validate-tracker [authenticated human and JSON]",
+      "./workspace validate capability capabilities/<all-16-owned> --evidence-time 2026-08-12 [human and JSON]",
+      "./workspace validate registry-lock capability-registry.json --lock capability-registry-lock.json --mode published --evidence-time 2026-08-12 [human and JSON]",
+      "./workspace resolve registry capability-registry.json --lock <temporary> --mode published --evidence-time 2026-08-12",
+      "./workspace validate provider-entry-points . --registry capability-registry.json --lock <fresh-lock> --mode published --evidence-time 2026-08-12 [human and JSON]",
+      "provider inventories and generation eligibility [human and JSON]",
+      "WS-ENTRY-005 unavailable-support and expired-evidence no-write proofs [human and JSON]"
+    ]
   },
   "governance_artifacts": {
     "registry": {
@@ -60,95 +70,365 @@
     }
   },
   "capability_releases": [
-    {"id":"capability:scope:notes/content-processing","authority":"scope:notes","repository":"github:njabrooks/notes","version":"0.2.0","revision":"04ea4f13d40a7c868ce43490d2a7e3ac440a026e","package_digest":"sha256:cbc56e1e943cfdfc2585592b4284e2640ce53ac0aaad9325913a5de78224881f","evidence_date":"2026-08-10"},
-    {"id":"capability:scope:notes/pdf-transcript","authority":"scope:notes","repository":"github:njabrooks/notes","version":"0.2.0","revision":"04ea4f13d40a7c868ce43490d2a7e3ac440a026e","package_digest":"sha256:af8335cf5022c0e709e4fa755096fbfff5c5b4d0e6920fbba601aa1b532e2f3b","evidence_date":"2026-08-10"},
-    {"id":"capability:scope:notes/tana-client","authority":"scope:notes","repository":"github:njabrooks/notes","version":"0.2.0","revision":"04ea4f13d40a7c868ce43490d2a7e3ac440a026e","package_digest":"sha256:02f53b445a4629a3baf31730a244590d7de003afd6c840980e5657bff80e98d9","evidence_date":"2026-08-07"},
-    {"id":"capability:scope:trade-journal/belief-evidence-assessment","authority":"scope:trade-journal","repository":"github:njabrooks/trade-journal","version":"1.0.1","revision":"d66b72d6bebde40dc1bc2a13949da42b9e4bd378","package_digest":"sha256:758d4f0c233c7479f62daf6cc8fa4221b4379eb2dd517a258a0f2feeded805e7","evidence_date":"2026-08-08"},
-    {"id":"capability:scope:trade-journal/belief-maintenance","authority":"scope:trade-journal","repository":"github:njabrooks/trade-journal","version":"1.0.0","revision":"be8ac53f04a59d34570ab72c4fe891dfa69a35ce","package_digest":"sha256:bd842e99b0a3c9b48b83d1f570235a32dc97fcf4036f34751248483889299d48","evidence_date":"2026-08-06"},
-    {"id":"capability:scope:trade-journal/belief-research-relation","authority":"scope:trade-journal","repository":"github:njabrooks/trade-journal","version":"1.0.1","revision":"d66b72d6bebde40dc1bc2a13949da42b9e4bd378","package_digest":"sha256:ad7bf0f89879faf4c38e10aa7de0009d429034843e009e3eab12a15b808ba149","evidence_date":"2026-08-09"},
-    {"id":"capability:scope:trade-journal/claims-synthesis","authority":"scope:trade-journal","repository":"github:njabrooks/trade-journal","version":"1.0.1","revision":"d66b72d6bebde40dc1bc2a13949da42b9e4bd378","package_digest":"sha256:b20b92a6e66de2281074813c60672daf0e985520d355e5a2ffa56f383cc99b52","evidence_date":"2026-08-08"},
-    {"id":"capability:scope:trade-journal/decision-resolution","authority":"scope:trade-journal","repository":"github:njabrooks/trade-journal","version":"1.0.1","revision":"d66b72d6bebde40dc1bc2a13949da42b9e4bd378","package_digest":"sha256:0761d66e9ce3e9e77ff2d71e8c8b304e5b354f06542378155e3c1641b1f62bb4","evidence_date":"2026-08-12"},
-    {"id":"capability:scope:trade-journal/morning-attention-brief","authority":"scope:trade-journal","repository":"github:njabrooks/trade-journal","version":"1.0.0","revision":"be091a981fcac066102005e1512d845de362b7a0","package_digest":"sha256:e9224d2a011b4b3c9f83233efed7a30f0ed92818a7e16495f88c48a299b2e3ec","evidence_date":"2026-08-07"},
-    {"id":"capability:scope:trade-journal/options-vol-analysis","authority":"scope:trade-journal","repository":"github:njabrooks/trade-journal","version":"1.0.0","revision":"a165aacc7991946dcb2cc5983790fc22c09a3663","package_digest":"sha256:6c0ef068f8bd35b75cf936718574532594860756d5fa4c13414e1f3452ebc20d","evidence_date":"2026-08-11"},
-    {"id":"capability:scope:trade-journal/portfolio-analysis","authority":"scope:trade-journal","repository":"github:njabrooks/trade-journal","version":"1.0.0","revision":"548fc84a0720c439e40c281715a302b7c07673c4","package_digest":"sha256:5bf06252b1442c960f3f2f9d190e26b47cf09f9f3393f72f55e1013cc4ebab10","evidence_date":"2026-08-11"},
-    {"id":"capability:scope:trade-journal/portfolio-options-advice","authority":"scope:trade-journal","repository":"github:njabrooks/trade-journal","version":"1.0.0","revision":"be8ac53f04a59d34570ab72c4fe891dfa69a35ce","package_digest":"sha256:2082d00338232f3bed0a320b7fabdc8eda80e8bc26803adad173b90d1ba8a6a7","evidence_date":"2026-08-06"},
-    {"id":"capability:scope:trade-journal/portfolio-snapshot","authority":"scope:trade-journal","repository":"github:njabrooks/trade-journal","version":"1.0.0","revision":"0aaf10db7eaf4315aadd440f09ab150b38192d5e","package_digest":"sha256:8e37dcee1342e6d1b9e4b53bb5eb24c56208e4fe52cbd78844f8993ebc41f155","evidence_date":"2026-08-06"},
-    {"id":"capability:scope:trade-journal/research-pipeline","authority":"scope:trade-journal","repository":"github:njabrooks/trade-journal","version":"1.3.2","revision":"d66b72d6bebde40dc1bc2a13949da42b9e4bd378","package_digest":"sha256:95a0ab405433e250bb08b19a0d282518633852bf816b6520ff817a97b04210d0","evidence_date":"2026-08-10"},
-    {"id":"capability:scope:trade-journal/research-publication","authority":"scope:trade-journal","repository":"github:njabrooks/trade-journal","version":"1.0.1","revision":"d66b72d6bebde40dc1bc2a13949da42b9e4bd378","package_digest":"sha256:72eaaf59988b176adf331564775420e89fc80d234e97fd64788c3972eba8ef21","evidence_date":"2026-08-08"},
-    {"id":"capability:scope:trade-journal/thesis-foreground","authority":"scope:trade-journal","repository":"github:njabrooks/trade-journal","version":"1.0.1","revision":"d66b72d6bebde40dc1bc2a13949da42b9e4bd378","package_digest":"sha256:ba06f98a1639b18b499efe2b198a911deaf17e8452b17b7438a5ae2b5be0f8fd","evidence_date":"2026-08-12"},
-    {"id":"capability:scope:trade-journal/thesis-observation","authority":"scope:trade-journal","repository":"github:njabrooks/trade-journal","version":"1.0.0","revision":"be8ac53f04a59d34570ab72c4fe891dfa69a35ce","package_digest":"sha256:3bd4bbd415adf291ae8a421cb09724031b147008d79482914a20f5f19f7f230c","evidence_date":"2026-08-06"},
-    {"id":"capability:scope:trade-journal/thesis-underwriting","authority":"scope:trade-journal","repository":"github:njabrooks/trade-journal","version":"1.0.1","revision":"d66b72d6bebde40dc1bc2a13949da42b9e4bd378","package_digest":"sha256:57a65268ae6033915b2ae1401b15551949dda8336e1a5f510e8c1a89cc646e7e","evidence_date":"2026-08-07"},
-    {"id":"capability:scope:trade-journal/workflow-discovery","authority":"scope:trade-journal","repository":"github:njabrooks/trade-journal","version":"1.0.2","revision":"bbeb3fedbaa8e4f16496d16c36970a2e04829367","package_digest":"sha256:01c347703cdd54dd1bb174d9372acf243cb60b191a569f112727cc726b1d5a2b","evidence_date":"2026-08-12"}
+    {
+      "id": "capability:scope:notes/content-processing",
+      "authority": "scope:notes",
+      "repository": "github:njabrooks/notes",
+      "version": "0.2.0",
+      "revision": "04ea4f13d40a7c868ce43490d2a7e3ac440a026e",
+      "package_digest": "sha256:cbc56e1e943cfdfc2585592b4284e2640ce53ac0aaad9325913a5de78224881f",
+      "evidence_date": "2026-08-10"
+    },
+    {
+      "id": "capability:scope:notes/pdf-transcript",
+      "authority": "scope:notes",
+      "repository": "github:njabrooks/notes",
+      "version": "0.2.0",
+      "revision": "04ea4f13d40a7c868ce43490d2a7e3ac440a026e",
+      "package_digest": "sha256:af8335cf5022c0e709e4fa755096fbfff5c5b4d0e6920fbba601aa1b532e2f3b",
+      "evidence_date": "2026-08-10"
+    },
+    {
+      "id": "capability:scope:notes/tana-client",
+      "authority": "scope:notes",
+      "repository": "github:njabrooks/notes",
+      "version": "0.2.0",
+      "revision": "04ea4f13d40a7c868ce43490d2a7e3ac440a026e",
+      "package_digest": "sha256:02f53b445a4629a3baf31730a244590d7de003afd6c840980e5657bff80e98d9",
+      "evidence_date": "2026-08-07"
+    },
+    {
+      "id": "capability:scope:trade-journal/belief-evidence-assessment",
+      "authority": "scope:trade-journal",
+      "repository": "github:njabrooks/trade-journal",
+      "version": "1.0.1",
+      "revision": "d66b72d6bebde40dc1bc2a13949da42b9e4bd378",
+      "package_digest": "sha256:758d4f0c233c7479f62daf6cc8fa4221b4379eb2dd517a258a0f2feeded805e7",
+      "evidence_date": "2026-08-08"
+    },
+    {
+      "id": "capability:scope:trade-journal/belief-maintenance",
+      "authority": "scope:trade-journal",
+      "repository": "github:njabrooks/trade-journal",
+      "version": "1.0.0",
+      "revision": "be8ac53f04a59d34570ab72c4fe891dfa69a35ce",
+      "package_digest": "sha256:bd842e99b0a3c9b48b83d1f570235a32dc97fcf4036f34751248483889299d48",
+      "evidence_date": "2026-08-06"
+    },
+    {
+      "id": "capability:scope:trade-journal/belief-research-relation",
+      "authority": "scope:trade-journal",
+      "repository": "github:njabrooks/trade-journal",
+      "version": "1.0.1",
+      "revision": "d66b72d6bebde40dc1bc2a13949da42b9e4bd378",
+      "package_digest": "sha256:ad7bf0f89879faf4c38e10aa7de0009d429034843e009e3eab12a15b808ba149",
+      "evidence_date": "2026-08-09"
+    },
+    {
+      "id": "capability:scope:trade-journal/claims-synthesis",
+      "authority": "scope:trade-journal",
+      "repository": "github:njabrooks/trade-journal",
+      "version": "1.0.1",
+      "revision": "d66b72d6bebde40dc1bc2a13949da42b9e4bd378",
+      "package_digest": "sha256:b20b92a6e66de2281074813c60672daf0e985520d355e5a2ffa56f383cc99b52",
+      "evidence_date": "2026-08-08"
+    },
+    {
+      "id": "capability:scope:trade-journal/decision-resolution",
+      "authority": "scope:trade-journal",
+      "repository": "github:njabrooks/trade-journal",
+      "version": "1.0.1",
+      "revision": "d66b72d6bebde40dc1bc2a13949da42b9e4bd378",
+      "package_digest": "sha256:0761d66e9ce3e9e77ff2d71e8c8b304e5b354f06542378155e3c1641b1f62bb4",
+      "evidence_date": "2026-08-12"
+    },
+    {
+      "id": "capability:scope:trade-journal/morning-attention-brief",
+      "authority": "scope:trade-journal",
+      "repository": "github:njabrooks/trade-journal",
+      "version": "1.0.0",
+      "revision": "be091a981fcac066102005e1512d845de362b7a0",
+      "package_digest": "sha256:e9224d2a011b4b3c9f83233efed7a30f0ed92818a7e16495f88c48a299b2e3ec",
+      "evidence_date": "2026-08-07"
+    },
+    {
+      "id": "capability:scope:trade-journal/options-vol-analysis",
+      "authority": "scope:trade-journal",
+      "repository": "github:njabrooks/trade-journal",
+      "version": "1.0.0",
+      "revision": "a165aacc7991946dcb2cc5983790fc22c09a3663",
+      "package_digest": "sha256:6c0ef068f8bd35b75cf936718574532594860756d5fa4c13414e1f3452ebc20d",
+      "evidence_date": "2026-08-11"
+    },
+    {
+      "id": "capability:scope:trade-journal/portfolio-analysis",
+      "authority": "scope:trade-journal",
+      "repository": "github:njabrooks/trade-journal",
+      "version": "1.0.0",
+      "revision": "548fc84a0720c439e40c281715a302b7c07673c4",
+      "package_digest": "sha256:5bf06252b1442c960f3f2f9d190e26b47cf09f9f3393f72f55e1013cc4ebab10",
+      "evidence_date": "2026-08-11"
+    },
+    {
+      "id": "capability:scope:trade-journal/portfolio-options-advice",
+      "authority": "scope:trade-journal",
+      "repository": "github:njabrooks/trade-journal",
+      "version": "1.0.0",
+      "revision": "be8ac53f04a59d34570ab72c4fe891dfa69a35ce",
+      "package_digest": "sha256:2082d00338232f3bed0a320b7fabdc8eda80e8bc26803adad173b90d1ba8a6a7",
+      "evidence_date": "2026-08-06"
+    },
+    {
+      "id": "capability:scope:trade-journal/portfolio-snapshot",
+      "authority": "scope:trade-journal",
+      "repository": "github:njabrooks/trade-journal",
+      "version": "1.0.0",
+      "revision": "0aaf10db7eaf4315aadd440f09ab150b38192d5e",
+      "package_digest": "sha256:8e37dcee1342e6d1b9e4b53bb5eb24c56208e4fe52cbd78844f8993ebc41f155",
+      "evidence_date": "2026-08-06"
+    },
+    {
+      "id": "capability:scope:trade-journal/research-pipeline",
+      "authority": "scope:trade-journal",
+      "repository": "github:njabrooks/trade-journal",
+      "version": "1.3.2",
+      "revision": "d66b72d6bebde40dc1bc2a13949da42b9e4bd378",
+      "package_digest": "sha256:95a0ab405433e250bb08b19a0d282518633852bf816b6520ff817a97b04210d0",
+      "evidence_date": "2026-08-10"
+    },
+    {
+      "id": "capability:scope:trade-journal/research-publication",
+      "authority": "scope:trade-journal",
+      "repository": "github:njabrooks/trade-journal",
+      "version": "1.0.1",
+      "revision": "d66b72d6bebde40dc1bc2a13949da42b9e4bd378",
+      "package_digest": "sha256:72eaaf59988b176adf331564775420e89fc80d234e97fd64788c3972eba8ef21",
+      "evidence_date": "2026-08-08"
+    },
+    {
+      "id": "capability:scope:trade-journal/thesis-foreground",
+      "authority": "scope:trade-journal",
+      "repository": "github:njabrooks/trade-journal",
+      "version": "1.0.1",
+      "revision": "d66b72d6bebde40dc1bc2a13949da42b9e4bd378",
+      "package_digest": "sha256:ba06f98a1639b18b499efe2b198a911deaf17e8452b17b7438a5ae2b5be0f8fd",
+      "evidence_date": "2026-08-12"
+    },
+    {
+      "id": "capability:scope:trade-journal/thesis-observation",
+      "authority": "scope:trade-journal",
+      "repository": "github:njabrooks/trade-journal",
+      "version": "1.0.0",
+      "revision": "be8ac53f04a59d34570ab72c4fe891dfa69a35ce",
+      "package_digest": "sha256:3bd4bbd415adf291ae8a421cb09724031b147008d79482914a20f5f19f7f230c",
+      "evidence_date": "2026-08-06"
+    },
+    {
+      "id": "capability:scope:trade-journal/thesis-underwriting",
+      "authority": "scope:trade-journal",
+      "repository": "github:njabrooks/trade-journal",
+      "version": "1.0.1",
+      "revision": "d66b72d6bebde40dc1bc2a13949da42b9e4bd378",
+      "package_digest": "sha256:57a65268ae6033915b2ae1401b15551949dda8336e1a5f510e8c1a89cc646e7e",
+      "evidence_date": "2026-08-07"
+    },
+    {
+      "id": "capability:scope:trade-journal/workflow-discovery",
+      "authority": "scope:trade-journal",
+      "repository": "github:njabrooks/trade-journal",
+      "version": "1.0.2",
+      "revision": "bbeb3fedbaa8e4f16496d16c36970a2e04829367",
+      "package_digest": "sha256:01c347703cdd54dd1bb174d9372acf243cb60b191a569f112727cc726b1d5a2b",
+      "evidence_date": "2026-08-12"
+    }
   ],
   "adapter_digests": {
-    "notes-content-processing-claude":"sha256:60fefe2dd5fff691582166fde0655d8c58155b7cfe956405aa320f19df3c9511",
-    "notes-content-processing-codex":"sha256:0e8460c2e6948fdff9b45862f26be6e251520909db678ba938c8691ea513eac0",
-    "notes-pdf-transcript-claude":"sha256:1d196142dc9833e0ca9c6e9e8a15b143db5abc0894537e96751980a695c3f562",
-    "notes-pdf-transcript-codex":"sha256:a08710a61391d4244104da48e37e610e9a03e76cd2b1b78a0e155eb593a14a69",
-    "notes-tana-client-claude":"sha256:80da4ec1accb2caba9d9fa6b9a22e8d81aedcf9a75b0becaec376e5dd8fa4b9e",
-    "notes-tana-client-codex":"sha256:415d0778487e8695a60ecac9698c37c1e6c1a0e2c883ca912893eb72bebba1bc",
-    "belief-evidence-assessment-claude":"sha256:9d68674236145e1217029ef723d481a05c7580d90559da8891f674b42c186d6c",
-    "belief-evidence-assessment-codex":"sha256:0fb1750bc026e48370d4e0d193b0e90213974b87009731cc699f856c3d078adb",
-    "belief-maintenance-claude":"sha256:994acd5860b1e78d952d26c1e69dc46f05a9bb9b2cbce013ca8b073599fc2641",
-    "belief-maintenance-codex":"sha256:1c3e9fb432cd494bf71bf691771ac9284dd1b8dc63b8ce0cfaaa22aeb8b0b22c",
-    "belief-research-relation-claude":"sha256:f6b73f31596b71532b45d4a37512b3251ec615053ff2e7bc1b974df75126994a",
-    "belief-research-relation-codex":"sha256:339b828b0b2a0649339657da16c8f20188adbabdf08215a2868e92f06cc3ef74",
-    "claims-synthesis-claude":"sha256:ffea868f3116dd820e11f0a9524e06d6bca225ad50de1f28a704559f69a48c40",
-    "claims-synthesis-codex":"sha256:18ff6b767b4e501bbf97930ec803dedb787fe767b0ffc57f0b5cf4bed86f9a99",
-    "decision-resolution-claude":"sha256:2536391fdd71e813c3fc3ea7771cf07c69ee9717ae4a3931501ecb8c3eb48d2a",
-    "decision-resolution-codex":"sha256:4618d8ca2d232fda1490ebb53309d787bfcaedafb9e8f7bb5f94f397c3986f44",
-    "morning-attention-brief-claude":"sha256:d84d2c175160b79ee612bbce054a4ee0dd5702932bf18e8864b147bdd55c63d3",
-    "morning-attention-brief-codex":"sha256:392151b5da990f7f3f407ddd46c6100072c58d58632cfc0b605cbf30724ba934",
-    "options-vol-analysis-claude":"sha256:23ea58b25be105d8d3ebcf4944abceb7d116f4ea14a51c2158147e27c3af28f3",
-    "options-vol-analysis-codex":"sha256:27d4e39c1d6be2dba54e8d5bf5f7af23da866cc77a47ac3010faf850017a609f",
-    "portfolio-analysis-claude":"sha256:9d93c809f56b723a6a130ece295395ebcbceab752a7b5b423acadf264452a7ac",
-    "portfolio-analysis-codex":"sha256:38685a8964aed739d7c6454bb33531330f077b08c27b58004a382931cc02b230",
-    "portfolio-options-advice-claude":"sha256:4fe912e48492cf4fc3d65649a169cf380b831d4fb919039cd15a34351ab80e38",
-    "portfolio-options-advice-codex":"sha256:14f1cf3627fdd8734ed973f67ed0f562ab8126639d77d44c3468a90903a173c6",
-    "portfolio-snapshot-claude":"sha256:cd677a8d769e3eee5873d1f9db44cdc02dbc839a33e31392e4fb3fd5146b3db4",
-    "portfolio-snapshot-codex":"sha256:a885a2fc94d9dea473d4df4e466caea7a8a0cdb18088b58d8c227d76a482c209",
-    "research-pipeline-claude":"sha256:ae03a42715dbce27565cf772cff6f71c82ec8bf7f4fb6c3ef7f3cf017ff30fd5",
-    "research-pipeline-codex":"sha256:746ca82d4717d721c30377cb023585dc4c94689e93c1a0118b37942053388a53",
-    "research-publication-claude":"sha256:bd963ae249d123183632c5c09bd878b2979d99149d4e8815a9bcbb1c24e58134",
-    "research-publication-codex":"sha256:e89e187bc4e509f3fa1e56cf2f27d2da85c65113bc5c93fe2e0d43a2ab8118e0",
-    "thesis-foreground-claude":"sha256:96216e50097b758ef9d2a0557974329cf1e491d20dbe1a67725b1348c2fd4650",
-    "thesis-foreground-codex":"sha256:9e0452709adb108dcf8baf307608d21e9a09973faab11c0d538a4d2c28be893d",
-    "thesis-observation-claude":"sha256:c6eb5237932881cd801aae3e55bd20fab541ff247e92e3b4a88c6faada2029ca",
-    "thesis-observation-codex":"sha256:20e4586623451c88c16deee0bc6add22bcf7281a4a8e908972705a8ff5f2938a",
-    "thesis-underwriting-claude":"sha256:58ec39a1d27c3a184e5cc7624ba4e95ffcf96a289318352555f2e1826ddd490d",
-    "thesis-underwriting-codex":"sha256:f5067026d7a81aa37de1d1ddc78d9c80511112b6e28e59f15851ed033b887a45",
-    "workflow-discovery-claude":"sha256:82ee574c9e1e4c2bce81a425775a5de45ba350350f8589c3f9ff60d8f945b82b",
-    "workflow-discovery-codex":"sha256:b36d0c5055bf4e63f42d0407cf4349a2e4f567afb52f097aa0ece5ab4bcd39a0"
+    "notes-content-processing-claude": "sha256:60fefe2dd5fff691582166fde0655d8c58155b7cfe956405aa320f19df3c9511",
+    "notes-content-processing-codex": "sha256:0e8460c2e6948fdff9b45862f26be6e251520909db678ba938c8691ea513eac0",
+    "notes-pdf-transcript-claude": "sha256:1d196142dc9833e0ca9c6e9e8a15b143db5abc0894537e96751980a695c3f562",
+    "notes-pdf-transcript-codex": "sha256:a08710a61391d4244104da48e37e610e9a03e76cd2b1b78a0e155eb593a14a69",
+    "notes-tana-client-claude": "sha256:80da4ec1accb2caba9d9fa6b9a22e8d81aedcf9a75b0becaec376e5dd8fa4b9e",
+    "notes-tana-client-codex": "sha256:415d0778487e8695a60ecac9698c37c1e6c1a0e2c883ca912893eb72bebba1bc",
+    "belief-evidence-assessment-claude": "sha256:9d68674236145e1217029ef723d481a05c7580d90559da8891f674b42c186d6c",
+    "belief-evidence-assessment-codex": "sha256:0fb1750bc026e48370d4e0d193b0e90213974b87009731cc699f856c3d078adb",
+    "belief-maintenance-claude": "sha256:994acd5860b1e78d952d26c1e69dc46f05a9bb9b2cbce013ca8b073599fc2641",
+    "belief-maintenance-codex": "sha256:1c3e9fb432cd494bf71bf691771ac9284dd1b8dc63b8ce0cfaaa22aeb8b0b22c",
+    "belief-research-relation-claude": "sha256:f6b73f31596b71532b45d4a37512b3251ec615053ff2e7bc1b974df75126994a",
+    "belief-research-relation-codex": "sha256:339b828b0b2a0649339657da16c8f20188adbabdf08215a2868e92f06cc3ef74",
+    "claims-synthesis-claude": "sha256:ffea868f3116dd820e11f0a9524e06d6bca225ad50de1f28a704559f69a48c40",
+    "claims-synthesis-codex": "sha256:18ff6b767b4e501bbf97930ec803dedb787fe767b0ffc57f0b5cf4bed86f9a99",
+    "decision-resolution-claude": "sha256:2536391fdd71e813c3fc3ea7771cf07c69ee9717ae4a3931501ecb8c3eb48d2a",
+    "decision-resolution-codex": "sha256:4618d8ca2d232fda1490ebb53309d787bfcaedafb9e8f7bb5f94f397c3986f44",
+    "morning-attention-brief-claude": "sha256:d84d2c175160b79ee612bbce054a4ee0dd5702932bf18e8864b147bdd55c63d3",
+    "morning-attention-brief-codex": "sha256:392151b5da990f7f3f407ddd46c6100072c58d58632cfc0b605cbf30724ba934",
+    "options-vol-analysis-claude": "sha256:23ea58b25be105d8d3ebcf4944abceb7d116f4ea14a51c2158147e27c3af28f3",
+    "options-vol-analysis-codex": "sha256:27d4e39c1d6be2dba54e8d5bf5f7af23da866cc77a47ac3010faf850017a609f",
+    "portfolio-analysis-claude": "sha256:9d93c809f56b723a6a130ece295395ebcbceab752a7b5b423acadf264452a7ac",
+    "portfolio-analysis-codex": "sha256:38685a8964aed739d7c6454bb33531330f077b08c27b58004a382931cc02b230",
+    "portfolio-options-advice-claude": "sha256:4fe912e48492cf4fc3d65649a169cf380b831d4fb919039cd15a34351ab80e38",
+    "portfolio-options-advice-codex": "sha256:14f1cf3627fdd8734ed973f67ed0f562ab8126639d77d44c3468a90903a173c6",
+    "portfolio-snapshot-claude": "sha256:cd677a8d769e3eee5873d1f9db44cdc02dbc839a33e31392e4fb3fd5146b3db4",
+    "portfolio-snapshot-codex": "sha256:a885a2fc94d9dea473d4df4e466caea7a8a0cdb18088b58d8c227d76a482c209",
+    "research-pipeline-claude": "sha256:ae03a42715dbce27565cf772cff6f71c82ec8bf7f4fb6c3ef7f3cf017ff30fd5",
+    "research-pipeline-codex": "sha256:746ca82d4717d721c30377cb023585dc4c94689e93c1a0118b37942053388a53",
+    "research-publication-claude": "sha256:bd963ae249d123183632c5c09bd878b2979d99149d4e8815a9bcbb1c24e58134",
+    "research-publication-codex": "sha256:e89e187bc4e509f3fa1e56cf2f27d2da85c65113bc5c93fe2e0d43a2ab8118e0",
+    "thesis-foreground-claude": "sha256:96216e50097b758ef9d2a0557974329cf1e491d20dbe1a67725b1348c2fd4650",
+    "thesis-foreground-codex": "sha256:9e0452709adb108dcf8baf307608d21e9a09973faab11c0d538a4d2c28be893d",
+    "thesis-observation-claude": "sha256:c6eb5237932881cd801aae3e55bd20fab541ff247e92e3b4a88c6faada2029ca",
+    "thesis-observation-codex": "sha256:20e4586623451c88c16deee0bc6add22bcf7281a4a8e908972705a8ff5f2938a",
+    "thesis-underwriting-claude": "sha256:58ec39a1d27c3a184e5cc7624ba4e95ffcf96a289318352555f2e1826ddd490d",
+    "thesis-underwriting-codex": "sha256:f5067026d7a81aa37de1d1ddc78d9c80511112b6e28e59f15851ed033b887a45",
+    "workflow-discovery-claude": "sha256:82ee574c9e1e4c2bce81a425775a5de45ba350350f8589c3f9ff60d8f945b82b",
+    "workflow-discovery-codex": "sha256:b36d0c5055bf4e63f42d0407cf4349a2e4f567afb52f097aa0ece5ab4bcd39a0"
   },
   "inventory_reconciliation": {
     "historical_j1_requirement": 73,
+    "historical_j1_revision": "2328956997f414170c27bd03478c068e378e2b3b",
+    "historical_j1_projection_path": "docs/agents/provider-adapters/generation-eligibility.json",
+    "historical_j1_projection_sha256": "609d4e55fbd6d4fd9814eda4d56fad0f5c923574d983ded2112ead5430b43876",
     "validated_j2_inventory": 74,
     "reason_for_difference": "The repository-native Codex workflow-discovery entry was added after J1 acceptance and is a valid governed entry. J2 reconciles it rather than deleting it to preserve the historical count.",
+    "added_entries_since_j1": ["interactive-claude-workflow-discovery"],
+    "removed_entries_since_j1": [],
     "interactive": 38,
     "headless": 36,
     "generation_eligible": 58,
-    "final_dispositions": {"governed":51,"replaced":7,"retained":4,"deferred":2,"retired":6,"tombstone":2,"unavailable":2},
+    "final_dispositions": {
+      "governed": 51,
+      "replaced": 7,
+      "retained": 4,
+      "deferred": 2,
+      "retired": 6,
+      "tombstone": 2,
+      "unavailable": 2
+    },
     "entry_level_record": "docs/agents/provider-adapters/generation-eligibility.json"
   },
   "live_cutovers": [
-    {"consumer":"belief-maintenance","issue":49,"approval":"https://github.com/njabrooks/trade-journal/issues/49#issuecomment-5214036143","evidence_date":"2026-08-07","canary":"one bounded thesis-health result; exactly one authorized journal row; no Decision Item resolution or status mutation","safeguards":"08:00/20:00 schedule, RunAtLoad=false, per-job lock, 3000s stale-lock recovery, 2400s process-group timeout, log, status ledger, notification, always-zero wrapper policy, off-switch","rollback":"tested logs/.maintenance-use-legacy selector restores the exact legacy invocation","record":{"path":"docs/agents/j2-49-maintenance-cutover.md","sha256":"37272581d5b3a10db71c584838b3b9af2c404abc3ce69df6b9f5e33c33e393b8"}},
-    {"consumer":"thesis-observation","issue":51,"approval":"https://github.com/njabrooks/trade-journal/issues/51#issuecomment-5214350769","evidence_date":"2026-08-07","canary":"corrected one-thesis canary wrote one observation artifact and five scoped snapshots; zero intel_items, candidate signals, Decision Item, or status mutations","safeguards":"07:00 schedule, RunAtLoad=false, per-job lock, 3600s stale-lock recovery, 3000s process-group timeout, log, status ledger, notification, always-zero wrapper policy, off-switch","rollback":"first boundary violation triggered real rollback; tested logs/.thesis-observe-use-legacy restores the exact legacy invocation","record":{"path":"docs/agents/j2-51-thesis-observe-cutover.md","sha256":"5b0448fa70fa028ba6c79a72722a055696ed347440b2786620c85d2dd043208f"}},
-    {"consumer":"options-advisor-morning","issue":53,"approval":"https://github.com/njabrooks/trade-journal/issues/53#issuecomment-5214350958","evidence_date":"2026-08-07","canary":"bounded live canary correctly persisted nothing when verification was unavailable; deterministic positive fixture later proved the recommendation and dashboard contract with no trade authority","safeguards":"08:05 weekday schedule, RunAtLoad=false, batch lock, 3000s stale-lock recovery, 2400s process-group timeout, log, status ledger, notification, always-zero wrapper policy, strict no-trade boundary, off-switch","rollback":"tested logs/.options-advisor-batch-use-legacy restores the exact legacy invocation","record":{"path":"docs/agents/j2-53-morning-options-cutover.md","sha256":"fd7810f8824dbb172555cc759c23d95c5f06780bcc89896cd42096a91cbbe965"}},
-    {"consumer":"options-advisor-leap","issue":54,"approval":"https://github.com/njabrooks/trade-journal/issues/54#issuecomment-5214351202","evidence_date":"2026-08-07","canary":"eligible-hours one-ticker GLXY canary live-verified and correctly produced zero recommendations and writes","safeguards":"15:20 weekday schedule, market-hours and Radon-gateway preflight, RunAtLoad=false, LEAP lock, 4200s stale-lock recovery, 3600s process-group timeout, log, status ledger, notification, always-zero wrapper policy, strict no-trade boundary, off-switch","rollback":"tested logs/.options-advisor-leap-use-legacy restores the exact legacy invocation","record":{"path":"docs/agents/j2-54-leap-options-cutover.md","sha256":"bffb7f564db4fa2fe3345f6df80d0a0926726fa75b9649c6963af098926e8e21"}},
-    {"consumer":"morning-attention-brief","issue":56,"approval":"https://github.com/njabrooks/trade-journal/issues/56#issuecomment-5214351387","evidence_date":"2026-08-07","canary":"two same-date canaries proved exactly one idempotent morning_briefs row and unchanged belief, strategy, and Decision Item fingerprints; repair fixtures proved stale/missing refusal and dashboard consumption","safeguards":"08:45 daily schedule, RunAtLoad=false, per-job lock, 3600s stale-lock recovery, 1800s process-group timeout, log, status ledger, notification, always-zero wrapper policy, single-upsert boundary, off-switch","rollback":"tested logs/.morning-brief-use-legacy restores the exact legacy invocation","record":{"path":"docs/agents/j2-56-morning-brief-cutover.md","sha256":"55c0a9d029027971b9368a1008c6feba09ee339bf764fca9fc1cb029fcc115a1"}}
+    {
+      "consumer": "belief-maintenance",
+      "issue": 49,
+      "approval": "https://github.com/njabrooks/trade-journal/issues/49#issuecomment-5214036143",
+      "evidence_date": "2026-08-07",
+      "canary": "one bounded thesis-health result; exactly one authorized journal row; no Decision Item resolution or status mutation",
+      "safeguards": "08:00/20:00 schedule, RunAtLoad=false, per-job lock, 3000s stale-lock recovery, 2400s process-group timeout, log, status ledger, notification, always-zero wrapper policy, off-switch",
+      "rollback": "tested logs/.maintenance-use-legacy selector restores the exact legacy invocation",
+      "record": {
+        "path": "docs/agents/j2-49-maintenance-cutover.md",
+        "sha256": "37272581d5b3a10db71c584838b3b9af2c404abc3ce69df6b9f5e33c33e393b8"
+      }
+    },
+    {
+      "consumer": "thesis-observation",
+      "issue": 51,
+      "approval": "https://github.com/njabrooks/trade-journal/issues/51#issuecomment-5214350769",
+      "evidence_date": "2026-08-07",
+      "canary": "corrected one-thesis canary wrote one observation artifact and five scoped snapshots; zero intel_items, candidate signals, Decision Item, or status mutations",
+      "safeguards": "07:00 schedule, RunAtLoad=false, per-job lock, 3600s stale-lock recovery, 3000s process-group timeout, log, status ledger, notification, always-zero wrapper policy, off-switch",
+      "rollback": "first boundary violation triggered real rollback; tested logs/.thesis-observe-use-legacy restores the exact legacy invocation",
+      "record": {
+        "path": "docs/agents/j2-51-thesis-observe-cutover.md",
+        "sha256": "5b0448fa70fa028ba6c79a72722a055696ed347440b2786620c85d2dd043208f"
+      }
+    },
+    {
+      "consumer": "options-advisor-morning",
+      "issue": 53,
+      "approval": "https://github.com/njabrooks/trade-journal/issues/53#issuecomment-5214350958",
+      "evidence_date": "2026-08-07",
+      "canary": "bounded live canary correctly persisted nothing when verification was unavailable; deterministic positive fixture later proved the recommendation and dashboard contract with no trade authority",
+      "safeguards": "08:05 weekday schedule, RunAtLoad=false, batch lock, 3000s stale-lock recovery, 2400s process-group timeout, log, status ledger, notification, always-zero wrapper policy, strict no-trade boundary, off-switch",
+      "rollback": "tested logs/.options-advisor-batch-use-legacy restores the exact legacy invocation",
+      "record": {
+        "path": "docs/agents/j2-53-morning-options-cutover.md",
+        "sha256": "fd7810f8824dbb172555cc759c23d95c5f06780bcc89896cd42096a91cbbe965"
+      }
+    },
+    {
+      "consumer": "options-advisor-leap",
+      "issue": 54,
+      "approval": "https://github.com/njabrooks/trade-journal/issues/54#issuecomment-5214351202",
+      "evidence_date": "2026-08-07",
+      "canary": "eligible-hours one-ticker GLXY canary live-verified and correctly produced zero recommendations and writes",
+      "safeguards": "15:20 weekday schedule, market-hours and Radon-gateway preflight, RunAtLoad=false, LEAP lock, 4200s stale-lock recovery, 3600s process-group timeout, log, status ledger, notification, always-zero wrapper policy, strict no-trade boundary, off-switch",
+      "rollback": "tested logs/.options-advisor-leap-use-legacy restores the exact legacy invocation",
+      "record": {
+        "path": "docs/agents/j2-54-leap-options-cutover.md",
+        "sha256": "bffb7f564db4fa2fe3345f6df80d0a0926726fa75b9649c6963af098926e8e21"
+      }
+    },
+    {
+      "consumer": "morning-attention-brief",
+      "issue": 56,
+      "approval": "https://github.com/njabrooks/trade-journal/issues/56#issuecomment-5214351387",
+      "evidence_date": "2026-08-07",
+      "canary": "two same-date canaries proved exactly one idempotent morning_briefs row and unchanged belief, strategy, and Decision Item fingerprints; repair fixtures proved stale/missing refusal and dashboard consumption",
+      "safeguards": "08:45 daily schedule, RunAtLoad=false, per-job lock, 3600s stale-lock recovery, 1800s process-group timeout, log, status ledger, notification, always-zero wrapper policy, single-upsert boundary, off-switch",
+      "rollback": "tested logs/.morning-brief-use-legacy restores the exact legacy invocation",
+      "record": {
+        "path": "docs/agents/j2-56-morning-brief-cutover.md",
+        "sha256": "55c0a9d029027971b9368a1008c6feba09ee339bf764fca9fc1cb029fcc115a1"
+      }
+    }
   ],
   "cross_cutover_safeguards": {
     "issue": "njabrooks/trade-journal#85",
     "accepted_merge_revision": "924a81e0cbd57a0089264e6cf80458b2a8b056f5",
-    "executable_record": {"path":"tests/scheduled-provider-wrappers.test.ts","sha256":"0b3079ee74990957b6647e981fa3bcb0002c8ef95acef46ab4ac928edac2d7a2"},
+    "executable_record": {
+      "path": "tests/scheduled-provider-wrappers.test.ts",
+      "sha256": "0b3079ee74990957b6647e981fa3bcb0002c8ef95acef46ab4ac928edac2d7a2"
+    },
     "proof": "All five real wrappers and governed/legacy selectors prove active-lock skip, stale-lock recovery, success/empty/refusal/failure transport, timestamped logs, status ledger, notification, process-group timeout with child termination, independent batch/LEAP locks, exact rollback selection and return to governed selection, plus isolated off-switch removal."
   },
   "external_authority_dispositions": [
-    {"authority":"scope:home-hub-workspace","repository":"github:njabrooks/projects","disposition":"referenced-not-redefined","revision":"2b6ea3e02ff5ba114b0f91dd779c4afb26181358","detail":"Workspace Standard 1.0.0 and the public CLI remain Workspace-owned. projects#31 remains authority for future CLI distribution; Trade Journal retains the checksum-verified interim launcher."},
-    {"authority":"scope:notes","repository":"github:njabrooks/notes","disposition":"immutable-releases-adopted","revision":"04ea4f13d40a7c868ce43490d2a7e3ac440a026e","detail":"Notes retains capture, thinking, source material, and Toulmin extraction authority. Trade Journal adopts the locked content-processing, pdf-transcript, and tana-client releases without copying their contracts.","record":{"path":"evidence/issue-72-notes-toulmin-adoption.json","sha256":"a33a6b29392809a83f0d3f73744dcdb815c41bddac318fe3410ed6790f75c89a"}},
-    {"authority":"scope:radon","repository":"github:njabrooks/radon","capability":"capability:scope:radon/ibkr-gateway-control","disposition":"retained-unavailable","review_revision":"0e88af93c31471c093dbd61bc80c386ab8da38de","detail":"No accepted package, version, package digest, adapter digest, or conformance evidence exists; interactive control remains bounded and unattended execution refuses before reads or writes.","record":{"path":"evidence/issue-73-radon-gateway-reconciliation.json","sha256":"58be7d3f9f8c15d07c3d8887aaad223cdd515a2a269ac96c94037df9ba8f2dd2"}},
-    {"authority":"scope:radon","repository":"github:njabrooks/radon","capability":"capability:scope:radon/ibkr-option-quote","disposition":"retained-unavailable","review_revision":"0e88af93c31471c093dbd61bc80c386ab8da38de","detail":"No accepted package, version, package digest, adapter digest, conformance evidence, or release-selecting Work Item exists; requested-contract helpers report unavailable honestly and headless execution refuses before reads or writes.","record":{"path":"evidence/issue-74-radon-option-quote-reconciliation.json","sha256":"6dc035c28fc3bf0a42655fc7b889239a2e4acc4ad5bdfbb05708c207e3e28eaf"}},
-    {"authority":"machine-local:home-hub","disposition":"environmental-prerequisite-only","detail":"Credentials, authenticated provider/browser sessions, notifications, gateway availability, and the optional Codex bridge are not repository-owned conformance evidence or authority."}
+    {
+      "authority": "scope:home-hub-workspace",
+      "repository": "github:njabrooks/projects",
+      "disposition": "referenced-not-redefined",
+      "revision": "2b6ea3e02ff5ba114b0f91dd779c4afb26181358",
+      "detail": "Workspace Standard 1.0.0 and the public CLI remain Workspace-owned. projects#31 remains authority for future CLI distribution; Trade Journal retains the checksum-verified interim launcher."
+    },
+    {
+      "authority": "scope:notes",
+      "repository": "github:njabrooks/notes",
+      "disposition": "immutable-releases-adopted",
+      "revision": "04ea4f13d40a7c868ce43490d2a7e3ac440a026e",
+      "detail": "Notes retains capture, thinking, source material, and Toulmin extraction authority. Trade Journal adopts the locked content-processing, pdf-transcript, and tana-client releases without copying their contracts.",
+      "record": {
+        "path": "evidence/issue-72-notes-toulmin-adoption.json",
+        "sha256": "a33a6b29392809a83f0d3f73744dcdb815c41bddac318fe3410ed6790f75c89a"
+      }
+    },
+    {
+      "authority": "scope:radon",
+      "repository": "github:njabrooks/radon",
+      "capability": "capability:scope:radon/ibkr-gateway-control",
+      "disposition": "retained-unavailable",
+      "review_revision": "0e88af93c31471c093dbd61bc80c386ab8da38de",
+      "detail": "No accepted package, version, package digest, adapter digest, or conformance evidence exists; interactive control remains bounded and unattended execution refuses before reads or writes.",
+      "record": {
+        "path": "evidence/issue-73-radon-gateway-reconciliation.json",
+        "sha256": "58be7d3f9f8c15d07c3d8887aaad223cdd515a2a269ac96c94037df9ba8f2dd2"
+      }
+    },
+    {
+      "authority": "scope:radon",
+      "repository": "github:njabrooks/radon",
+      "capability": "capability:scope:radon/ibkr-option-quote",
+      "disposition": "retained-unavailable",
+      "review_revision": "0e88af93c31471c093dbd61bc80c386ab8da38de",
+      "detail": "No accepted package, version, package digest, adapter digest, conformance evidence, or release-selecting Work Item exists; requested-contract helpers report unavailable honestly and headless execution refuses before reads or writes.",
+      "record": {
+        "path": "evidence/issue-74-radon-option-quote-reconciliation.json",
+        "sha256": "6dc035c28fc3bf0a42655fc7b889239a2e4acc4ad5bdfbb05708c207e3e28eaf"
+      }
+    },
+    {
+      "authority": "machine-local:home-hub",
+      "disposition": "environmental-prerequisite-only",
+      "detail": "Credentials, authenticated provider/browser sessions, notifications, gateway availability, and the optional Codex bridge are not repository-owned conformance evidence or authority."
+    }
   ],
   "verification": {
     "public_cli_repository": "passed human and JSON modes",
@@ -158,7 +438,15 @@
     "provider_entry_points": "two canonical outputs passed clean validation with exact digests",
     "inventories": "38 interactive plus 36 headless; 58 of 74 generation eligible",
     "refusals": "WS-ENTRY-005 unavailable-support and expired-evidence proofs passed before writing in human and JSON modes",
-    "required_test_build_review_ci_workflows": "recorded at issue #77 closure after the exact PR revision and merged default-branch revision complete",
+    "focused_governance_tests": "256 passed, 8 skipped",
+    "full_tests": "689 passed, 8 skipped",
+    "typecheck": "passed",
+    "changed_scope_and_repository_lint": "passed",
+    "production_build": "passed",
+    "service_restart": "com.tradej restarted after the build",
+    "smoke": "HTTP 307 from / and HTTP 200 from /claims",
+    "review": "initial Standards and Spec findings were corrected; final no-finding reviews are required on the corrected commit before PR publication",
+    "github_ci": "the exact accepted PR revision and run URL are added after the first clean PR workflow passes; the subsequent workflow validates that publication update",
     "application_safeguard": "Any production build is followed by restart of the existing com.tradej service and HTTP smoke; no second development server is started."
   },
   "completion_claim": "J2 establishes the exact locked Trade Journal and adopted Notes Capability releases, digest-bound Claude and Codex adapters, two generated governed Provider Entry Points, exhaustive 74-entry final dispositions, and safeguarded migration evidence for five live provider-dependent consumers. It does not define Workspace distribution, transfer Notes or Radon authority, claim unavailable Radon support, make machine-local state repository-owned, broaden any adapter write set, authorize trade execution, or change the Trade Journal investment domain model."

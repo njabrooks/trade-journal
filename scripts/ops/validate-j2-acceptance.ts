@@ -1,10 +1,19 @@
 import { createHash } from "node:crypto";
+import { execFileSync } from "node:child_process";
 import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 
 type Json = null | boolean | number | string | Json[] | { [key: string]: Json };
 type ObjectJson = { [key: string]: Json };
+type ArtifactDigest = { path: string; sha256: string };
+
+const ACCEPTANCE_COUNTS = {
+  capabilities: 19,
+  adapters: 38,
+  inventoryEntries: 74,
+  liveCutovers: 5,
+} as const;
 
 const root = process.cwd();
 
@@ -35,10 +44,7 @@ function text(value: Json | undefined, name: string): string {
   return value;
 }
 
-function collectArtifacts(
-  value: Json,
-  found: Array<{ path: string; sha256: string }>,
-): void {
+function collectArtifacts(value: Json, found: ArtifactDigest[]): void {
   if (Array.isArray(value)) {
     for (const item of value) collectArtifacts(item, found);
     return;
@@ -58,15 +64,19 @@ export function validateJ2Acceptance(): string[] {
     resolve(root, "docs/agents/provider-adapters/generation-eligibility.json"),
   );
 
-  const releases = array(receipt.capability_releases, "capability_releases").map(
-    (value, index) => object(value, `capability_releases[${index}]`),
-  );
+  const releases = array(
+    receipt.capability_releases,
+    "capability_releases",
+  ).map((value, index) => object(value, `capability_releases[${index}]`));
   const locked = array(lock.capabilities, "lock.capabilities").map(
     (value, index) => object(value, `lock.capabilities[${index}]`),
   );
-  if (releases.length !== 19 || locked.length !== 19) {
+  if (
+    releases.length !== ACCEPTANCE_COUNTS.capabilities ||
+    locked.length !== ACCEPTANCE_COUNTS.capabilities
+  ) {
     diagnostics.push(
-      `expected 19 releases and lock entries, found ${releases.length}/${locked.length}`,
+      `expected ${ACCEPTANCE_COUNTS.capabilities} releases and lock entries, found ${releases.length}/${locked.length}`,
     );
   }
 
@@ -112,23 +122,33 @@ export function validateJ2Acceptance(): string[] {
         text(adapter.evidence, `${adapterId}.evidence`),
       );
       if (!existsSync(evidencePath)) {
-        diagnostics.push(`missing exact evidence for ${adapterId}: ${evidencePath}`);
+        diagnostics.push(
+          `missing exact evidence for ${adapterId}: ${evidencePath}`,
+        );
         continue;
       }
       const evidence = readJson(evidencePath);
-      const digest = text(evidence.adapter_digest, `${adapterId}.adapter_digest`);
+      const digest = text(
+        evidence.adapter_digest,
+        `${adapterId}.adapter_digest`,
+      );
       if (recordedAdapters[adapterId] !== digest) {
         diagnostics.push(`${adapterId} digest does not match exact evidence`);
       }
       if (release.evidence_date !== evidence.validated_at) {
-        diagnostics.push(`${adapterId} evidence date does not match the release record`);
+        diagnostics.push(
+          `${adapterId} evidence date does not match the release record`,
+        );
       }
       seenAdapters.add(adapterId);
     }
   }
-  if (seenAdapters.size !== 38 || Object.keys(recordedAdapters).length !== 38) {
+  if (
+    seenAdapters.size !== ACCEPTANCE_COUNTS.adapters ||
+    Object.keys(recordedAdapters).length !== ACCEPTANCE_COUNTS.adapters
+  ) {
     diagnostics.push(
-      `expected 38 exact adapter bindings, found ${seenAdapters.size}/${Object.keys(recordedAdapters).length}`,
+      `expected ${ACCEPTANCE_COUNTS.adapters} exact adapter bindings, found ${seenAdapters.size}/${Object.keys(recordedAdapters).length}`,
     );
   }
 
@@ -140,14 +160,94 @@ export function validateJ2Acceptance(): string[] {
     (value, index) => object(value, `projection.entries[${index}]`),
   );
   if (entries.length !== inventory.validated_j2_inventory) {
-    diagnostics.push("validated inventory count does not match the final projection");
+    diagnostics.push(
+      "validated inventory count does not match the final projection",
+    );
+  }
+  const interactive = readJson(
+    resolve(root, "docs/agents/provider-adapters/interactive-inventory.json"),
+  );
+  const headless = readJson(
+    resolve(root, "docs/agents/provider-adapters/headless-inventory.json"),
+  );
+  if (
+    array(interactive.entries, "interactive.entries").length !==
+    inventory.interactive
+  ) {
+    diagnostics.push(
+      "interactive count does not match its exhaustive inventory",
+    );
+  }
+  if (
+    array(headless.entries, "headless.entries").length !== inventory.headless
+  ) {
+    diagnostics.push("headless count does not match its exhaustive inventory");
+  }
+
+  const j1Revision = text(
+    inventory.historical_j1_revision,
+    "historical_j1_revision",
+  );
+  const j1Path = text(
+    inventory.historical_j1_projection_path,
+    "historical_j1_projection_path",
+  );
+  let j1Projection: ObjectJson | undefined;
+  try {
+    const bytes = execFileSync("git", ["show", `${j1Revision}:${j1Path}`], {
+      cwd: root,
+    });
+    if (
+      createHash("sha256").update(bytes).digest("hex") !==
+      inventory.historical_j1_projection_sha256
+    ) {
+      diagnostics.push("historical J1 projection digest is stale");
+    }
+    j1Projection = JSON.parse(bytes.toString("utf8")) as ObjectJson;
+  } catch {
+    diagnostics.push(
+      "historical J1 projection cannot be reproduced from its exact revision",
+    );
+  }
+  if (j1Projection) {
+    const j1Ids = new Set(
+      array(j1Projection.entries, "j1.entries").map((value) =>
+        text(object(value, "j1.entry").inventory_entry, "j1.inventory_entry"),
+      ),
+    );
+    const j2Ids = new Set(
+      entries.map((entry) => text(entry.inventory_entry, "inventory_entry")),
+    );
+    const added = [...j2Ids].filter((id) => !j1Ids.has(id)).sort();
+    const removed = [...j1Ids].filter((id) => !j2Ids.has(id)).sort();
+    if (j1Ids.size !== inventory.historical_j1_requirement) {
+      diagnostics.push(
+        "historical J1 entry count does not match its requirement",
+      );
+    }
+    if (
+      JSON.stringify(added) !== JSON.stringify(inventory.added_entries_since_j1)
+    ) {
+      diagnostics.push("J1-to-J2 added-entry reconciliation is stale");
+    }
+    if (
+      JSON.stringify(removed) !==
+      JSON.stringify(inventory.removed_entries_since_j1)
+    ) {
+      diagnostics.push("J1-to-J2 removed-entry reconciliation is stale");
+    }
   }
   if (projection.generation_eligible_count !== inventory.generation_eligible) {
-    diagnostics.push("generation-eligible count does not match the final projection");
+    diagnostics.push(
+      "generation-eligible count does not match the final projection",
+    );
   }
   const dispositionCounts: Record<string, number> = {};
   for (const entry of entries) {
-    const disposition = object(entry.final_disposition, "entry.final_disposition");
+    const disposition = object(
+      entry.final_disposition,
+      "entry.final_disposition",
+    );
     const state = text(disposition.state, "entry.final_disposition.state");
     dispositionCounts[state] = (dispositionCounts[state] ?? 0) + 1;
   }
@@ -157,12 +257,19 @@ export function validateJ2Acceptance(): string[] {
   );
   for (const [state, count] of Object.entries(dispositionCounts)) {
     if (recordedDispositions[state] !== count) {
-      diagnostics.push(`final disposition ${state} does not match the projection`);
+      diagnostics.push(
+        `final disposition ${state} does not match the projection`,
+      );
     }
   }
 
-  const artifacts: Array<{ path: string; sha256: string }> = [];
+  const artifacts: ArtifactDigest[] = [];
   collectArtifacts(receipt, artifacts);
+  const acceptanceRun = object(receipt.acceptance_run, "acceptance_run");
+  const acceptanceRevision = text(
+    acceptanceRun.trade_journal_revision,
+    "acceptance_run.trade_journal_revision",
+  );
   for (const artifact of artifacts) {
     const path = resolve(root, artifact.path);
     if (!existsSync(path)) {
@@ -172,9 +279,35 @@ export function validateJ2Acceptance(): string[] {
     }
   }
 
+  for (const value of Object.values(
+    object(receipt.governance_artifacts, "governance_artifacts"),
+  )) {
+    const artifact = object(value, "governance artifact");
+    const path = text(artifact.path, "governance artifact path");
+    const digest = text(artifact.sha256, "governance artifact sha256");
+    try {
+      const bytes = execFileSync(
+        "git",
+        ["show", `${acceptanceRevision}:${path}`],
+        {
+          cwd: root,
+        },
+      );
+      if (createHash("sha256").update(bytes).digest("hex") !== digest) {
+        diagnostics.push(
+          `acceptance revision does not contain the recorded bytes: ${path}`,
+        );
+      }
+    } catch {
+      diagnostics.push(`acceptance revision cannot reproduce: ${path}`);
+    }
+  }
+
   const cutovers = array(receipt.live_cutovers, "live_cutovers");
-  if (cutovers.length !== 5) {
-    diagnostics.push(`expected five live cutovers, found ${cutovers.length}`);
+  if (cutovers.length !== ACCEPTANCE_COUNTS.liveCutovers) {
+    diagnostics.push(
+      `expected ${ACCEPTANCE_COUNTS.liveCutovers} live cutovers, found ${cutovers.length}`,
+    );
   }
   for (const [index, value] of cutovers.entries()) {
     const cutover = object(value, `live_cutovers[${index}]`);
@@ -192,8 +325,9 @@ export function validateJ2Acceptance(): string[] {
   return diagnostics;
 }
 
-function runCli(): void {
-  const json = process.argv.includes("--format") && process.argv.includes("json");
+async function main(): Promise<void> {
+  const json =
+    process.argv.includes("--format") && process.argv.includes("json");
   const diagnostics = validateJ2Acceptance();
   if (json) {
     process.stdout.write(
@@ -209,7 +343,7 @@ function runCli(): void {
     );
   } else if (diagnostics.length === 0) {
     process.stdout.write(
-      "J2 acceptance record: valid\nCapabilities: 19\nAdapters: 38\nInventory entries: 74\nLive cutovers: 5\nDiagnostics: none\n",
+      `J2 acceptance record: valid\nCapabilities: ${ACCEPTANCE_COUNTS.capabilities}\nAdapters: ${ACCEPTANCE_COUNTS.adapters}\nInventory entries: ${ACCEPTANCE_COUNTS.inventoryEntries}\nLive cutovers: ${ACCEPTANCE_COUNTS.liveCutovers}\nDiagnostics: none\n`,
     );
   } else {
     process.stderr.write(
@@ -219,6 +353,14 @@ function runCli(): void {
   if (diagnostics.length > 0) process.exitCode = 1;
 }
 
-if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
-  runCli();
+if (
+  process.argv[1] &&
+  import.meta.url === pathToFileURL(process.argv[1]).href
+) {
+  main().catch((error: unknown) => {
+    process.stderr.write(
+      `${error instanceof Error ? error.message : String(error)}\n`,
+    );
+    process.exitCode = 1;
+  });
 }
