@@ -1,3 +1,5 @@
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 import {
   buildThesisDelta,
@@ -188,7 +190,12 @@ describe("thesis foreground executable contract", () => {
         },
       ],
       evidence: [
-        { id: "e1", recordedAt: "2026-08-05T00:00:00Z" },
+        {
+          id: "e1",
+          recordedAt: "2026-08-05T00:00:00Z",
+          signalStatus: "rejected",
+          articulationId: "a0",
+        },
         { id: "old", recordedAt: "2026-07-01T00:00:00Z" },
       ],
     });
@@ -205,6 +212,10 @@ describe("thesis foreground executable contract", () => {
         ],
       );
       expect(result.evidence.map(({ id }) => id)).toEqual(["e1"]);
+      expect(result.evidence[0]).toMatchObject({
+        signalStatus: "rejected",
+        articulationId: "a0",
+      });
     }
   });
 
@@ -248,5 +259,20 @@ describe("thesis foreground executable contract", () => {
       baseline: { articulationId: "a2" },
       writes: [],
     });
+  });
+
+  it("keeps the command on a read-only repeatable snapshot and does not filter transitioned signals", () => {
+    const command = readFileSync(
+      resolve(process.cwd(), "scripts/ops/thesis-delta.ts"),
+      "utf8",
+    );
+
+    expect(command).toContain("db.transaction(async (tx)");
+    expect(command).toContain(
+      "SET TRANSACTION ISOLATION LEVEL REPEATABLE READ READ ONLY",
+    );
+    expect(command).toContain("signalStatus: evidenceSignals.status");
+    expect(command).toContain("articulationId: evidenceSignals.articulationId");
+    expect(command).not.toContain('eq(evidenceSignals.status, "active")');
   });
 });

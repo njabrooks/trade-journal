@@ -58,10 +58,17 @@
     "provenance_claims_since_baseline": 0,
     "observation_or_assessment_evidence_since_baseline": 216,
     "writes": [],
-    "stale_articulation_refusal": "passed"
+    "stale_articulation_refusal": "passed",
+    "repeatable_read_boundary": "passed",
+    "transitioned_signal_lineage_fixture": "passed"
   },
   "executable_preflight": {
-    "headless_result": { "outcome": "refused", "reason": "interactive_thesis_judgment_required", "reads": [], "writes": [] },
+    "headless_result": {
+      "outcome": "refused",
+      "reason": "interactive_thesis_judgment_required",
+      "reads": [],
+      "writes": []
+    },
     "mutating_inputs_must_be_affirmative": true,
     "observation_as_of_required": true,
     "assessment_evidence_required": true,
