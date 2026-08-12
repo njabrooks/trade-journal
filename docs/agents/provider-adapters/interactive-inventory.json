@@ -2066,8 +2066,8 @@
         "state": "current",
         "as_of": "2026-08-12",
         "capability_version": "1.0.0",
-        "package_digest": "sha256:01437f79c7d9c0485b827227d43dd551c57f298473e3de96267fe0575ab036c8",
-        "adapter_digest": "sha256:98da87f2dc887862f5627f7922f7a68924dee8a2f415574e57fbadaa786fb6cd",
+        "package_digest": "sha256:5eab91124924507d50529c38296be8a31defb9563e4adda309e4c47c0aea2211",
+        "adapter_digest": "sha256:7a2b541690384bb9abe82873c7f98a842baec559295b9ac166f68eab4edccf61",
         "reason": "Exact current evidence binds thesis-foreground 1.0.0 and the governed Claude adapter while unattended execution and scheduling remain ineligible."
       },
       "j2_disposition": {

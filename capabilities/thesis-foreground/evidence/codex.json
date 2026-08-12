@@ -1,9 +1,9 @@
 {
   "capability_id": "capability:scope:trade-journal/thesis-foreground",
   "capability_version": "1.0.0",
-  "package_digest": "sha256:01437f79c7d9c0485b827227d43dd551c57f298473e3de96267fe0575ab036c8",
+  "package_digest": "sha256:5eab91124924507d50529c38296be8a31defb9563e4adda309e4c47c0aea2211",
   "adapter_id": "thesis-foreground-codex",
-  "adapter_digest": "sha256:139617bfe3c6ea3303e57daaa44dfd348d2c166573a38c33a8f9a4a6cecec84a",
+  "adapter_digest": "sha256:c8e0219ebd3abc6c410f939a5bfbb65e56114022b9efcb073d4d0cdf38762440",
   "support_state": "current",
   "validated_at": "2026-08-12",
   "results": {
@@ -21,7 +21,7 @@
     },
     "query-and-delta-contract": {
       "status": "passed",
-      "method": "Repository contract tests preserve read-only snapshot queries, articulation-baselined provenance deltas, and honest missing-baseline results"
+      "method": "Executable fixture tests exercise the purpose-built read-only delta surface's newly-created/newly-linked provenance classification, post-baseline evidence, missing baseline, and stale articulation refusal"
     },
     "governed-dependency-boundaries": {
       "status": "passed",

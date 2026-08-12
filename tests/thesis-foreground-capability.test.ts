@@ -101,6 +101,8 @@ describe("thesis-foreground Capability", () => {
       }
       expect(adapter).toContain("thin.unlinkedClaimCount");
       expect(adapter).toContain("Both verbs are read-only");
+      expect(adapter).toContain("scripts/ops/thesis-delta.ts");
+      expect(adapter).toContain("expected-articulation-id");
       expect(adapter).toContain("no direct database authority");
       expect(adapter).toContain("must never be declared unattended-current");
       expect(adapter).toContain("schedule or launchd definition");
@@ -109,6 +111,19 @@ describe("thesis-foreground Capability", () => {
     expect(read("adapters/codex.md")).toContain("repository command runner");
     expect(read("adapters/codex.md")).toContain("Do not substitute the machine-local bridge");
     expect(read("adapters/claude.md")).toContain("exact Claude adapters");
+  });
+
+  it("keeps the user-invocable skill a thin governed foreground shim", () => {
+    const skill = readFileSync(resolve(root, ".claude/skills/thesis/SKILL.md"), "utf8");
+
+    expect(skill).toContain("thin interactive migration shim");
+    expect(skill).toContain("capabilities/thesis-foreground/adapters/claude.md");
+    expect(skill).toContain("scripts/ops/thesis-delta.ts");
+    expect(skill).toContain("must not capture observations directly");
+    expect(skill).toContain("propose or execute options/trades as a foreground verb");
+    expect(skill).not.toContain("scripts/options-advisor.ts");
+    expect(skill).not.toContain("scripts/ops/raise-decision.ts");
+    expect(skill).not.toContain("scripts/ops/capture-observation.ts");
   });
 
   it("uses a byte-identical unconditional zero-read zero-write headless refusal", () => {
