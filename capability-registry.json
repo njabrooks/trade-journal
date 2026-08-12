@@ -276,10 +276,10 @@
       "authority": "scope:trade-journal",
       "repository": "github:njabrooks/trade-journal",
       "package_path": "capabilities/workflow-discovery",
-      "approved_version": "1.0.1",
+      "approved_version": "1.0.2",
       "release": {
         "source": ".",
-        "revision": "d66b72d6bebde40dc1bc2a13949da42b9e4bd378"
+        "revision": "bbeb3fedbaa8e4f16496d16c36970a2e04829367"
       },
       "development": {
         "enabled": true,

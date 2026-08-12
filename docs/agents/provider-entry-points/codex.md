@@ -676,7 +676,7 @@ Provider Adapter `thesis-underwriting-codex` (current):
 
 This adapter may write a new versioned articulation, derived resolution signals, consumed candidate-signal dispositions, and their resulting audit history. It must not change thesis status, must not invoke `scripts/ops/update-entity-status.ts`, must not invoke `scripts/ops/resolve-decision.ts`, must not write ad hoc SQL, and has no order, trade, execution, or scheduler authority.
 
-### capability:scope:trade-journal/workflow-discovery 1.0.1
+### capability:scope:trade-journal/workflow-discovery 1.0.2
 
 Intent: Route an interactive Trade Journal request to the authoritative current workflow source without executing the workflow or duplicating its semantics.
 
@@ -690,7 +690,7 @@ Provider-neutral instructions:
 - Route an explicitly requested protective tombstone only to its refusal boundary; never rediscover archived historical evidence as an executable workflow.
 - Apply provider-specific tool translation from the repository's provider guidance without changing the selected workflow's semantic, authority, write, or judgment boundaries.
 - Keep discovery read-only. Execution of a selected workflow is a separate step and requires the user authority, environmental prerequisites, and safeguards declared by that workflow.
-- When installed, treat the machine-local bridge as an active legacy discovery router whose curated routing may compete with the governed inventory. Prefer repository-native governed routing, surface the legacy limitation, and never treat bridge presence, contents, or parity as repository-owned semantics or Adapter Conformance evidence.
+- When installed, treat the machine-local bridge as an optional, non-authoritative bootstrap whose curated routing cannot override the governed inventory. Prefer repository-native governed routing, surface the external limitation, and never treat bridge presence, contents, or parity as repository-owned semantics or Adapter Conformance evidence.
 
 Provider Adapter `workflow-discovery-codex` (current):
 

@@ -2267,16 +2267,16 @@
       "evidence": {
         "state": "current",
         "as_of": "2026-08-11",
-        "capability_version": "1.0.1",
-        "package_digest": "sha256:238471af4b82e2ab8cf29016c15ac3b7d8ee93d1a36b5d5dbb031b289f809ff4",
+        "capability_version": "1.0.2",
+        "package_digest": "sha256:01c347703cdd54dd1bb174d9372acf243cb60b191a569f112727cc726b1d5a2b",
         "adapter_digest": "sha256:82ee574c9e1e4c2bce81a425775a5de45ba350350f8589c3f9ff60d8f945b82b",
-        "reason": "Exact current evidence binds capability:scope:trade-journal/workflow-discovery 1.0.1 and its claude adapter to the canonical governed Provider Entry Point."
+        "reason": "Exact current evidence binds capability:scope:trade-journal/workflow-discovery 1.0.2 and its claude adapter to the canonical governed Provider Entry Point."
       },
       "generation_eligible": true,
       "ineligibility_reasons": [],
       "final_disposition": {
         "state": "governed",
-        "rationale": "Exact current evidence binds capability:scope:trade-journal/workflow-discovery 1.0.1 and its claude adapter to the canonical governed Provider Entry Point."
+        "rationale": "Exact current evidence binds capability:scope:trade-journal/workflow-discovery 1.0.2 and its claude adapter to the canonical governed Provider Entry Point."
       }
     },
     {
@@ -2297,16 +2297,16 @@
       "evidence": {
         "state": "current",
         "as_of": "2026-08-11",
-        "capability_version": "1.0.1",
-        "package_digest": "sha256:238471af4b82e2ab8cf29016c15ac3b7d8ee93d1a36b5d5dbb031b289f809ff4",
+        "capability_version": "1.0.2",
+        "package_digest": "sha256:01c347703cdd54dd1bb174d9372acf243cb60b191a569f112727cc726b1d5a2b",
         "adapter_digest": "sha256:b36d0c5055bf4e63f42d0407cf4349a2e4f567afb52f097aa0ece5ab4bcd39a0",
-        "reason": "Exact current evidence binds capability:scope:trade-journal/workflow-discovery 1.0.1 and its codex adapter to the canonical governed Provider Entry Point."
+        "reason": "Exact current evidence binds capability:scope:trade-journal/workflow-discovery 1.0.2 and its codex adapter to the canonical governed Provider Entry Point."
       },
       "generation_eligible": true,
       "ineligibility_reasons": [],
       "final_disposition": {
         "state": "replaced",
-        "rationale": "Exact current evidence binds capability:scope:trade-journal/workflow-discovery 1.0.1 and its codex adapter to the canonical governed Provider Entry Point."
+        "rationale": "Exact current evidence binds capability:scope:trade-journal/workflow-discovery 1.0.2 and its codex adapter to the canonical governed Provider Entry Point."
       }
     }
   ],
