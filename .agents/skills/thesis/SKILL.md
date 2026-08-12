@@ -52,6 +52,8 @@ dependency. It must not capture observations directly, create or resolve Decisio
 maintenance, propose or execute options/trades as a foreground verb, access credentials for convenience, or
 create or modify a schedule or launchd definition. Route any separately chosen next move through governed
 workflow discovery.
+Research intake remains the separate governed `research-pipeline` Capability; this foreground neither invokes
+its legacy routes nor treats research capture as a thesis verb.
 
 Return the thesis ID and type, verb, baseline, dependency calls, provenance sources, result, limitations, current
 user judgments, recording disposition, and exact writes. Never describe a refusal, unavailable dependency,
