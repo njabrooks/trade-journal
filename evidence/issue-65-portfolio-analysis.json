@@ -79,14 +79,14 @@
     "rollback": "Legacy inputs remain byte-unchanged and discoverable until the separately authorized final discovery cutover."
   },
   "published_artifacts": {
-    "registry_lock": "sha256:122d0bb9334ac8171391f8086d622cec7799f24b9888d30aecc882f1f72b88de",
-    "claude_staging": "sha256:bb2cc2a64fc4dde5cca096e7f220ba51f83f7aae033de2b7fe5a1de23d56edd9",
-    "codex_staging": "sha256:54fec6d70d5f7ea22cf31b7b20e23c6e6119a51e436ea775f6f5cde1a8781d39",
-    "interactive_inventory": "sha256:b610c0dc497d991749c309d92fa963eaac116160554666ef00d07bf8bd95361c",
-    "headless_inventory": "sha256:b8f05d946241c9d1579eebc84e6cb9e88a151d6586e7f2d7c81fbadf4d73aa53",
-    "generation_eligibility": "sha256:0a9f612a5f2a0b557cfa48cd8288049864bb2f37860a540eb08fed2282489887",
+    "registry_lock": "sha256:6a14f228c6de0ed073d8fe442a3aafa24d44fb32822a655688c1f722952ff38b",
+    "claude_staging": "sha256:558468e2d22b98e4ea622496bcb5492ce86a64d5030c2fa62d9fe51d6778de2b",
+    "codex_staging": "sha256:7c10e452a1a8ac0e9c859b5c5fbc6333dc61a188a1e69f102387dca266f1238b",
+    "interactive_inventory": "sha256:83cb86ea1b8d5b2cf70568b00ac032191925602e7dc1ba7a5cdfd5515f3bdfc6",
+    "headless_inventory": "sha256:0a28ffa9c42e19c625654e4fa2a339a3183cfcdc4538e7be79caafe4665007d5",
+    "generation_eligibility": "sha256:8d2767168f046ffbf70234e39e8f2e9189af53cc7b2b7c0bec278de5f43744bf",
     "inventory_entries": 74,
-    "generation_eligible_entries": 56
+    "generation_eligible_entries": 58
   },
   "reviews": {
     "fixed_point": "91422545e8104ad80d70781ed9fecc0b7702f49b",

@@ -2022,7 +2022,7 @@
     },
     {
       "id": "interactive-claude-thesis",
-      "ability": "Explore and re-underwrite one thesis with the user.",
+      "ability": "Interactively query, observe, show what changed for, or re-underwrite one exact thesis through governed dependencies.",
       "candidate_capability": {
         "status": "candidate",
         "id": "capability:scope:trade-journal/thesis-foreground",
@@ -2032,46 +2032,58 @@
       "source": {
         "ownership": "repository:njabrooks/trade-journal",
         "location_class": "repository",
-        "path": ".claude/skills/thesis/SKILL.md"
+        "path": "capabilities/thesis-foreground/adapters/claude.md"
       },
-      "packaging": "authored-provider-entry-point",
+      "packaging": "governed-provider-adapter",
       "invocation": {
         "mode": "interactive",
-        "entry_point": "/thesis",
+        "entry_point": "docs/agents/provider-entry-points/staging/claude.md",
         "unattended_eligibility": "ineligible",
-        "rationale": "Foreground surface for genuine thesis and expression judgment."
+        "rationale": "The foreground conversation and every evidence-recording or re-underwriting choice require the current user's participation."
       },
       "lifecycle": {
         "status": "active",
         "protective_tombstone": false
       },
       "authority_and_write_scope": {
-        "reads": "Thesis snapshot, claims, signals, evidence, and portfolio context.",
-        "writes": "Observations or explicit Decision packets through governed paths.",
-        "judgment": "Foreground surface for genuine thesis and expression judgment."
+        "reads": "One selected thesis snapshot, its living underwriting, linked provenance-bearing evidence, resolution signals, portfolio context, and exact governed dependency results.",
+        "writes": "None for query or what-changed. Observation, explicitly requested evidence recording, or re-underwriting may write only the exact records returned by the selected governed dependency.",
+        "judgment": "The current user selects the thesis and verb and supplies every required recording, scope, candidate-disposition, or re-underwriting judgment."
       },
       "prerequisites": [
         "Claude Code repository session",
-        "User participation and database helpers."
+        "Current user participation, one explicit thesis and verb, database read access, and exact Registry-resolved observation, underwriting, and evidence-assessment dependencies."
       ],
       "limitations": [
-        "Generic headless packaging must not turn the foreground conversation into autonomous judgment.",
-        "No evidence is bound to an exact W1 Capability version, package digest, and adapter digest."
+        "The governed Provider Entry Point remains staged; the authored /thesis skill remains the active migration input until final discovery cutover.",
+        "Current Adapter Conformance proves interactive semantics and refusal, not unattended execution or scheduling eligibility.",
+        "Fresh observation remains limited to the thesis-observation dependency's Tier-1 monitoring and active-signal contract; unsupported targets are unavailable."
       ],
       "operational_consumers": [
         "Interactive Trade Journal maintainer or delegated agent"
       ],
       "evidence": {
-        "state": "unavailable",
-        "as_of": "2026-08-04",
-        "capability_version": null,
-        "package_digest": null,
-        "adapter_digest": null,
-        "reason": "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
+        "state": "current",
+        "as_of": "2026-08-12",
+        "capability_version": "1.0.0",
+        "package_digest": "sha256:41eae671d367800c55fd35fd1cad21ab022faa18a9310db84f6de0a70f4cfae5",
+        "adapter_digest": "sha256:96216e50097b758ef9d2a0557974329cf1e491d20dbe1a67725b1348c2fd4650",
+        "reason": "Exact current evidence binds thesis-foreground 1.0.0 and the governed Claude adapter while unattended execution and scheduling remain ineligible."
       },
       "j2_disposition": {
         "action": "migrate",
-        "rationale": "Migrate the provider packaging in J2 without changing the underlying Trade Journal workflow semantics."
+        "rationale": "The governed adapter is current and staged; retain the authored /thesis skill as a migration input until final discovery cutover."
+      },
+      "migration_input": {
+        "ownership": "repository:njabrooks/trade-journal",
+        "location_class": "repository",
+        "path": ".claude/skills/thesis/SKILL.md"
+      },
+      "governed_binding": {
+        "package_path": "capabilities/thesis-foreground/capability-package.json",
+        "adapter_id": "thesis-foreground-claude",
+        "evidence_path": "capabilities/thesis-foreground/evidence/claude.json",
+        "staged_entry_point": "docs/agents/provider-entry-points/staging/claude.md"
       }
     },
     {
@@ -2610,7 +2622,7 @@
     {
       "id": "no-exact-adapter-evidence",
       "classification": "evidence",
-      "detail": "At issue #75 acceptance, Twenty-four interactive inventory entries have current evidence. Of thirteen unavailable entries, nine await J2 disposition and four non-candidates have completed final retire dispositions. After issues #71, #64, and #65 add governed workflow discovery, options-vol-analysis, and portfolio-analysis adapters, the totals were twenty-eight current and ten unavailable. Issue #60 adds governed interactive-only decision resolution, making the current totals twenty-nine current and nine unavailable; the same four non-candidate dispositions remain unchanged."
+      "detail": "At issue #75 acceptance, twenty-four interactive inventory entries had current evidence. Of thirteen unavailable entries, nine awaited J2 disposition and four non-candidates had completed final retire dispositions. Issues #71, #64, #65, and #60 raised the totals to twenty-nine current and nine unavailable. Issue #61 adds the governed interactive-only thesis foreground, making the current totals thirty current and eight unavailable; four await J2 disposition and the same four non-candidate dispositions remain unchanged."
     },
     {
       "id": "external-codex-legacy-router",

@@ -227,6 +227,21 @@
       }
     },
     {
+      "id": "capability:scope:trade-journal/thesis-foreground",
+      "authority": "scope:trade-journal",
+      "repository": "github:njabrooks/trade-journal",
+      "package_path": "capabilities/thesis-foreground",
+      "approved_version": "1.0.0",
+      "release": {
+        "source": ".",
+        "revision": "75df76cfb4aabb5d54df250889dd30ebb8932642"
+      },
+      "development": {
+        "enabled": true,
+        "working_tree": "."
+      }
+    },
+    {
       "id": "capability:scope:trade-journal/thesis-observation",
       "authority": "scope:trade-journal",
       "repository": "github:njabrooks/trade-journal",

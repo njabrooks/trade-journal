@@ -1,7 +1,7 @@
 {
   "schema_version": "1.0.0",
   "inventory_kind": "headless",
-  "as_of": "2026-08-08",
+  "as_of": "2026-08-12",
   "accepted_workspace_revision": "2b6ea3e02ff5ba114b0f91dd779c4afb26181358",
   "authority": "Repository-owned supporting inventory under Workspace Initiative #12, Wayfinder #1, migration decision #9, and accepted W1 #13. W1 remains authoritative only for its defined manifest and exact evidence contracts.",
   "entries": [
@@ -2501,7 +2501,7 @@
     },
     {
       "id": "headless-codex-thesis",
-      "ability": "Explore and re-underwrite one thesis with the user.",
+      "ability": "Unconditionally refuse unattended thesis foreground execution because live user judgment is required.",
       "candidate_capability": {
         "status": "candidate",
         "id": "capability:scope:trade-journal/thesis-foreground",
@@ -2511,42 +2511,41 @@
       "source": {
         "ownership": "repository:njabrooks/trade-journal",
         "location_class": "repository",
-        "path": ".agents/skills/thesis/SKILL.md"
+        "path": "capabilities/thesis-foreground/adapters/codex.md"
       },
       "authored_source": {
         "ownership": "repository:njabrooks/trade-journal",
         "location_class": "repository",
         "path": ".claude/skills/thesis/SKILL.md"
       },
-      "packaging": "generated-headless-projection",
+      "packaging": "governed-provider-adapter",
       "execution_contract": {
-        "class": "generic",
-        "preamble_path": ".agents/skills/thesis/HEADLESS_PREAMBLE.md",
-        "readiness": "Generated baseline packaging only; it is not evidence of unattended operational readiness."
+        "class": "bespoke",
+        "preamble_path": ".claude/skills/thesis/HEADLESS_PREAMBLE.md",
+        "readiness": "Unconditional zero-read/zero-write refusal only; there is no unattended observation, assessment, re-underwriting, or scheduling contract."
       },
       "invocation": {
         "mode": "headless",
-        "entry_point": ".agents/skills/thesis/skill.json",
+        "entry_point": "docs/agents/provider-entry-points/staging/codex.md",
         "unattended_eligibility": "ineligible",
-        "rationale": "Interactive-only foreground workflow; mirror presence does not authorize unattended execution."
+        "rationale": "Interactive-only foreground workflow; exact current adapter evidence and mirror presence do not authorize unattended execution."
       },
       "lifecycle": {
         "status": "active",
         "protective_tombstone": false
       },
       "authority_and_write_scope": {
-        "reads": "Thesis snapshot, claims, signals, evidence, and portfolio context.",
-        "writes": "Observations or explicit Decision packets through governed paths.",
-        "judgment": "Foreground surface for genuine thesis and expression judgment."
+        "reads": "No unattended reads; refusal occurs before thesis, Registry, database, credential, source, provider, or dependency access.",
+        "writes": "No unattended writes. Interactive writes remain separately bounded to the exact selected observation, evidence-assessment, or underwriting dependency.",
+        "judgment": "No unattended thesis, verb, recording, scope, candidate-disposition, or re-underwriting judgment is permitted."
       },
       "prerequisites": [
         "Codex headless runtime with repository access",
-        "User participation and database helpers."
+        "No repository, database, credential, provider, caller-input, or scheduler prerequisite can make unattended thesis foreground execution eligible."
       ],
       "limitations": [
-        "Generic preamble is a packaging baseline, not an operational-readiness claim.",
-        "Generic headless packaging must not turn the foreground conversation into autonomous judgment.",
-        "No evidence is bound to an exact W1 Capability version, package digest, and adapter digest."
+        "The governed Provider Entry Point remains staged; the mirrored skill is retained for parity and rollback only.",
+        "The current evidence proves adapter semantics and unconditional refusal, not unattended execution support or scheduling eligibility."
       ],
       "operational_consumers": [
         "No live operational consumer; current repository automation does not invoke this Codex projection."
@@ -2557,16 +2556,27 @@
         "rationale": "Contains judgment or interactive control boundaries and is not a live scheduled consumer."
       },
       "evidence": {
-        "state": "unavailable",
-        "as_of": "2026-08-04",
-        "capability_version": null,
-        "package_digest": null,
-        "adapter_digest": null,
-        "reason": "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
+        "state": "current",
+        "as_of": "2026-08-12",
+        "capability_version": "1.0.0",
+        "package_digest": "sha256:41eae671d367800c55fd35fd1cad21ab022faa18a9310db84f6de0a70f4cfae5",
+        "adapter_digest": "sha256:9e0452709adb108dcf8baf307608d21e9a09973faab11c0d538a4d2c28be893d",
+        "reason": "Exact current evidence binds the Codex adapter's interactive-only semantics and unconditional headless refusal; unattended execution remains ineligible."
       },
       "j2_disposition": {
         "action": "migrate",
-        "rationale": "Migrate the provider packaging in J2 without changing the underlying Trade Journal workflow semantics."
+        "rationale": "The governed adapter is current and staged; retain the bespoke refusal mirror as a migration input until final discovery cutover."
+      },
+      "migration_input": {
+        "ownership": "repository:njabrooks/trade-journal",
+        "location_class": "repository",
+        "path": ".agents/skills/thesis/SKILL.md"
+      },
+      "governed_binding": {
+        "package_path": "capabilities/thesis-foreground/capability-package.json",
+        "adapter_id": "thesis-foreground-codex",
+        "evidence_path": "capabilities/thesis-foreground/evidence/codex.json",
+        "staged_entry_point": "docs/agents/provider-entry-points/staging/codex.md"
       }
     },
     {
@@ -3069,12 +3079,12 @@
     {
       "id": "adapter-evidence-unavailable",
       "classification": "evidence",
-      "detail": "Twenty-seven headless inventory entries have current evidence. Of nine unavailable entries, five await J2 disposition and four non-candidates have completed final retire dispositions under issue #75."
+      "detail": "Twenty-eight headless inventory entries have current evidence. Of eight unavailable entries, four await J2 disposition and four non-candidates have completed final retire dispositions under issue #75."
     },
     {
       "id": "generic-contract-readiness",
       "classification": "execution-contract",
-      "detail": "Fourteen current projections have generic packaging baselines; twenty have bespoke contracts, including the decision-resolution refusal, ten governed research-pipeline tombstones, and four unavailable or retired safety refusals. Three additional non-candidate records are historical evidence only outside active discovery."
+      "detail": "Fourteen current projections have generic packaging baselines; twenty-one have bespoke contracts, including the decision-resolution and thesis-foreground refusals, ten governed research-pipeline tombstones, and four unavailable or retired safety refusals. Three additional non-candidate records are historical evidence only outside active discovery."
     },
     {
       "id": "live-jobs-still-claude",
@@ -3084,7 +3094,7 @@
     {
       "id": "interactive-only-mirrors",
       "classification": "eligibility",
-      "detail": "decisions and thesis are mirrored for parity but remain explicitly ineligible for unattended execution. Decision resolution now has an exact current governed adapter plus a bespoke unconditional zero-read/zero-write refusal; current Adapter Conformance does not make unattended execution current or schedulable."
+      "detail": "decisions and thesis are mirrored for parity but remain explicitly ineligible for unattended execution. Both now have exact current governed adapters plus bespoke unconditional zero-read/zero-write refusals; current Adapter Conformance does not make either workflow unattended-current or schedulable."
     }
   ]
 }

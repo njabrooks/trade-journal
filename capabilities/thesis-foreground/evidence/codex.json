@@ -1,0 +1,42 @@
+{
+  "capability_id": "capability:scope:trade-journal/thesis-foreground",
+  "capability_version": "1.0.0",
+  "package_digest": "sha256:41eae671d367800c55fd35fd1cad21ab022faa18a9310db84f6de0a70f4cfae5",
+  "adapter_id": "thesis-foreground-codex",
+  "adapter_digest": "sha256:9e0452709adb108dcf8baf307608d21e9a09973faab11c0d538a4d2c28be893d",
+  "support_state": "current",
+  "validated_at": "2026-08-12",
+  "results": {
+    "adapter-entry-point": {
+      "status": "passed",
+      "method": "Accepted Workspace CLI Capability validation and clean staged Codex Provider Entry Point generation"
+    },
+    "interactive-only-refusal": {
+      "status": "passed",
+      "method": "Repository contract tests prove that the exact adapter and bespoke mirror refuse unattended and scheduled execution before reads, provider calls, prompting, or writes"
+    },
+    "single-target-complete-request": {
+      "status": "passed",
+      "method": "Repository contract tests bind the adapter to one explicit thesis and verb and require target, evidence, target-freshness, and current-user judgment completeness before writes"
+    },
+    "query-and-delta-contract": {
+      "status": "passed",
+      "method": "Executable fixture tests exercise the purpose-built read-only delta surface's newly-created/newly-linked provenance classification, post-baseline evidence, missing baseline, and stale articulation refusal"
+    },
+    "governed-dependency-boundaries": {
+      "status": "passed",
+      "method": "Repository contract tests require exact Registry-resolved thesis-observation, thesis-underwriting, and belief-evidence-assessment adapters and prohibit direct or widened writes"
+    },
+    "provider-semantic-equivalence": {
+      "status": "passed",
+      "reviewer": "J2 implementation review",
+      "method": "Compared the exact Claude and Codex adapters with issue #61, parent #46, accepted blockers #50/#57/#58, issue #60's interactive-only precedent, and the living-underwriting and observation model",
+      "evidence_link": "https://github.com/njabrooks/trade-journal/issues/61",
+      "expires_at": "2026-09-11"
+    },
+    "eligible-environment": {
+      "status": "passed",
+      "method": "The configured interactive Trade Journal runtime completed credential-free refusal and contract tests plus the governed read-only thesis preflight on 2026-08-12; absent database, provider, source, sandbox, network, or user presence remains refused or unavailable"
+    }
+  }
+}

@@ -1,0 +1,95 @@
+{
+  "id": "capability:scope:trade-journal/thesis-foreground",
+  "authority": "scope:trade-journal",
+  "version": "1.0.0",
+  "intent": "Interactively query, observe, explain what changed for, and re-underwrite one Trade Journal thesis without fabricating user judgment or broadening any governed dependency's write authority.",
+  "contract": "Given a live interactive Trade Journal repository session, one explicit macro or asset thesis, and one explicit foreground request, return a conversational query, what-changed, observation, evidence-assessment, or re-underwriting result grounded in the current living underwriting, linked provenance-bearing evidence, resolution signals, portfolio context, and governed dependencies. Query and what-changed are read-only. Observation, optional evidence recording, and re-underwriting delegate only to the Registry-resolved thesis-observation, belief-evidence-assessment, and thesis-underwriting Capabilities and cannot exceed their write sets. Re-underwriting requires the current user's explicit request and complete evidence inputs; recording evidence requires the current user's explicit recording choice. Missing or ambiguous target, missing intent, incomplete evidence, absent current underwriting where required, missing user judgment, unavailable prerequisites, headless or unattended execution, and every scheduling request are refused or unavailable before any write. This Capability is interactive-only and has no unattended or scheduling eligibility.",
+  "instructions": [
+    "Require a live interactive repository session with the current user present. Refuse headless, autonomous, scheduled, cron, background, batch, CI, webhook, timeout-default, or ambient invocation before reading thesis or repository state, calling a provider, or writing anything.",
+    "Require one explicit foreground verb and one explicit macro or asset thesis. Run the dependency-free scripts/ops/thesis-foreground-preflight.ts before repository or database reads and again with the exact resolved ID/type before delegation; mutating dependency verbs require affirmative input and current-user judgment completeness, observe requires an explicit as-of time, assessment requires supplied evidence and an explicit recording choice, and re-underwriting requires an explicit request. A user-supplied ticker or title may be resolved through scripts/ops/thesis-snapshot.ts only after interactive presence and verb gates; unknown or ambiguous resolution returns candidates without delegation or writes.",
+    "Resolve capability:scope:trade-journal/thesis-observation, capability:scope:trade-journal/thesis-underwriting, and capability:scope:trade-journal/belief-evidence-assessment through the published Registry Lock. Reference their exact governed contracts and provider adapters without copying, redefining, or widening them.",
+    "For query requests, read the selected thesis through scripts/ops/thesis-snapshot.ts and answer from its current articulation, conviction history, active auto-derived resolution signals, linked claims and observations, signal-quality context, strategies, performance, and allocation. Thesis lifecycle status is context, not an information gate. If a requested field is absent or stale, say so instead of inventing it.",
+    "For what-changed requests, bind the latest articulation ID from the snapshot and invoke the purpose-built read-only scripts/ops/thesis-delta.ts surface with the exact thesis ID, type, and expected articulation ID (or none). Use its provenance-bearing newly-created/newly-linked claim classification and post-baseline observation or assessment evidence; refuse a changed articulation as stale and never substitute ad-hoc SQL. If no articulation exists, state that there is no prior underwriting baseline and present all current evidence as unbaselined rather than claiming a delta.",
+    "For a fresh current-source observation request, delegate one bounded target and explicit as-of time to the Registry-resolved thesis-observation Capability. Preserve its Tier-1 monitoring, active-signal, current-source, thesis-centric polarity, collector deferral, sensing-only, and unavailable-input rules. A target outside that dependency's eligible set is unavailable, not silently widened.",
+    "For supplied or newly observed provenance-bearing evidence that the user wants assessed, delegate to the Registry-resolved belief-evidence-assessment Capability. Keep assessment read-only by default; invoke its deterministic recorder only when the current user explicitly requests recording, and preserve its exact target binding, provenance, stale-target refusal, advisory-only result, and atomic maximum write set.",
+    "For re-underwriting, require the current user's explicit request for the exact thesis and load the complete snapshot first. If thin.unlinkedClaimCount is non-zero, evidence provenance is incomplete, the target changed, or required candidate-signal and signal-quality inputs cannot be resolved, stop before writing and present the missing inputs or choices. Explain that the new version supersedes the prior resolution set, obtain any genuine scope or disposition judgment that remains, then delegate only to the Registry-resolved thesis-underwriting Capability.",
+    "The maximum writes are exactly those returned by the selected governed dependency: thesis-observation observation artifacts, signal evidence snapshots, and journal history; belief-evidence-assessment qualitative snapshots, existing-claim evidence links, and its journal audits when recording was explicitly requested; or thesis-underwriting articulation, auto-derived signal, candidate-disposition, and audit writes after explicit re-underwriting judgment. This foreground adapter has no direct database authority.",
+    "Return the exact thesis ID and type, requested verb, comparison baseline when any, dependency invocations, evidence sources, result summary, limitations, user judgments received, recording disposition, exact writes, and unavailable or failed outcomes. Never describe a refusal, stale target, unavailable dependency, non-zero command result, or partial write as success.",
+    "Do not drain maintenance worklists, create or resolve Decision Items, change thesis, signal, strategy, or position status, configure manual signals or explicit_details, create or duplicate claims, alter claim-thesis linkage, use ad-hoc SQL or a generic database writer, size or place trades, change credentials or provider installation, create a schedule, or modify a scheduler or launchd definition. Route out-of-scope next moves through separately governed discovery after the user selects them."
+  ],
+  "conformance": {
+    "evidence_validity_days": 30,
+    "requirements": [
+      {
+        "id": "adapter-entry-point",
+        "category": "structural",
+        "description": "Each exact provider adapter is present in the staged governed Provider Entry Point generated from this package.",
+        "evidence_type": "automated"
+      },
+      {
+        "id": "interactive-only-refusal",
+        "category": "behavioural",
+        "description": "Both adapters and the bespoke Codex mirror refuse headless, unattended, autonomous, scheduled, background, batch, CI, webhook, and missing-user-presence invocation before every read, provider call, prompt, or write.",
+        "evidence_type": "automated"
+      },
+      {
+        "id": "single-target-complete-request",
+        "category": "behavioural",
+        "description": "Execution requires one exact thesis and one explicit foreground verb; ambiguous targets, absent intent, incomplete evidence, stale targets, and missing genuine judgment fail closed before writes.",
+        "evidence_type": "automated"
+      },
+      {
+        "id": "query-and-delta-contract",
+        "category": "behavioural",
+        "description": "Query and what-changed remain read-only, source their answers from the current thesis snapshot and provenance-bearing post-articulation evidence, and report a missing baseline or unavailable data honestly.",
+        "evidence_type": "automated"
+      },
+      {
+        "id": "governed-dependency-boundaries",
+        "category": "behavioural",
+        "description": "Observation, optional evidence recording, and re-underwriting resolve and invoke the exact governed dependencies without broadening their inputs, writes, judgment, lifecycle, or failure boundaries.",
+        "evidence_type": "automated"
+      },
+      {
+        "id": "provider-semantic-equivalence",
+        "category": "semantic",
+        "description": "The exact Claude and Codex adapters preserve equivalent single-thesis query, delta, observation, assessment, re-underwriting, refusal, result, and no-scheduling semantics.",
+        "evidence_type": "human"
+      },
+      {
+        "id": "eligible-environment",
+        "category": "environmental",
+        "description": "The configured interactive Trade Journal runtime can perform the read-only thesis preflight and dependency validation; unavailable database, provider, source, sandbox, network, or user-presence prerequisites remain explicit refused or unavailable outcomes.",
+        "evidence_type": "automated"
+      }
+    ]
+  },
+  "provider_adapters": [
+    {
+      "id": "thesis-foreground-claude",
+      "provider": "claude",
+      "source": "adapters/claude.md",
+      "evidence": "evidence/claude.json"
+    },
+    {
+      "id": "thesis-foreground-codex",
+      "provider": "codex",
+      "source": "adapters/codex.md",
+      "evidence": "evidence/codex.json"
+    }
+  ],
+  "dependencies": [
+    {
+      "id": "capability:scope:trade-journal/thesis-observation",
+      "version_constraint": ">=1.0.0 <2.0.0"
+    },
+    {
+      "id": "capability:scope:trade-journal/thesis-underwriting",
+      "version_constraint": ">=1.0.0 <2.0.0"
+    },
+    {
+      "id": "capability:scope:trade-journal/belief-evidence-assessment",
+      "version_constraint": ">=1.0.0 <2.0.0"
+    }
+  ]
+}

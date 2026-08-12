@@ -1,0 +1,133 @@
+{
+  "kind": "ThesisForegroundCapabilityEvidence",
+  "issue": "njabrooks/trade-journal#61",
+  "parent": "njabrooks/trade-journal#46",
+  "accepted_blockers": [
+    "njabrooks/trade-journal#50",
+    "njabrooks/trade-journal#57",
+    "njabrooks/trade-journal#58"
+  ],
+  "interactive_precedent": "njabrooks/trade-journal#60",
+  "fixed_point": "7acb431994193928ce136d7a3787f37e10305f3a",
+  "release_revision": "75df76cfb4aabb5d54df250889dd30ebb8932642",
+  "evidence_time": "2026-08-12",
+  "capability": {
+    "id": "capability:scope:trade-journal/thesis-foreground",
+    "authority": "scope:trade-journal",
+    "version": "1.0.0",
+    "package_digest": "sha256:41eae671d367800c55fd35fd1cad21ab022faa18a9310db84f6de0a70f4cfae5",
+    "claude_adapter_digest": "sha256:96216e50097b758ef9d2a0557974329cf1e491d20dbe1a67725b1348c2fd4650",
+    "codex_adapter_digest": "sha256:9e0452709adb108dcf8baf307608d21e9a09973faab11c0d538a4d2c28be893d",
+    "dependencies": [
+      "capability:scope:trade-journal/thesis-observation@>=1.0.0 <2.0.0",
+      "capability:scope:trade-journal/thesis-underwriting@>=1.0.0 <2.0.0",
+      "capability:scope:trade-journal/belief-evidence-assessment@>=1.0.0 <2.0.0"
+    ]
+  },
+  "interactive_judgment_boundary": {
+    "one_exact_thesis_required": true,
+    "one_explicit_verb_required": true,
+    "recording_choice_required": true,
+    "reunderwriting_request_required": true,
+    "missing_or_ambiguous_input_refused": true,
+    "headless_reads_permitted": false,
+    "headless_writes_permitted": false,
+    "unattended_eligible": false,
+    "scheduled_eligible": false,
+    "headless_refusal_digest": "sha256:8bed879fc950dcce4f70c04e11752d30ae5b7bf4de556877912d021124523b31",
+    "headless_refusal_result": {
+      "success": false,
+      "skill": "thesis",
+      "status": "refused",
+      "reason": "interactive_thesis_judgment_required",
+      "writes": []
+    }
+  },
+  "foreground_verbs": {
+    "query": "read-only thesis snapshot",
+    "what_changed": "read-only latest-articulation baseline and provenance-bearing evidence delta",
+    "observe": "exact thesis-observation dependency with its sensing-only boundary",
+    "assess_evidence": "exact belief-evidence-assessment dependency; read-only unless recording is explicitly requested",
+    "re_underwrite": "exact thesis-underwriting dependency after completeness and user-judgment checks"
+  },
+  "delta_surface_probe": {
+    "command": "npx tsx scripts/ops/thesis-delta.ts --id 0e32347b-1b71-4e8d-8266-9286d7f062e9 --type asset --expected-articulation-id d9db1cd1-3b47-4fc3-a332-5f7acdecf9c9",
+    "mode": "read-only",
+    "outcome": "ready",
+    "baseline_version": 2,
+    "provenance_claims_since_baseline": 0,
+    "observation_or_assessment_evidence_since_baseline": 216,
+    "writes": [],
+    "stale_articulation_refusal": "passed",
+    "repeatable_read_boundary": "passed",
+    "transitioned_signal_lineage_fixture": "passed"
+  },
+  "executable_preflight": {
+    "headless_result": {
+      "outcome": "refused",
+      "reason": "interactive_thesis_judgment_required",
+      "reads": [],
+      "writes": []
+    },
+    "mutating_inputs_must_be_affirmative": true,
+    "observation_as_of_required": true,
+    "assessment_evidence_required": true,
+    "reunderwriting_request_required": true
+  },
+  "approved_write_boundaries": {
+    "direct_foreground_database_authority": false,
+    "observation": "Only observation artifacts, signal evidence snapshots, and journal history returned by thesis-observation.",
+    "evidence_assessment": "Only the explicit recorder's qualitative snapshots, existing-claim evidence links, and journal audits.",
+    "underwriting": "Only versioned articulation, auto-derived signals, candidate dispositions, and audit writes returned by thesis-underwriting.",
+    "status_or_decision_resolution": false,
+    "manual_signal_configuration": false,
+    "claim_creation_or_linkage": false,
+    "trade_or_order_authority": false
+  },
+  "eligible_environment_probe": {
+    "command": "npx tsx scripts/ops/thesis-snapshot.ts --ticker ENTG",
+    "mode": "read-only",
+    "result": "passed",
+    "thesis_id": "0e32347b-1b71-4e8d-8266-9286d7f062e9",
+    "thesis_type": "asset",
+    "status": "monitoring",
+    "articulation_version": 2,
+    "claims": 17,
+    "unlinked_claims": 0,
+    "active_resolution_signals": 6,
+    "writes": []
+  },
+  "published_artifacts": {
+    "registry_lock": "sha256:6a14f228c6de0ed073d8fe442a3aafa24d44fb32822a655688c1f722952ff38b",
+    "claude_staging": "sha256:558468e2d22b98e4ea622496bcb5492ce86a64d5030c2fa62d9fe51d6778de2b",
+    "codex_staging": "sha256:7c10e452a1a8ac0e9c859b5c5fbc6333dc61a188a1e69f102387dca266f1238b",
+    "interactive_inventory": "sha256:83cb86ea1b8d5b2cf70568b00ac032191925602e7dc1ba7a5cdfd5515f3bdfc6",
+    "headless_inventory": "sha256:0a28ffa9c42e19c625654e4fa2a339a3183cfcdc4538e7be79caafe4665007d5",
+    "generation_eligibility": "sha256:8d2767168f046ffbf70234e39e8f2e9189af53cc7b2b7c0bec278de5f43744bf",
+    "inventory_entries": 74,
+    "generation_eligible_entries": 58
+  },
+  "validation": {
+    "workspace_repository": "passed",
+    "capability": "passed",
+    "registry_lock": "passed",
+    "provider_entry_points": "passed",
+    "inventory_reconciliation": "passed",
+    "deterministic_eligibility": "passed",
+    "missing_input_and_judgment_refusal": "passed",
+    "unattended_and_scheduling_refusal": "passed",
+    "workspace_unavailable_support_refusal": "passed",
+    "workspace_expired_evidence_refusal": "passed",
+    "clean_regeneration": "passed"
+  },
+  "scope": {
+    "active_discovery_changed": false,
+    "scheduler_or_launchd_changed": false,
+    "live_provider_invoked": false,
+    "database_or_investment_state_changed": false,
+    "credentials_changed": false,
+    "cross_repository_write": false,
+    "trade_or_order_authority": false
+  },
+  "rollback": "Revert the merge commit while preserving Registry release history, resolve a new published Lock, and regenerate both staged Provider Entry Points. No operational or data rollback is required because issue #61 changes no live consumer, scheduler, or production state."
+}

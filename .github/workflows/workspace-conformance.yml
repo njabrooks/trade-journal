@@ -30,6 +30,8 @@ on:
       - "tests/morning-brief-capability-evidence.test.ts"
       - "tests/evidence-freshness-governance.test.ts"
       - "tests/thesis-underwriting-capability.test.ts"
+      - "tests/thesis-foreground-capability.test.ts"
+      - "tests/thesis-foreground-contract.test.ts"
       - "tests/belief-evidence-assessment-capability.test.ts"
       - "tests/belief-evidence-assessment-recorder.test.ts"
       - "tests/claims-synthesis-*.test.ts"
@@ -79,6 +81,8 @@ on:
       - "tests/morning-brief-capability-evidence.test.ts"
       - "tests/evidence-freshness-governance.test.ts"
       - "tests/thesis-underwriting-capability.test.ts"
+      - "tests/thesis-foreground-capability.test.ts"
+      - "tests/thesis-foreground-contract.test.ts"
       - "tests/belief-evidence-assessment-capability.test.ts"
       - "tests/belief-evidence-assessment-recorder.test.ts"
       - "tests/claims-synthesis-*.test.ts"
@@ -196,7 +200,7 @@ jobs:
 
       - name: Validate governed Capabilities
         run: |
-          for capability in portfolio-snapshot belief-maintenance belief-research-relation decision-resolution claims-synthesis research-publication research-pipeline thesis-observation thesis-underwriting belief-evidence-assessment options-vol-analysis portfolio-analysis portfolio-options-advice morning-attention-brief workflow-discovery; do
+          for capability in portfolio-snapshot belief-maintenance belief-research-relation decision-resolution claims-synthesis research-publication research-pipeline thesis-foreground thesis-observation thesis-underwriting belief-evidence-assessment options-vol-analysis portfolio-analysis portfolio-options-advice morning-attention-brief workflow-discovery; do
             ./workspace validate capability "capabilities/$capability" --evidence-time "$WORKSPACE_EVIDENCE_TIME"
             ./workspace validate capability "capabilities/$capability" --evidence-time "$WORKSPACE_EVIDENCE_TIME" --format json
           done
@@ -229,4 +233,4 @@ jobs:
           # These tests validate the immutable published Lock, not the separately
           # resolved current-evidence Lock used by the preceding entry-point step.
           WORKSPACE_EVIDENCE_TIME: ${{ env.WORKSPACE_LOCK_EVIDENCE_TIME }}
-        run: npx vitest run tests/non-candidate-entry-points.test.ts tests/provider-adapter-inventory.test.ts tests/notes-toulmin-adoption.test.ts tests/radon-gateway-reconciliation.test.ts tests/radon-option-quote-reconciliation.test.ts tests/ibkr-option-quote-boundary.test.ts tests/provider-generation-eligibility.test.ts tests/workflow-discovery-capability.test.ts tests/options-vol-analysis-capability.test.ts tests/portfolio-analysis-capability.test.ts tests/portfolio-snapshot-capability.test.ts tests/j2-governed-capabilities.test.ts tests/morning-brief-capability-evidence.test.ts tests/evidence-freshness-governance.test.ts tests/thesis-underwriting-capability.test.ts tests/belief-evidence-assessment-capability.test.ts tests/belief-evidence-assessment-recorder.test.ts tests/claims-synthesis-capability.test.ts tests/claims-synthesis-contract.test.ts tests/claims-synthesis-db-adapter.test.ts tests/claims-synthesis-read-boundary.test.ts tests/research-publication-capability.test.ts tests/research-publication-contract.test.ts tests/research-publication-db-adapter.test.ts tests/research-publication-read-boundary.test.ts tests/research-publication-recorder.test.ts tests/research-pipeline-capability.test.ts tests/research-pipeline-contract.test.ts tests/research-pipeline-intake-contract.test.ts tests/belief-research-relation-capability.test.ts tests/belief-research-relation-contract.test.ts tests/belief-research-relation-read-boundary.test.ts tests/belief-research-relation-recorder.test.ts tests/belief-research-relation-db-adapter.test.ts tests/decision-resolution-capability.test.ts
+        run: npx vitest run tests/non-candidate-entry-points.test.ts tests/provider-adapter-inventory.test.ts tests/notes-toulmin-adoption.test.ts tests/radon-gateway-reconciliation.test.ts tests/radon-option-quote-reconciliation.test.ts tests/ibkr-option-quote-boundary.test.ts tests/provider-generation-eligibility.test.ts tests/workflow-discovery-capability.test.ts tests/options-vol-analysis-capability.test.ts tests/portfolio-analysis-capability.test.ts tests/portfolio-snapshot-capability.test.ts tests/j2-governed-capabilities.test.ts tests/morning-brief-capability-evidence.test.ts tests/evidence-freshness-governance.test.ts tests/thesis-foreground-capability.test.ts tests/thesis-foreground-contract.test.ts tests/thesis-underwriting-capability.test.ts tests/belief-evidence-assessment-capability.test.ts tests/belief-evidence-assessment-recorder.test.ts tests/claims-synthesis-capability.test.ts tests/claims-synthesis-contract.test.ts tests/claims-synthesis-db-adapter.test.ts tests/claims-synthesis-read-boundary.test.ts tests/research-publication-capability.test.ts tests/research-publication-contract.test.ts tests/research-publication-db-adapter.test.ts tests/research-publication-read-boundary.test.ts tests/research-publication-recorder.test.ts tests/research-pipeline-capability.test.ts tests/research-pipeline-contract.test.ts tests/research-pipeline-intake-contract.test.ts tests/belief-research-relation-capability.test.ts tests/belief-research-relation-contract.test.ts tests/belief-research-relation-read-boundary.test.ts tests/belief-research-relation-recorder.test.ts tests/belief-research-relation-db-adapter.test.ts tests/decision-resolution-capability.test.ts

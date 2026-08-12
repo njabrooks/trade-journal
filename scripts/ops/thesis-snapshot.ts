@@ -317,6 +317,7 @@ async function main() {
     thesis: r,
     underwriting: articulation
       ? {
+          id: articulation.id,
           version: articulation.version,
           createdAt: articulation.createdAt,
           coreArgument: articulation.coreArgument,

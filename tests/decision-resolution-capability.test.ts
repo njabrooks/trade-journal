@@ -303,7 +303,7 @@ describe("decision-resolution Capability", () => {
         "docs/agents/provider-adapters/generation-eligibility.json",
       ),
       inventory_entries: 74,
-      generation_eligible_entries: 56,
+      generation_eligible_entries: 58,
     });
     expect(receipt.scope).toMatchObject({
       active_discovery_changed: false,
