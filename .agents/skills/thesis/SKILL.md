@@ -15,6 +15,18 @@ ambiguous verb or thesis also refuses before dependency invocation or writes.
 Resolve the published Registry Lock and follow the exact Claude adapter at
 `capabilities/thesis-foreground/adapters/claude.md`. Do not copy or widen dependency semantics here.
 
+Run the zero-I/O executable guard before repository/database reads or delegation, passing the honest invocation
+mode, current-user presence, verb, exact ID/type, and the verb-specific affirmative completeness fields required
+by the adapter:
+
+```bash
+npx tsx scripts/ops/thesis-foreground-preflight.ts --invocation interactive --user-present true \
+  --verb <verb> --id <uuid> --type <asset|macro> [verb-specific arguments]
+```
+
+Any non-zero/refused result stops the foreground. For a ticker/title selector, apply the presence and verb gates
+first, resolve the candidate read-only, obtain the user's exact choice, then run this exact-ID preflight.
+
 ## Exact read surfaces
 
 Resolve the thesis from the repository root with the read-only snapshot:

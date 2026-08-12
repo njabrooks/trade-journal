@@ -1,9 +1,9 @@
 {
   "capability_id": "capability:scope:trade-journal/thesis-foreground",
   "capability_version": "1.0.0",
-  "package_digest": "sha256:5eab91124924507d50529c38296be8a31defb9563e4adda309e4c47c0aea2211",
+  "package_digest": "sha256:41eae671d367800c55fd35fd1cad21ab022faa18a9310db84f6de0a70f4cfae5",
   "adapter_id": "thesis-foreground-codex",
-  "adapter_digest": "sha256:c8e0219ebd3abc6c410f939a5bfbb65e56114022b9efcb073d4d0cdf38762440",
+  "adapter_digest": "sha256:9e0452709adb108dcf8baf307608d21e9a09973faab11c0d538a4d2c28be893d",
   "support_state": "current",
   "validated_at": "2026-08-12",
   "results": {

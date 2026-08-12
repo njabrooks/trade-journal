@@ -19,6 +19,8 @@ export type ForegroundRequest = {
   reunderwritingRequested?: boolean;
   inputsComplete?: boolean;
   judgmentComplete?: boolean;
+  observationAsOf?: string;
+  evidenceProvided?: boolean;
 };
 
 export type ForegroundPlan =
@@ -70,7 +72,12 @@ export function planThesisForeground(
       writes: [],
     };
   }
-  if (request.inputsComplete === false) {
+  const verb = request.verb as ThesisForegroundVerb;
+  const delegates =
+    verb === "observe" ||
+    verb === "assess-evidence" ||
+    verb === "re-underwrite";
+  if (delegates && request.inputsComplete !== true) {
     return {
       outcome: "refused",
       reason: "complete_inputs_required",
@@ -78,7 +85,7 @@ export function planThesisForeground(
       writes: [],
     };
   }
-  if (request.judgmentComplete === false) {
+  if (delegates && request.judgmentComplete !== true) {
     return {
       outcome: "refused",
       reason: "current_user_judgment_required",
@@ -87,7 +94,22 @@ export function planThesisForeground(
     };
   }
 
-  const verb = request.verb as ThesisForegroundVerb;
+  if (verb === "observe" && !request.observationAsOf) {
+    return {
+      outcome: "refused",
+      reason: "explicit_observation_as_of_required",
+      reads: [],
+      writes: [],
+    };
+  }
+  if (verb === "assess-evidence" && request.evidenceProvided !== true) {
+    return {
+      outcome: "refused",
+      reason: "assessment_evidence_required",
+      reads: [],
+      writes: [],
+    };
+  }
   if (verb === "assess-evidence" && request.recordingRequested !== true) {
     return {
       outcome: "ready",

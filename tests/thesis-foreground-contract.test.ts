@@ -46,15 +46,47 @@ describe("thesis foreground executable contract", () => {
         invocation: "interactive",
         userPresent: true,
         verb: "observe",
-        judgmentComplete: false,
         ...target,
       }),
-    ).toMatchObject({ outcome: "refused", reads: [], writes: [] });
+    ).toMatchObject({
+      outcome: "refused",
+      reason: "complete_inputs_required",
+      reads: [],
+      writes: [],
+    });
+    expect(
+      planThesisForeground({
+        invocation: "interactive",
+        userPresent: true,
+        verb: "observe",
+        inputsComplete: true,
+        judgmentComplete: true,
+        ...target,
+      }),
+    ).toMatchObject({
+      outcome: "refused",
+      reason: "explicit_observation_as_of_required",
+    });
+    expect(
+      planThesisForeground({
+        invocation: "interactive",
+        userPresent: true,
+        verb: "assess-evidence",
+        inputsComplete: true,
+        judgmentComplete: true,
+        ...target,
+      }),
+    ).toMatchObject({
+      outcome: "refused",
+      reason: "assessment_evidence_required",
+    });
     expect(
       planThesisForeground({
         invocation: "interactive",
         userPresent: true,
         verb: "re-underwrite",
+        inputsComplete: true,
+        judgmentComplete: true,
         ...target,
       }),
     ).toMatchObject({
@@ -85,6 +117,9 @@ describe("thesis foreground executable contract", () => {
         invocation: "interactive",
         userPresent: true,
         verb: "observe",
+        inputsComplete: true,
+        judgmentComplete: true,
+        observationAsOf: "2026-08-12T07:00:00Z",
         ...target,
       }),
     ).toMatchObject({
@@ -96,6 +131,9 @@ describe("thesis foreground executable contract", () => {
         invocation: "interactive",
         userPresent: true,
         verb: "assess-evidence",
+        inputsComplete: true,
+        judgmentComplete: true,
+        evidenceProvided: true,
         ...target,
       }),
     ).toMatchObject({
@@ -108,6 +146,8 @@ describe("thesis foreground executable contract", () => {
         invocation: "interactive",
         userPresent: true,
         verb: "re-underwrite",
+        inputsComplete: true,
+        judgmentComplete: true,
         reunderwritingRequested: true,
         ...target,
       }),
@@ -185,5 +225,28 @@ describe("thesis foreground executable contract", () => {
         evidence: [],
       }),
     ).toEqual({ outcome: "stale", reason: "articulation_changed", writes: [] });
+  });
+
+  it("binds the snapshot articulation ID directly into the delta contract", () => {
+    const snapshot = {
+      thesis: { id: "thesis-1", type: "asset" },
+      underwriting: {
+        id: "a2",
+        version: 2,
+        createdAt: "2026-08-01T00:00:00Z",
+      },
+    };
+    expect(
+      buildThesisDelta({
+        expectedArticulationId: snapshot.underwriting.id,
+        articulation: snapshot.underwriting,
+        claims: [],
+        evidence: [],
+      }),
+    ).toMatchObject({
+      outcome: "ready",
+      baseline: { articulationId: "a2" },
+      writes: [],
+    });
   });
 });

@@ -7,7 +7,8 @@ import { describe, expect, it } from "vitest";
 const root = process.cwd();
 const capabilityRoot = resolve(root, "capabilities/thesis-foreground");
 const workspaceRoot = process.env.WORKSPACE_REPOSITORY_ROOT;
-const workspaceEvidenceTime = process.env.WORKSPACE_EVIDENCE_TIME ?? "2026-08-12";
+const workspaceEvidenceTime =
+  process.env.WORKSPACE_EVIDENCE_TIME ?? "2026-08-12";
 const governanceIt = workspaceRoot ? it : it.skip;
 
 function read(path: string): string {
@@ -29,9 +30,9 @@ function repositoryDigest(path: string): string {
 }
 
 function inventoryEntry(path: string, id: string): Record<string, unknown> {
-  const inventory = JSON.parse(
-    readFileSync(resolve(root, path), "utf8"),
-  ) as { entries: Array<Record<string, unknown>> };
+  const inventory = JSON.parse(readFileSync(resolve(root, path), "utf8")) as {
+    entries: Array<Record<string, unknown>>;
+  };
   return inventory.entries.find((entry) => entry.id === id)!;
 }
 
@@ -46,7 +47,9 @@ describe("thesis-foreground Capability", () => {
       expect(evidence.package_digest).toBe(packageDigest);
       expect(evidence.adapter_digest).toBe(digest(`adapters/${provider}.md`));
       expect(evidence.support_state).toBe("current");
-      expect(Object.values(results).every(({ status }) => status === "passed")).toBe(true);
+      expect(
+        Object.values(results).every(({ status }) => status === "passed"),
+      ).toBe(true);
     }
   });
 
@@ -82,45 +85,72 @@ describe("thesis-foreground Capability", () => {
     expect(contract).toContain("one explicit macro or asset thesis");
     expect(contract).toContain("Query and what-changed are read-only");
     expect(contract).toContain("interactive-only");
-    expect(joined).toContain("one explicit foreground verb and one explicit macro or asset thesis");
+    expect(joined).toContain(
+      "one explicit foreground verb and one explicit macro or asset thesis",
+    );
     expect(joined).toContain("If no articulation exists");
     expect(joined).toContain("thin.unlinkedClaimCount is non-zero");
     expect(joined).toContain("current user explicitly requests recording");
-    expect(joined).toContain("This foreground adapter has no direct database authority");
+    expect(joined).toContain(
+      "This foreground adapter has no direct database authority",
+    );
   });
 
   it("keeps both provider adapters externally equivalent and provider-specific", () => {
     for (const provider of ["claude", "codex"]) {
       const adapter = read(`adapters/${provider}.md`);
 
-      for (const verb of ["query", "what-changed", "observe", "assess-evidence", "re-underwrite"]) {
+      for (const verb of [
+        "query",
+        "what-changed",
+        "observe",
+        "assess-evidence",
+        "re-underwrite",
+      ]) {
         expect(adapter).toContain(verb);
       }
-      for (const dependency of ["thesis-observation", "thesis-underwriting", "belief-evidence-assessment"]) {
-        expect(adapter).toContain(`capability:scope:trade-journal/${dependency}`);
+      for (const dependency of [
+        "thesis-observation",
+        "thesis-underwriting",
+        "belief-evidence-assessment",
+      ]) {
+        expect(adapter).toContain(
+          `capability:scope:trade-journal/${dependency}`,
+        );
       }
       expect(adapter).toContain("thin.unlinkedClaimCount");
       expect(adapter).toContain("Both verbs are read-only");
       expect(adapter).toContain("scripts/ops/thesis-delta.ts");
       expect(adapter).toContain("expected-articulation-id");
+      expect(adapter).toContain("thesis-foreground-preflight.ts");
       expect(adapter).toContain("no direct database authority");
       expect(adapter).toContain("must never be declared unattended-current");
       expect(adapter).toContain("schedule or launchd definition");
     }
 
     expect(read("adapters/codex.md")).toContain("repository command runner");
-    expect(read("adapters/codex.md")).toContain("Do not substitute the machine-local bridge");
+    expect(read("adapters/codex.md")).toContain(
+      "Do not substitute the machine-local bridge",
+    );
     expect(read("adapters/claude.md")).toContain("exact Claude adapters");
   });
 
   it("keeps the user-invocable skill a thin governed foreground shim", () => {
-    const skill = readFileSync(resolve(root, ".claude/skills/thesis/SKILL.md"), "utf8");
+    const skill = readFileSync(
+      resolve(root, ".claude/skills/thesis/SKILL.md"),
+      "utf8",
+    );
 
     expect(skill).toContain("thin interactive migration shim");
-    expect(skill).toContain("capabilities/thesis-foreground/adapters/claude.md");
+    expect(skill).toContain(
+      "capabilities/thesis-foreground/adapters/claude.md",
+    );
     expect(skill).toContain("scripts/ops/thesis-delta.ts");
+    expect(skill).toContain("scripts/ops/thesis-foreground-preflight.ts");
     expect(skill).toContain("must not capture observations directly");
-    expect(skill).toContain("propose or execute options/trades as a foreground verb");
+    expect(skill).toContain(
+      "propose or execute options/trades as a foreground verb",
+    );
     expect(skill).not.toContain("scripts/options-advisor.ts");
     expect(skill).not.toContain("scripts/ops/raise-decision.ts");
     expect(skill).not.toContain("scripts/ops/capture-observation.ts");
@@ -139,7 +169,9 @@ describe("thesis-foreground Capability", () => {
     expect(codexPreamble).toBe(claudePreamble);
     expect(codexPreamble).toContain("unconditional refusal");
     expect(codexPreamble).toContain("Do not inspect a thesis");
-    expect(codexPreamble).toContain("There are no permitted unattended parameters, reads, writes");
+    expect(codexPreamble).toContain(
+      "There are no permitted unattended parameters, reads, writes",
+    );
     expect(codexPreamble).toContain(
       '{"success":false,"skill":"thesis","status":"refused","reason":"interactive_thesis_judgment_required","writes":[]}',
     );
@@ -182,16 +214,29 @@ describe("thesis-foreground Capability", () => {
 
   it("records deterministic publication artifacts and unchanged operational scope", () => {
     const receipt = JSON.parse(
-      readFileSync(resolve(root, "evidence/issue-61-thesis-foreground.json"), "utf8"),
+      readFileSync(
+        resolve(root, "evidence/issue-61-thesis-foreground.json"),
+        "utf8",
+      ),
     ) as Record<string, Record<string, unknown>>;
 
     expect(receipt.published_artifacts).toMatchObject({
       registry_lock: repositoryDigest("capability-registry-lock.json"),
-      claude_staging: repositoryDigest("docs/agents/provider-entry-points/staging/claude.md"),
-      codex_staging: repositoryDigest("docs/agents/provider-entry-points/staging/codex.md"),
-      interactive_inventory: repositoryDigest("docs/agents/provider-adapters/interactive-inventory.json"),
-      headless_inventory: repositoryDigest("docs/agents/provider-adapters/headless-inventory.json"),
-      generation_eligibility: repositoryDigest("docs/agents/provider-adapters/generation-eligibility.json"),
+      claude_staging: repositoryDigest(
+        "docs/agents/provider-entry-points/staging/claude.md",
+      ),
+      codex_staging: repositoryDigest(
+        "docs/agents/provider-entry-points/staging/codex.md",
+      ),
+      interactive_inventory: repositoryDigest(
+        "docs/agents/provider-adapters/interactive-inventory.json",
+      ),
+      headless_inventory: repositoryDigest(
+        "docs/agents/provider-adapters/headless-inventory.json",
+      ),
+      generation_eligibility: repositoryDigest(
+        "docs/agents/provider-adapters/generation-eligibility.json",
+      ),
       inventory_entries: 74,
       generation_eligible_entries: 58,
     });
