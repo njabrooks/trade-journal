@@ -19,13 +19,20 @@
 # (supersede-on-save, 7-day expiry) that the dashboard ScannerSnapshot renders.
 #
 # Off-switch: ./launchd/install.sh --remove (or launchctl unload the plists).
+# Mode-specific logged no-ops are also available through
+# TJ_OPTIONS_ADVISOR_BATCH_DISABLED=1 and TJ_OPTIONS_ADVISOR_LEAP_DISABLED=1.
 #
 set -euo pipefail
 
 MODE="${1:-batch}"
-TJ_ROOT="$HOME/projects/trade-journal"
-LOG_FILE="$TJ_ROOT/logs/options-advisor-${MODE}.log"
-LOCK_FILE="$TJ_ROOT/logs/.options-advisor-${MODE}.lock"
+TJ_ROOT="${TJ_ROOT:-$HOME/projects/trade-journal}"
+LOG_DIR="${TJ_CRON_LOG_DIR:-$TJ_ROOT/logs}"
+LOG_FILE="$LOG_DIR/options-advisor-${MODE}.log"
+LOCK_FILE="$LOG_DIR/.options-advisor-${MODE}.lock"
+STATUS_FILE="$LOG_DIR/cron-status.tsv"
+INVOCATION_BIN="${TJ_OPTIONS_ADVISOR_INVOCATION_BIN:-$TJ_ROOT/scripts/cron/options-advisor-invocation.sh}"
+NOTIFICATION_BIN="${TJ_CRON_NOTIFICATION_BIN:-/usr/bin/osascript}"
+RUN_MODE="${TJ_OPTIONS_ADVISOR_RUN_MODE:-live}"
 ts() { TZ='Europe/London' date +'%Y-%m-%d %H:%M:%S %Z'; }
 
 case "$MODE" in
@@ -39,8 +46,19 @@ case "$MODE" in
     echo "Usage: options-advisor-run.sh batch|leap" >&2; exit 1
     ;;
 esac
+CLAUDE_TIMEOUT="${TJ_OPTIONS_ADVISOR_TIMEOUT_SECONDS:-$CLAUDE_TIMEOUT}"
 
-mkdir -p "$TJ_ROOT/logs"
+mkdir -p "$LOG_DIR"
+
+case "$MODE" in
+  batch) DISABLED="${TJ_OPTIONS_ADVISOR_BATCH_DISABLED:-0}" ;;
+  leap) DISABLED="${TJ_OPTIONS_ADVISOR_LEAP_DISABLED:-0}" ;;
+esac
+if [ "$DISABLED" = "1" ]; then
+    echo "[$(ts)] options-advisor-${MODE} disabled by wrapper off-switch; skipping" >> "$LOG_FILE"
+    printf '%s\t%s\t%s\n' "$(date -u +'%Y-%m-%dT%H:%M:%SZ')" "options-advisor-${MODE}" "0" >> "$STATUS_FILE"
+    exit 0
+fi
 
 run_with_timeout() {
     local secs="$1"; shift
@@ -79,8 +97,7 @@ cd "$TJ_ROOT"
 } >> "$LOG_FILE"
 
 set +e
-RUN_MODE="${TJ_OPTIONS_ADVISOR_RUN_MODE:-live}"
-run_with_timeout "$CLAUDE_TIMEOUT" "$TJ_ROOT/scripts/cron/options-advisor-invocation.sh" "$MODE" "$RUN_MODE" >> "$LOG_FILE" 2>&1
+run_with_timeout "$CLAUDE_TIMEOUT" "$INVOCATION_BIN" "$MODE" "$RUN_MODE" >> "$LOG_FILE" 2>&1
 RC=$?
 set -e
 
@@ -94,8 +111,8 @@ fi
 
 STATUS_NAME="options-advisor-${MODE}"
 if [ "$RUN_MODE" != "live" ]; then STATUS_NAME="${STATUS_NAME}-${RUN_MODE}"; fi
-printf '%s\t%s\t%s\n' "$(date -u +'%Y-%m-%dT%H:%M:%SZ')" "$STATUS_NAME" "$RC" >> "$TJ_ROOT/logs/cron-status.tsv"
+printf '%s\t%s\t%s\n' "$(date -u +'%Y-%m-%dT%H:%M:%SZ')" "$STATUS_NAME" "$RC" >> "$STATUS_FILE"
 if [ "$RC" -ne 0 ]; then
-    /usr/bin/osascript -e "display notification \"options-advisor-${MODE} failed (rc=$RC) — see logs/options-advisor-${MODE}.log\" with title \"trade-journal cron\"" >/dev/null 2>&1 || true
+    "$NOTIFICATION_BIN" -e "display notification \"options-advisor-${MODE} failed (rc=$RC) — see logs/options-advisor-${MODE}.log\" with title \"trade-journal cron\"" >/dev/null 2>&1 || true
 fi
 exit 0

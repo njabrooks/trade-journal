@@ -80,7 +80,7 @@ describe('governed maintenance invocation', () => {
     expect(shell).toContain('LOCK_AGE');
     expect(shell).toContain('-lt 3000');
     expect(shell).toContain('os.killpg');
-    expect(shell).toContain('logs/cron-status.tsv');
+    expect(shell).toContain('cron-status.tsv');
     expect(shell).toContain('display notification');
     expect(shell.trimEnd()).toMatch(/exit 0$/);
     expect(launchd).toContain('<integer>8</integer>');

@@ -20,16 +20,29 @@
 # Off-switch:
 #   launchctl unload ~/Library/LaunchAgents/com.trade-journal.morning-brief.plist
 # (or ./launchd/install.sh --remove). Judgment is all-Opus (--model opus).
+# A scheduled process can also be made a logged no-op with TJ_MORNING_BRIEF_DISABLED=1.
 #
 set -euo pipefail
 
-TJ_ROOT="$HOME/projects/trade-journal"
-LOG_FILE="$TJ_ROOT/logs/morning-brief.log"
-LOCK_FILE="$TJ_ROOT/logs/.morning-brief.lock"
+TJ_ROOT="${TJ_ROOT:-$HOME/projects/trade-journal}"
+LOG_DIR="${TJ_CRON_LOG_DIR:-$TJ_ROOT/logs}"
+LOG_FILE="$LOG_DIR/morning-brief.log"
+LOCK_FILE="$LOG_DIR/.morning-brief.lock"
+STATUS_FILE="$LOG_DIR/cron-status.tsv"
+INVOCATION_BIN="${TJ_MORNING_BRIEF_INVOCATION_BIN:-$TJ_ROOT/scripts/cron/morning-brief-invocation.sh}"
+NOTIFICATION_BIN="${TJ_CRON_NOTIFICATION_BIN:-/usr/bin/osascript}"
 CLAUDE_TIMEOUT=1800   # 30 min hard cap (deterministic bundle + synthesis; no WebSearch)
+CLAUDE_TIMEOUT="${TJ_MORNING_BRIEF_TIMEOUT_SECONDS:-$CLAUDE_TIMEOUT}"
+RUN_MODE="${TJ_MORNING_BRIEF_RUN_MODE:-live}"
 ts() { TZ='Europe/London' date +'%Y-%m-%d %H:%M:%S %Z'; }
 
-mkdir -p "$TJ_ROOT/logs"
+mkdir -p "$LOG_DIR"
+
+if [ "${TJ_MORNING_BRIEF_DISABLED:-0}" = "1" ]; then
+    echo "[$(ts)] morning-brief disabled by wrapper off-switch; skipping" >> "$LOG_FILE"
+    printf '%s\t%s\t%s\n' "$(date -u +'%Y-%m-%dT%H:%M:%SZ')" "morning-brief" "0" >> "$STATUS_FILE"
+    exit 0
+fi
 
 # Run a command with a wall-clock timeout, killing the whole process group on expiry so
 # claude's MCP/subprocess children don't survive. Exits 124 on timeout.
@@ -72,8 +85,7 @@ cd "$TJ_ROOT"
 
 # Run the governed selector headlessly (all-Opus for the judgment synthesis).
 set +e
-RUN_MODE="${TJ_MORNING_BRIEF_RUN_MODE:-live}"
-run_with_timeout "$CLAUDE_TIMEOUT" "$TJ_ROOT/scripts/cron/morning-brief-invocation.sh" "$RUN_MODE" >> "$LOG_FILE" 2>&1
+run_with_timeout "$CLAUDE_TIMEOUT" "$INVOCATION_BIN" "$RUN_MODE" >> "$LOG_FILE" 2>&1
 RC=$?
 set -e
 
@@ -88,8 +100,8 @@ fi
 # Record outcome for check-cron-health.ts (SessionStart nudge surfaces failure streaks).
 STATUS_NAME="morning-brief"
 if [ "$RUN_MODE" != "live" ]; then STATUS_NAME="${STATUS_NAME}-${RUN_MODE}"; fi
-printf '%s\t%s\t%s\n' "$(date -u +'%Y-%m-%dT%H:%M:%SZ')" "$STATUS_NAME" "$RC" >> "$TJ_ROOT/logs/cron-status.tsv"
+printf '%s\t%s\t%s\n' "$(date -u +'%Y-%m-%dT%H:%M:%SZ')" "$STATUS_NAME" "$RC" >> "$STATUS_FILE"
 if [ "$RC" -ne 0 ]; then
-    /usr/bin/osascript -e "display notification \"morning-brief failed (rc=$RC) — see logs/morning-brief.log\" with title \"trade-journal cron\"" >/dev/null 2>&1 || true
+    "$NOTIFICATION_BIN" -e "display notification \"morning-brief failed (rc=$RC) — see logs/morning-brief.log\" with title \"trade-journal cron\"" >/dev/null 2>&1 || true
 fi
 exit 0

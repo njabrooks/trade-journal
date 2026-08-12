@@ -25,7 +25,7 @@ if [ "$RUN_MODE" = "fixture" ]; then
     esac
 fi
 
-if [ -f "$TJ_REPO_ROOT/.env.local" ]; then
+if [ "${TJ_MORNING_BRIEF_SKIP_ENV:-0}" != "1" ] && [ -f "$TJ_REPO_ROOT/.env.local" ]; then
     set -a
     # shellcheck disable=SC1091
     source "$TJ_REPO_ROOT/.env.local"

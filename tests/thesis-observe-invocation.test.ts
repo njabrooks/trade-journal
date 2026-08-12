@@ -67,7 +67,7 @@ describe('governed thesis-observe invocation', () => {
     expect(shell).toContain('CLAUDE_TIMEOUT=3000');
     expect(shell).toContain('-lt 3600');
     expect(shell).toContain('os.killpg');
-    expect(shell).toContain('logs/cron-status.tsv');
+    expect(shell).toContain('cron-status.tsv');
     expect(shell).toContain('display notification');
     expect(shell.trimEnd()).toMatch(/exit 0$/);
     expect(plist).toContain('<integer>7</integer>');
