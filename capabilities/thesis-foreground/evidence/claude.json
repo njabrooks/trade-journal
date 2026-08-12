@@ -1,0 +1,42 @@
+{
+  "capability_id": "capability:scope:trade-journal/thesis-foreground",
+  "capability_version": "1.0.0",
+  "package_digest": "sha256:01437f79c7d9c0485b827227d43dd551c57f298473e3de96267fe0575ab036c8",
+  "adapter_id": "thesis-foreground-claude",
+  "adapter_digest": "sha256:98da87f2dc887862f5627f7922f7a68924dee8a2f415574e57fbadaa786fb6cd",
+  "support_state": "current",
+  "validated_at": "2026-08-12",
+  "results": {
+    "adapter-entry-point": {
+      "status": "passed",
+      "method": "Accepted Workspace CLI Capability validation and clean staged Claude Provider Entry Point generation"
+    },
+    "interactive-only-refusal": {
+      "status": "passed",
+      "method": "Repository contract tests prove that the exact adapter and bespoke mirror refuse unattended and scheduled execution before reads, provider calls, prompting, or writes"
+    },
+    "single-target-complete-request": {
+      "status": "passed",
+      "method": "Repository contract tests bind the adapter to one explicit thesis and verb and require target, evidence, target-freshness, and current-user judgment completeness before writes"
+    },
+    "query-and-delta-contract": {
+      "status": "passed",
+      "method": "Repository contract tests preserve read-only snapshot queries, articulation-baselined provenance deltas, and honest missing-baseline results"
+    },
+    "governed-dependency-boundaries": {
+      "status": "passed",
+      "method": "Repository contract tests require exact Registry-resolved thesis-observation, thesis-underwriting, and belief-evidence-assessment adapters and prohibit direct or widened writes"
+    },
+    "provider-semantic-equivalence": {
+      "status": "passed",
+      "reviewer": "J2 implementation review",
+      "method": "Compared the exact Claude and Codex adapters with issue #61, parent #46, accepted blockers #50/#57/#58, issue #60's interactive-only precedent, and the living-underwriting and observation model",
+      "evidence_link": "https://github.com/njabrooks/trade-journal/issues/61",
+      "expires_at": "2026-09-11"
+    },
+    "eligible-environment": {
+      "status": "passed",
+      "method": "The configured interactive Trade Journal runtime completed credential-free refusal and contract tests plus the governed read-only thesis preflight on 2026-08-12; absent database, provider, source, sandbox, network, or user presence remains refused or unavailable"
+    }
+  }
+}

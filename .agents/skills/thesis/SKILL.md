@@ -7,6 +7,20 @@ headline of the loose-agent model. The user asks; you answer from the synthesize
 evidence + quant/graph context, and propose loose next moves. Looseness lives here, in the agent — the
 schema just stores what conversations produce.
 
+## Governed invocation boundary
+
+This surface is explicitly **interactive-only**. Require the current user to supply one thesis and one foreground
+verb (`query`, `what-changed`, `observe`, `assess-evidence`, or `re-underwrite`). A headless, autonomous,
+scheduled, cron, background, batch, CI, webhook, timeout-default, or ambient invocation must stop before every
+read, provider call, question, or write; `/thesis` never creates or changes a schedule.
+
+The governed Capability is `capability:scope:trade-journal/thesis-foreground`. Resolve its exact underwriting,
+observation, and evidence-assessment dependencies through the published Registry Lock. Query and what-changed
+are read-only. Any observation, evidence, or articulation write is allowed only through the selected dependency's
+exact adapter and purpose-built repository boundary, after the current user's required target, scope, recording,
+or re-underwriting judgment is complete. Missing or ambiguous targets, incomplete evidence, stale dependency
+targets, missing judgment, and unavailable environment prerequisites fail closed; do not improvise a substitute.
+
 A thesis's **living underwriting** has three faces (docs/v2/10 §2):
 - **Basis for the investment** — the core argument, key drivers, key assumptions (why I'm in it).
 - **Basis for resolution** — the signals: what would confirm / complete / invalidate it (derived from the
@@ -128,7 +142,7 @@ before re-underwriting a thesis with a curated signal set. (This is distinct fro
 background **digest mode**, which stays developing-only precisely because it refreshes the overview
 *without* regenerating signals; `build-core-argument` always regenerates them, so it's safe on monitoring.)
 
-**What's-changed (the delta):** compute new evidence since the last underwriting.
+**What's-changed (the delta, read-only):** compute new evidence since the last underwriting.
 1. `ts = underwriting.createdAt` (if null, *everything* is new → offer to underwrite).
 2. New/newly-linked claims since `ts` (claim created after, **or** linked after):
 
@@ -236,9 +250,12 @@ WHERE mt.status='monitoring' AND NOT EXISTS (SELECT 1 FROM thesis_articulations 
 
 ## Notes
 
-- Read-only by default; the only writes are the explicit Step 3 (re-underwrite) and Step 4
-  (capture-observation / raise-decision) actions the user chose.
+- Read-only by default. Governed observation, evidence recording, and re-underwriting writes delegate only to
+  `thesis-observation`, `belief-evidence-assessment`, and `thesis-underwriting` after the user's exact choice.
+  Conversation capture, Decision Item creation/resolution, and expression or trade actions are separate governed
+  workflows; propose them here, then route through governed discovery only after the user selects one.
 - `monitoring` is a **position flag**, not an info-gate — information attaches to a thesis by *bearing*
   whether or not you hold it (docs/v2/10 §7). So query/underwrite a developing thesis exactly as you would
   a monitoring one.
-- On-demand only; no schedule (the background cadence is `/maintenance`'s job).
+- On-demand and interactive-only; refuse unattended execution and every scheduling request (the background
+  cadence is `/maintenance`'s job).
