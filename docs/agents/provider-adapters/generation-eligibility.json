@@ -1033,8 +1033,8 @@
         "state": "current",
         "as_of": "2026-08-12",
         "capability_version": "1.0.0",
-        "package_digest": "sha256:5eab91124924507d50529c38296be8a31defb9563e4adda309e4c47c0aea2211",
-        "adapter_digest": "sha256:c8e0219ebd3abc6c410f939a5bfbb65e56114022b9efcb073d4d0cdf38762440",
+        "package_digest": "sha256:41eae671d367800c55fd35fd1cad21ab022faa18a9310db84f6de0a70f4cfae5",
+        "adapter_digest": "sha256:9e0452709adb108dcf8baf307608d21e9a09973faab11c0d538a4d2c28be893d",
         "reason": "Exact current evidence binds the Codex adapter's interactive-only semantics and unconditional headless refusal; unattended execution remains ineligible."
       },
       "generation_eligible": true,
@@ -2145,8 +2145,8 @@
         "state": "current",
         "as_of": "2026-08-12",
         "capability_version": "1.0.0",
-        "package_digest": "sha256:5eab91124924507d50529c38296be8a31defb9563e4adda309e4c47c0aea2211",
-        "adapter_digest": "sha256:7a2b541690384bb9abe82873c7f98a842baec559295b9ac166f68eab4edccf61",
+        "package_digest": "sha256:41eae671d367800c55fd35fd1cad21ab022faa18a9310db84f6de0a70f4cfae5",
+        "adapter_digest": "sha256:96216e50097b758ef9d2a0557974329cf1e491d20dbe1a67725b1348c2fd4650",
         "reason": "Exact current evidence binds thesis-foreground 1.0.0 and the governed Claude adapter while unattended execution and scheduling remain ineligible."
       },
       "generation_eligible": true,

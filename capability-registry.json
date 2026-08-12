@@ -234,7 +234,7 @@
       "approved_version": "1.0.0",
       "release": {
         "source": ".",
-        "revision": "9e7e6b3a0b5e2d9d0463ca62563329cb589e0b64"
+        "revision": "75df76cfb4aabb5d54df250889dd30ebb8932642"
       },
       "development": {
         "enabled": true,

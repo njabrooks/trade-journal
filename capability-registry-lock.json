@@ -579,7 +579,7 @@
         }
       ],
       "id": "capability:scope:trade-journal/thesis-foreground",
-      "package_digest": "sha256:5eab91124924507d50529c38296be8a31defb9563e4adda309e4c47c0aea2211",
+      "package_digest": "sha256:41eae671d367800c55fd35fd1cad21ab022faa18a9310db84f6de0a70f4cfae5",
       "provider_adapters": [
         {
           "evidence": "evidence/claude.json",
@@ -602,8 +602,8 @@
       "source": {
         "development_digest": null,
         "package_path": "capabilities/thesis-foreground",
-        "release_reference": "9e7e6b3a0b5e2d9d0463ca62563329cb589e0b64",
-        "revision": "9e7e6b3a0b5e2d9d0463ca62563329cb589e0b64"
+        "release_reference": "75df76cfb4aabb5d54df250889dd30ebb8932642",
+        "revision": "75df76cfb4aabb5d54df250889dd30ebb8932642"
       }
     },
     {
@@ -707,6 +707,6 @@
   "kind": "CapabilityRegistryLock",
   "mode": "published",
   "publication_eligible": true,
-  "registry_digest": "sha256:c81baae52096ec44b3e6cd98c723df734b38ea8c9a8d7e4a451c042d52bfc753",
+  "registry_digest": "sha256:617ba3e86e65df8b8590877dff1ad43e651c2fbf5f480655ab3abd5240b20000",
   "schema_version": "1.0.0"
 }

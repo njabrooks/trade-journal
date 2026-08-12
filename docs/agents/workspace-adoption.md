@@ -71,7 +71,7 @@ unattended execution or scheduling. No live provider, scheduler, credential, dat
 or investment state changed while collecting evidence.
 
 Issue #61 adds the source-owned `thesis-foreground` Capability at immutable revision
-`9e7e6b3a0b5e2d9d0463ca62563329cb589e0b64`. It is interactive-only over one exact macro or asset thesis and
+`75df76cfb4aabb5d54df250889dd30ebb8932642`. It is interactive-only over one exact macro or asset thesis and
 one explicit query, what-changed, observe, assess-evidence, or re-underwrite verb. Query and delta are read-only;
 observation, explicitly requested evidence recording, and re-underwriting resolve the exact governed
 thesis-observation, belief-evidence-assessment, and thesis-underwriting dependencies without widening their
