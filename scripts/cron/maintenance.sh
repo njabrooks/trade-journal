@@ -26,13 +26,19 @@
 #
 set -euo pipefail
 
-TJ_ROOT="$HOME/projects/trade-journal"
-LOG_FILE="$TJ_ROOT/logs/maintenance.log"
-LOCK_FILE="$TJ_ROOT/logs/.maintenance.lock"
+TJ_ROOT="${TJ_ROOT:-$HOME/projects/trade-journal}"
+LOG_DIR="${TJ_CRON_LOG_DIR:-$TJ_ROOT/logs}"
+LOG_FILE="$LOG_DIR/maintenance.log"
+LOCK_FILE="$LOG_DIR/.maintenance.lock"
+STATUS_FILE="$LOG_DIR/cron-status.tsv"
+INVOCATION_BIN="${TJ_MAINTENANCE_INVOCATION_BIN:-$TJ_ROOT/scripts/cron/maintenance-invocation.sh}"
+NOTIFICATION_BIN="${TJ_CRON_NOTIFICATION_BIN:-/usr/bin/osascript}"
 CLAUDE_TIMEOUT=2400   # 40 min hard cap on the agent run
+CLAUDE_TIMEOUT="${TJ_MAINTENANCE_TIMEOUT_SECONDS:-$CLAUDE_TIMEOUT}"
+RUN_MODE="${TJ_MAINTENANCE_RUN_MODE:-live}"
 ts() { TZ='Europe/London' date +'%Y-%m-%d %H:%M:%S %Z'; }
 
-mkdir -p "$TJ_ROOT/logs"
+mkdir -p "$LOG_DIR"
 
 # Run a command with a wall-clock timeout, killing the whole process group on
 # expiry so claude's MCP/subprocess children don't survive. Exits 124 on timeout.
@@ -77,9 +83,8 @@ cd "$TJ_ROOT"
 # operator-only TJ_MAINTENANCE_RUN_MODE supports bounded shadow/canary evidence;
 # launchd leaves it unset and therefore uses the live bounded request.
 # --dangerously-skip-permissions: required for unattended Bash/psql/tsx writes.
-RUN_MODE="${TJ_MAINTENANCE_RUN_MODE:-live}"
 set +e
-run_with_timeout "$CLAUDE_TIMEOUT" "$TJ_ROOT/scripts/cron/maintenance-invocation.sh" "$RUN_MODE" >> "$LOG_FILE" 2>&1
+run_with_timeout "$CLAUDE_TIMEOUT" "$INVOCATION_BIN" "$RUN_MODE" >> "$LOG_FILE" 2>&1
 RC=$?
 set -e
 
@@ -96,8 +101,8 @@ STATUS_NAME="maintenance"
 if [ "$RUN_MODE" != "live" ]; then
     STATUS_NAME="maintenance-$RUN_MODE"
 fi
-printf '%s\t%s\t%s\n' "$(date -u +'%Y-%m-%dT%H:%M:%SZ')" "$STATUS_NAME" "$RC" >> "$TJ_ROOT/logs/cron-status.tsv"
+printf '%s\t%s\t%s\n' "$(date -u +'%Y-%m-%dT%H:%M:%SZ')" "$STATUS_NAME" "$RC" >> "$STATUS_FILE"
 if [ "$RC" -ne 0 ]; then
-    /usr/bin/osascript -e "display notification \"maintenance failed (rc=$RC) — see logs/maintenance.log\" with title \"trade-journal cron\"" >/dev/null 2>&1 || true
+    "$NOTIFICATION_BIN" -e "display notification \"maintenance failed (rc=$RC) — see logs/maintenance.log\" with title \"trade-journal cron\"" >/dev/null 2>&1 || true
 fi
 exit 0

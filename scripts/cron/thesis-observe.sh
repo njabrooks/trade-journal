@@ -22,13 +22,19 @@
 #
 set -euo pipefail
 
-TJ_ROOT="$HOME/projects/trade-journal"
-LOG_FILE="$TJ_ROOT/logs/thesis-observe.log"
-LOCK_FILE="$TJ_ROOT/logs/.thesis-observe.lock"
+TJ_ROOT="${TJ_ROOT:-$HOME/projects/trade-journal}"
+LOG_DIR="${TJ_CRON_LOG_DIR:-$TJ_ROOT/logs}"
+LOG_FILE="$LOG_DIR/thesis-observe.log"
+LOCK_FILE="$LOG_DIR/.thesis-observe.lock"
+STATUS_FILE="$LOG_DIR/cron-status.tsv"
+INVOCATION_BIN="${TJ_THESIS_OBSERVE_INVOCATION_BIN:-$TJ_ROOT/scripts/cron/thesis-observe-invocation.sh}"
+NOTIFICATION_BIN="${TJ_CRON_NOTIFICATION_BIN:-/usr/bin/osascript}"
 CLAUDE_TIMEOUT=3000   # 50 min hard cap (WebSearch-heavy; Tier-1 bounded)
+CLAUDE_TIMEOUT="${TJ_THESIS_OBSERVE_TIMEOUT_SECONDS:-$CLAUDE_TIMEOUT}"
+RUN_MODE="${TJ_THESIS_OBSERVE_RUN_MODE:-live}"
 ts() { TZ='Europe/London' date +'%Y-%m-%d %H:%M:%S %Z'; }
 
-mkdir -p "$TJ_ROOT/logs"
+mkdir -p "$LOG_DIR"
 
 # Run a command with a wall-clock timeout, killing the whole process group on expiry so
 # claude's MCP/subprocess children don't survive. Exits 124 on timeout.
@@ -71,9 +77,8 @@ cd "$TJ_ROOT"
 
 # Run the governed adapter headlessly (all-Opus for signal judgment).
 # --dangerously-skip-permissions: required for unattended Bash/tsx/WebSearch + git.
-RUN_MODE="${TJ_THESIS_OBSERVE_RUN_MODE:-live}"
 set +e
-run_with_timeout "$CLAUDE_TIMEOUT" "$TJ_ROOT/scripts/cron/thesis-observe-invocation.sh" "$RUN_MODE" >> "$LOG_FILE" 2>&1
+run_with_timeout "$CLAUDE_TIMEOUT" "$INVOCATION_BIN" "$RUN_MODE" >> "$LOG_FILE" 2>&1
 RC=$?
 set -e
 
@@ -88,8 +93,8 @@ fi
 # Record outcome for check-cron-health.ts (SessionStart nudge surfaces failure streaks).
 STATUS_NAME="thesis-observe"
 if [ "$RUN_MODE" != "live" ]; then STATUS_NAME="thesis-observe-$RUN_MODE"; fi
-printf '%s\t%s\t%s\n' "$(date -u +'%Y-%m-%dT%H:%M:%SZ')" "$STATUS_NAME" "$RC" >> "$TJ_ROOT/logs/cron-status.tsv"
+printf '%s\t%s\t%s\n' "$(date -u +'%Y-%m-%dT%H:%M:%SZ')" "$STATUS_NAME" "$RC" >> "$STATUS_FILE"
 if [ "$RC" -ne 0 ]; then
-    /usr/bin/osascript -e "display notification \"thesis-observe failed (rc=$RC) — see logs/thesis-observe.log\" with title \"trade-journal cron\"" >/dev/null 2>&1 || true
+    "$NOTIFICATION_BIN" -e "display notification \"thesis-observe failed (rc=$RC) — see logs/thesis-observe.log\" with title \"trade-journal cron\"" >/dev/null 2>&1 || true
 fi
 exit 0

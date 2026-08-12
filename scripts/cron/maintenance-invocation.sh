@@ -21,7 +21,7 @@ RUN_MODE="${1:-live}"
 # The governed adapter requires the configured repository environment. Export
 # the existing machine-local values to the provider process and its child
 # scripts; do not print or modify them.
-if [ -f "$TJ_REPO_ROOT/.env.local" ]; then
+if [ "${TJ_MAINTENANCE_SKIP_ENV:-0}" != "1" ] && [ -f "$TJ_REPO_ROOT/.env.local" ]; then
     set -a
     # shellcheck disable=SC1091
     source "$TJ_REPO_ROOT/.env.local"

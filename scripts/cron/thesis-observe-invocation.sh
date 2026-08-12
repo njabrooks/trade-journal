@@ -11,7 +11,7 @@ ROLLBACK_MARKER="${TJ_THESIS_OBSERVE_ROLLBACK_MARKER:-$TJ_REPO_ROOT/logs/.thesis
 EXPECTED_ADAPTER_DIGEST="c6eb5237932881cd801aae3e55bd20fab541ff247e92e3b4a88c6faada2029ca"
 RUN_MODE="${1:-live}"
 
-if [ -f "$TJ_REPO_ROOT/.env.local" ]; then
+if [ "${TJ_THESIS_OBSERVE_SKIP_ENV:-0}" != "1" ] && [ -f "$TJ_REPO_ROOT/.env.local" ]; then
     set -a
     # shellcheck disable=SC1091
     source "$TJ_REPO_ROOT/.env.local"
