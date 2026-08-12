@@ -207,7 +207,6 @@ esac`,
     notifications,
     invocation,
     rollbackMarker,
-    env: baseEnv,
     run(extraEnv: Record<string, string> = {}) {
       return spawnSync('/bin/bash', [resolve(repoRoot, job.wrapper), ...job.args], {
         cwd: repoRoot,
