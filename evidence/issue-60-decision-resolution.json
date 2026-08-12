@@ -7,7 +7,7 @@
     "njabrooks/trade-journal#48"
   ],
   "fixed_point": "c3a6ef1516f5a13c45b0b5dcc5d99528645329dc",
-  "release_revision": "f1ea377ec9d4c3c7d470c541fcdd2b3fd4f06987",
+  "release_revision": "4aba7e1808785fbeff7fe67d052ade4dd3c782d9",
   "evidence_time": "2026-08-12",
   "capability": {
     "id": "capability:scope:trade-journal/decision-resolution",
@@ -47,7 +47,7 @@
     ]
   },
   "published_artifacts": {
-    "registry_lock": "sha256:629eed2ee58ef3a3c01114acf92ac022abff3aaba34de4e843cbbe7c171d20c9",
+    "registry_lock": "sha256:122d0bb9334ac8171391f8086d622cec7799f24b9888d30aecc882f1f72b88de",
     "claude_staging": "sha256:bb2cc2a64fc4dde5cca096e7f220ba51f83f7aae033de2b7fe5a1de23d56edd9",
     "codex_staging": "sha256:54fec6d70d5f7ea22cf31b7b20e23c6e6119a51e436ea775f6f5cde1a8781d39",
     "interactive_inventory": "sha256:b610c0dc497d991749c309d92fa963eaac116160554666ef00d07bf8bd95361c",

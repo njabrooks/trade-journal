@@ -280,8 +280,8 @@
       "source": {
         "development_digest": null,
         "package_path": "capabilities/decision-resolution",
-        "release_reference": "f1ea377ec9d4c3c7d470c541fcdd2b3fd4f06987",
-        "revision": "f1ea377ec9d4c3c7d470c541fcdd2b3fd4f06987"
+        "release_reference": "4aba7e1808785fbeff7fe67d052ade4dd3c782d9",
+        "revision": "4aba7e1808785fbeff7fe67d052ade4dd3c782d9"
       }
     },
     {
@@ -662,6 +662,6 @@
   "kind": "CapabilityRegistryLock",
   "mode": "published",
   "publication_eligible": true,
-  "registry_digest": "sha256:7eba1bf9e8ca14a7006db6ce5fb654d176c25aafcd37047bf764ad80ad8ffc74",
+  "registry_digest": "sha256:6e8d08c29fc0527b6c75c2230a684e5768e862a27a2c7cd4ecae8f2f28810fb5",
   "schema_version": "1.0.0"
 }
