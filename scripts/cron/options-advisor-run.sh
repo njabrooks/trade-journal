@@ -19,8 +19,6 @@
 # (supersede-on-save, 7-day expiry) that the dashboard ScannerSnapshot renders.
 #
 # Off-switch: ./launchd/install.sh --remove (or launchctl unload the plists).
-# Mode-specific logged no-ops are also available through
-# TJ_OPTIONS_ADVISOR_BATCH_DISABLED=1 and TJ_OPTIONS_ADVISOR_LEAP_DISABLED=1.
 #
 set -euo pipefail
 
@@ -49,16 +47,6 @@ esac
 CLAUDE_TIMEOUT="${TJ_OPTIONS_ADVISOR_TIMEOUT_SECONDS:-$CLAUDE_TIMEOUT}"
 
 mkdir -p "$LOG_DIR"
-
-case "$MODE" in
-  batch) DISABLED="${TJ_OPTIONS_ADVISOR_BATCH_DISABLED:-0}" ;;
-  leap) DISABLED="${TJ_OPTIONS_ADVISOR_LEAP_DISABLED:-0}" ;;
-esac
-if [ "$DISABLED" = "1" ]; then
-    echo "[$(ts)] options-advisor-${MODE} disabled by wrapper off-switch; skipping" >> "$LOG_FILE"
-    printf '%s\t%s\t%s\n' "$(date -u +'%Y-%m-%dT%H:%M:%SZ')" "options-advisor-${MODE}" "0" >> "$STATUS_FILE"
-    exit 0
-fi
 
 run_with_timeout() {
     local secs="$1"; shift

@@ -1,6 +1,8 @@
 import {
   chmodSync,
+  copyFileSync,
   existsSync,
+  mkdirSync,
   mkdtempSync,
   readFileSync,
   rmSync,
@@ -26,7 +28,6 @@ type ScheduledJob = {
   statusName: string;
   invocationEnv: string;
   timeoutEnv: string;
-  disabledEnv: string;
   claudeEnv: string;
   rollbackEnv: string;
   skipEnv: string;
@@ -46,7 +47,6 @@ const jobs: ScheduledJob[] = [
     statusName: 'maintenance',
     invocationEnv: 'TJ_MAINTENANCE_INVOCATION_BIN',
     timeoutEnv: 'TJ_MAINTENANCE_TIMEOUT_SECONDS',
-    disabledEnv: 'TJ_MAINTENANCE_DISABLED',
     claudeEnv: 'TJ_MAINTENANCE_CLAUDE_BIN',
     rollbackEnv: 'TJ_MAINTENANCE_ROLLBACK_MARKER',
     skipEnv: 'TJ_MAINTENANCE_SKIP_ENV',
@@ -63,7 +63,6 @@ const jobs: ScheduledJob[] = [
     statusName: 'thesis-observe',
     invocationEnv: 'TJ_THESIS_OBSERVE_INVOCATION_BIN',
     timeoutEnv: 'TJ_THESIS_OBSERVE_TIMEOUT_SECONDS',
-    disabledEnv: 'TJ_THESIS_OBSERVE_DISABLED',
     claudeEnv: 'TJ_THESIS_OBSERVE_CLAUDE_BIN',
     rollbackEnv: 'TJ_THESIS_OBSERVE_ROLLBACK_MARKER',
     skipEnv: 'TJ_THESIS_OBSERVE_SKIP_ENV',
@@ -80,7 +79,6 @@ const jobs: ScheduledJob[] = [
     statusName: 'options-advisor-batch',
     invocationEnv: 'TJ_OPTIONS_ADVISOR_INVOCATION_BIN',
     timeoutEnv: 'TJ_OPTIONS_ADVISOR_TIMEOUT_SECONDS',
-    disabledEnv: 'TJ_OPTIONS_ADVISOR_BATCH_DISABLED',
     claudeEnv: 'TJ_OPTIONS_ADVISOR_CLAUDE_BIN',
     rollbackEnv: 'TJ_OPTIONS_ADVISOR_ROLLBACK_MARKER',
     skipEnv: 'TJ_OPTIONS_ADVISOR_SKIP_ENV',
@@ -97,7 +95,6 @@ const jobs: ScheduledJob[] = [
     statusName: 'options-advisor-leap',
     invocationEnv: 'TJ_OPTIONS_ADVISOR_INVOCATION_BIN',
     timeoutEnv: 'TJ_OPTIONS_ADVISOR_TIMEOUT_SECONDS',
-    disabledEnv: 'TJ_OPTIONS_ADVISOR_LEAP_DISABLED',
     claudeEnv: 'TJ_OPTIONS_ADVISOR_CLAUDE_BIN',
     rollbackEnv: 'TJ_OPTIONS_ADVISOR_ROLLBACK_MARKER',
     skipEnv: 'TJ_OPTIONS_ADVISOR_SKIP_ENV',
@@ -115,7 +112,6 @@ const jobs: ScheduledJob[] = [
     statusName: 'morning-brief',
     invocationEnv: 'TJ_MORNING_BRIEF_INVOCATION_BIN',
     timeoutEnv: 'TJ_MORNING_BRIEF_TIMEOUT_SECONDS',
-    disabledEnv: 'TJ_MORNING_BRIEF_DISABLED',
     claudeEnv: 'TJ_MORNING_BRIEF_CLAUDE_BIN',
     rollbackEnv: 'TJ_MORNING_BRIEF_ROLLBACK_MARKER',
     skipEnv: 'TJ_MORNING_BRIEF_SKIP_ENV',
@@ -324,16 +320,6 @@ describe('scheduled provider wrappers at their process boundaries', () => {
         expect(() => process.kill(pid, 0)).toThrow();
       });
 
-      it('honors the wrapper off-switch without invoking the provider', () => {
-        const harness = createHarness(job);
-        const result = harness.run({ [job.disabledEnv]: '1' });
-
-        expect(result.status).toBe(0);
-        expect(harness.log()).toContain('disabled by wrapper off-switch; skipping');
-        expect(harness.status()).toMatch(new RegExp(`\\t${job.statusName}\\t0\\n$`));
-        expect(existsSync(harness.calls)).toBe(false);
-      });
-
       it('selects governed execution and rolls back immediately in both directions', () => {
         const harness = createHarness(job);
         const claude = makeExecutable(join(harness.directory, 'claude-double'), `printf '%s\\n' "$*"`);
@@ -366,5 +352,53 @@ describe('scheduled provider wrappers at their process boundaries', () => {
     expect(harness.run().status).toBe(0);
     expect(readFileSync(harness.calls, 'utf8')).toContain('invoked:leap live');
     expect(harness.log()).toContain('options-advisor-leap complete');
+
+    const inverse = createHarness(batch);
+    writeFileSync(join(inverse.directory, leap.lockName), 'active LEAP lock');
+    expect(inverse.run().status).toBe(0);
+    expect(readFileSync(inverse.calls, 'utf8')).toContain('invoked:batch live');
+    expect(inverse.log()).toContain('options-advisor-batch complete');
+  });
+
+  it('executes the declared scheduler off-switch through a controlled launchctl boundary', () => {
+    const directory = mkdtempSync(join(tmpdir(), 'scheduled-off-switch-'));
+    temporaryDirectories.push(directory);
+    const launchAgents = join(directory, 'Library', 'LaunchAgents');
+    const bin = join(directory, 'bin');
+    const calls = join(directory, 'launchctl-calls.log');
+    mkdirSync(launchAgents, { recursive: true });
+    mkdirSync(bin);
+
+    const targetPlists = [
+      'com.trade-journal.maintenance.plist',
+      'com.trade-journal.thesis-observe.plist',
+      'com.trade-journal.options-advisor.plist',
+      'com.trade-journal.options-advisor-leap.plist',
+      'com.trade-journal.morning-brief.plist',
+    ];
+    for (const plist of targetPlists) {
+      copyFileSync(resolve(repoRoot, 'launchd', plist), join(launchAgents, plist));
+    }
+    makeExecutable(
+      join(bin, 'launchctl'),
+      `printf '%s\\n' "$*" >> "${calls}"`,
+    );
+
+    const result = spawnSync('/bin/bash', [resolve(repoRoot, 'launchd/install.sh'), '--remove'], {
+      cwd: repoRoot,
+      encoding: 'utf8',
+      env: {
+        HOME: directory,
+        PATH: `${bin}:/usr/bin:/bin`,
+        NODE_ENV: 'test',
+      },
+    });
+
+    expect(result.status).toBe(0);
+    const launchctlCalls = readFileSync(calls, 'utf8');
+    for (const plist of targetPlists) {
+      expect(launchctlCalls).toContain(`unload ${join(launchAgents, plist)}`);
+      expect(existsSync(join(launchAgents, plist))).toBe(false);
+    }
   });
 });

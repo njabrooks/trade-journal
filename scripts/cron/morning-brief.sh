@@ -20,7 +20,6 @@
 # Off-switch:
 #   launchctl unload ~/Library/LaunchAgents/com.trade-journal.morning-brief.plist
 # (or ./launchd/install.sh --remove). Judgment is all-Opus (--model opus).
-# A scheduled process can also be made a logged no-op with TJ_MORNING_BRIEF_DISABLED=1.
 #
 set -euo pipefail
 
@@ -37,12 +36,6 @@ RUN_MODE="${TJ_MORNING_BRIEF_RUN_MODE:-live}"
 ts() { TZ='Europe/London' date +'%Y-%m-%d %H:%M:%S %Z'; }
 
 mkdir -p "$LOG_DIR"
-
-if [ "${TJ_MORNING_BRIEF_DISABLED:-0}" = "1" ]; then
-    echo "[$(ts)] morning-brief disabled by wrapper off-switch; skipping" >> "$LOG_FILE"
-    printf '%s\t%s\t%s\n' "$(date -u +'%Y-%m-%dT%H:%M:%SZ')" "morning-brief" "0" >> "$STATUS_FILE"
-    exit 0
-fi
 
 # Run a command with a wall-clock timeout, killing the whole process group on expiry so
 # claude's MCP/subprocess children don't survive. Exits 124 on timeout.
