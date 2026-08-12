@@ -56,26 +56,26 @@
     },
     "claude": {
       "path": "docs/agents/provider-entry-points/claude.md",
-      "sha256": "558468e2d22b98e4ea622496bcb5492ce86a64d5030c2fa62d9fe51d6778de2b"
+      "sha256": "4b7851ffa5707a59e37d86bd370e530978d9dfc91b9e9d867d745119fc01eba3"
     },
     "codex": {
       "path": "docs/agents/provider-entry-points/codex.md",
-      "sha256": "7c10e452a1a8ac0e9c859b5c5fbc6333dc61a188a1e69f102387dca266f1238b"
+      "sha256": "bc0e17402323ac621fcd47ec0d67ac00027b6e87ebcad6d09dd2854fbea947b6"
     },
     "removed_authority": "docs/agents/provider-entry-points/staging/"
   },
   "inventory_artifacts": {
     "interactive": {
       "path": "docs/agents/provider-adapters/interactive-inventory.json",
-      "sha256": "01b6a39d1f65c964e322c25a40aea193181f765cf685033fc045945173462233"
+      "sha256": "c4138b73062c286351d37ef99d5074aa8fe27a2d33bf3dc30b965b4cc323dbe8"
     },
     "headless": {
       "path": "docs/agents/provider-adapters/headless-inventory.json",
-      "sha256": "fb528a50522cd1fb5126e660d97de486beb4131dae2661cab172d0de171f5585"
+      "sha256": "9af0d7ddbb9b90d34705932a6303d0385ee82516099ea8373db1b56cd1894a1b"
     },
     "final_projection": {
       "path": "docs/agents/provider-adapters/generation-eligibility.json",
-      "sha256": "142173c242c7cd1f808e4f6380082b77d569ae1911e47742efdccc0805c19735"
+      "sha256": "ca27bfe6f00c95a6de8bb3084283675f6f607d6d5ba3df4e5bc41c123d648134"
     }
   },
   "authority_boundary": {

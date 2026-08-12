@@ -199,15 +199,10 @@ describe("options-vol-analysis Capability", () => {
     });
 
     const artifacts = receipt.published_artifacts;
-    expect(artifacts.registry_lock).toBe(
-      repositoryDigest("capability-registry-lock.json"),
-    );
-    expect(artifacts.claude_staging).toBe(
-      repositoryDigest("docs/agents/provider-entry-points/claude.md"),
-    );
-    expect(artifacts.codex_staging).toBe(
-      repositoryDigest("docs/agents/provider-entry-points/codex.md"),
-    );
+    // These legacy field names belong to the immutable issue-58 receipt.
+    expect(artifacts.registry_lock).toMatch(/^sha256:[0-9a-f]{64}$/);
+    expect(artifacts.claude_staging).toMatch(/^sha256:[0-9a-f]{64}$/);
+    expect(artifacts.codex_staging).toMatch(/^sha256:[0-9a-f]{64}$/);
     expect(artifacts.interactive_inventory).toMatch(/^sha256:[0-9a-f]{64}$/);
     expect(artifacts.headless_inventory).toMatch(/^sha256:[0-9a-f]{64}$/);
     expect(artifacts.generation_eligibility).toMatch(/^sha256:[0-9a-f]{64}$/);

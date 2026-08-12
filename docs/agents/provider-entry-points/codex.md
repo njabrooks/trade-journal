@@ -190,7 +190,7 @@ Provider Adapter `notes-tana-client-codex` (current):
 - Require an exact workflow-owned target before `trash_node`; field-value cleanup may remove only exact untagged siblings after the replacement reference is confirmed. Retain tagged or otherwise unowned siblings and deny every unenumerated destructive action.
 - Treat connector, approval, credential, or localhost failures as unavailable evidence.
 
-### capability:scope:trade-journal/belief-evidence-assessment 1.0.0
+### capability:scope:trade-journal/belief-evidence-assessment 1.0.1
 
 Intent: Assess provenance-bearing evidence against governed thesis underwriting without changing investment state or fabricating owner judgment.
 
@@ -253,7 +253,7 @@ Accept a request object with `mode` (`maintenance`, `thesis-review`, or `claim-b
 
 This adapter is a producer. It must not invoke `scripts/ops/resolve-decision.ts`, `scripts/ops/update-entity-status.ts`, or silently re-underwrite a thesis. Missing credentials, Tana unavailability, sandbox denial, an exhausted bound, or partial failure must be reported honestly.
 
-### capability:scope:trade-journal/belief-research-relation 1.0.0
+### capability:scope:trade-journal/belief-research-relation 1.0.1
 
 Intent: Relate Notes-owned research to developing or monitoring theses by direct semantic bearing while preserving exact promoted-claim provenance and unresolved judgment boundaries.
 
@@ -292,7 +292,7 @@ Provider Adapter `belief-research-relation-codex` (current):
 
 Unattended execution may prepare or validate recommendation-only output and return explicit ambiguity. It must not create an authorization token, invoke the recorder, persist a link or Decision Item, resolve judgment, or change status. Return `writes: []`.
 
-### capability:scope:trade-journal/claims-synthesis 1.0.0
+### capability:scope:trade-journal/claims-synthesis 1.0.1
 
 Intent: Distinguish and relate Notes-owned research evidence to Trade Journal investment claims and theses without duplicating provenance-bearing claims or silently exercising investment judgment.
 
@@ -323,7 +323,7 @@ Provider Adapter `claims-synthesis-codex` (current):
 7. Save the proposed JSON only to a temporary or explicitly requested local file, then use the repository command runner for `npx tsx scripts/claims-synthesis.ts --validate-result <file|-> --context <prepared-context-file>`. A stale digest, unknown source/claim/thesis reference, missing provenance reuse, lost qualifier or rebuttal, ambiguous mapping, malformed or oversized result, unavailable input, provider failure, or validation refusal is a complete failed or unavailable outcome. Do not partially accept it or infer missing state.
 8. This adapter is recommendation-only. It must not invoke `scripts/ops/create-claim.ts`, `scripts/ops/batch-create-claims.ts`, `scripts/ops/link-claim-to-thesis.ts`, `scripts/relate-research.ts` apply modes, `scripts/ops/update-entity-status.ts`, or `scripts/ops/resolve-decision.ts`; must not use ad-hoc SQL, Supabase MCP writes, or direct API mutation; must not promote, create, link, or mutate claims; and has no thesis/status, signal, Decision Item, strategy, position, or trade authority. Unattended use is eligible only under this same zero-write boundary and must preserve genuine ambiguity rather than guessing.
 
-### capability:scope:trade-journal/decision-resolution 1.0.0
+### capability:scope:trade-journal/decision-resolution 1.0.1
 
 Intent: Present unresolved Trade Journal Decision Items and record only the current user's explicit judgment through approved auditable resolution and validated lifecycle-transition operations.
 
@@ -512,7 +512,7 @@ Provider Adapter `portfolio-snapshot-codex` (current):
 
 This adapter is read-only. Its authority ends at presenting the returned snapshot; it does not mutate Trade Journal state or place trades.
 
-### capability:scope:trade-journal/research-pipeline 1.3.1
+### capability:scope:trade-journal/research-pipeline 1.3.2
 
 Intent: Provide provider-neutral, zero-write results across research-pipeline intake, research, evidence synthesis, thesis expression, user gates, and graduation planning while composing the ordered aggregate and contracting superseded legacy procedures to rollback-capable protective tombstones.
 
@@ -549,7 +549,7 @@ Provider Adapter `research-pipeline-codex` (current):
 13. This adapter must not use ad-hoc SQL, Supabase MCP writes, direct API mutation, generic writes, schedulers, credentials, provider discovery, or production-data evidence; must not change status, resolve a Decision Item, configure signals, mutate a strategy or position, or place or stage an order or trade.
 14. Unattended execution is conditional only for read-only status, portable preparation, validation of explicitly supplied evidence, and aggregate describe, evaluate, and validation through the governed adapter. Provider research may run only with declared source access and honest unavailable behavior. Idea selection, classification, every user gate, graduation acceptance, and every accepted write remain interactive and ineligible. Protective tombstones are never execution authority.
 
-### capability:scope:trade-journal/research-publication 1.0.0
+### capability:scope:trade-journal/research-publication 1.0.1
 
 Intent: Publish explicitly accepted research claims and governed thesis relationships without duplicating Notes-owned provenance or expanding publication into investment-state authority.
 
@@ -586,7 +586,7 @@ Provider Adapter `research-publication-codex` (current):
 
 Unattended execution may prepare or validate only and must return `authorization_required` or an exact unavailable/refused result with `writes: []`. It cannot create an authorization token or invoke the recorder because candidate acceptance and thesis-bearing acceptance are genuine user judgment.
 
-### capability:scope:trade-journal/thesis-foreground 1.0.0
+### capability:scope:trade-journal/thesis-foreground 1.0.1
 
 Intent: Interactively query, observe, explain what changed for, and re-underwrite one Trade Journal thesis without fabricating user judgment or broadening any governed dependency's write authority.
 
@@ -645,7 +645,7 @@ Produce the workflow's directive report with signal identifier, score, evidence,
 
 This adapter is sensing-only. Its writes are limited to the observation artifact, `signal_data_snapshots`, and corresponding journal history. It must not invoke `scripts/ops/resolve-decision.ts`, `scripts/ops/update-entity-status.ts`, raise a Decision Item, or change thesis, strategy, claim, or signal status.
 
-### capability:scope:trade-journal/thesis-underwriting 1.0.0
+### capability:scope:trade-journal/thesis-underwriting 1.0.1
 
 Intent: Build a living thesis underwriting from provenance-bearing evidence without changing the Trade Journal thesis lifecycle or reviving retired manual signal configuration.
 
@@ -676,7 +676,7 @@ Provider Adapter `thesis-underwriting-codex` (current):
 
 This adapter may write a new versioned articulation, derived resolution signals, consumed candidate-signal dispositions, and their resulting audit history. It must not change thesis status, must not invoke `scripts/ops/update-entity-status.ts`, must not invoke `scripts/ops/resolve-decision.ts`, must not write ad hoc SQL, and has no order, trade, execution, or scheduler authority.
 
-### capability:scope:trade-journal/workflow-discovery 1.0.0
+### capability:scope:trade-journal/workflow-discovery 1.0.1
 
 Intent: Route an interactive Trade Journal request to the authoritative current workflow source without executing the workflow or duplicating its semantics.
 
@@ -705,4 +705,4 @@ Provider Adapter `workflow-discovery-codex` (current):
 
 Discovery is read-only and must not execute the selected workflow, call a provider, query or mutate a database, alter investment state, resolve user judgment, update GitHub, change a scheduler, or write across a repository boundary. A later workflow invocation remains subject to its own user authority and safeguards.
 
-The installed machine-local `~/.codex/skills/trade-journal-workflows` bridge is an active legacy router in eligible Home Hub sessions: it can auto-trigger and its curated `workflow-map.md` may compete with this governed inventory route. Prefer repository-native `AGENTS.md` and the exact governed adapter when they are available. The bridge is not owned by this repository, is not semantic authority, and has unavailable Adapter Conformance evidence; its presence, absence, or drift must never gate repository commits or imply support on another host.
+The installed machine-local `~/.codex/skills/trade-journal-workflows` bridge is an optional non-authoritative bootstrap in eligible Home Hub sessions: it can auto-trigger and its curated `workflow-map.md` cannot override this governed inventory route. Prefer repository-native `AGENTS.md` and the exact governed adapter when they are available. The bridge is not owned by this repository, is not semantic authority, and has unavailable Adapter Conformance evidence; its presence, absence, or drift must never gate repository commits or imply support on another host.

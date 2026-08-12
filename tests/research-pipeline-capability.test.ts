@@ -38,7 +38,7 @@ describe('research-pipeline Capability', () => {
     expect(capability).toMatchObject({
       id: 'capability:scope:trade-journal/research-pipeline',
       authority: 'scope:trade-journal',
-      version: '1.3.1',
+      version: '1.3.2',
       dependencies: [
         { id: 'capability:scope:trade-journal/claims-synthesis', version_constraint: '>=1.0.0 <2.0.0' },
         { id: 'capability:scope:trade-journal/research-publication', version_constraint: '>=1.0.0 <2.0.0' },

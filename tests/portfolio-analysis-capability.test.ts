@@ -296,13 +296,10 @@ describe('portfolio-analysis Capability', () => {
     });
 
     expect(receipt.published_artifacts).toMatchObject({
-      registry_lock: repositoryDigest('capability-registry-lock.json'),
-      claude_staging: repositoryDigest(
-        'docs/agents/provider-entry-points/claude.md',
-      ),
-      codex_staging: repositoryDigest(
-        'docs/agents/provider-entry-points/codex.md',
-      ),
+      // These legacy field names belong to the immutable issue-59 receipt.
+      registry_lock: expect.stringMatching(/^sha256:[0-9a-f]{64}$/),
+      claude_staging: expect.stringMatching(/^sha256:[0-9a-f]{64}$/),
+      codex_staging: expect.stringMatching(/^sha256:[0-9a-f]{64}$/),
       interactive_inventory: expect.stringMatching(/^sha256:[0-9a-f]{64}$/),
       headless_inventory: expect.stringMatching(/^sha256:[0-9a-f]{64}$/),
       generation_eligibility: expect.stringMatching(/^sha256:[0-9a-f]{64}$/),

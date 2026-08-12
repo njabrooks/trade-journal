@@ -43,16 +43,16 @@
       "evidence": {
         "state": "current",
         "as_of": "2026-08-10",
-        "capability_version": "1.3.1",
-        "package_digest": "sha256:5fe78a3a67c2ce2756c37cdc6052523012835d5068cc29992e98158dd591e039",
+        "capability_version": "1.3.2",
+        "package_digest": "sha256:95a0ab405433e250bb08b19a0d282518633852bf816b6520ff817a97b04210d0",
         "adapter_digest": "sha256:746ca82d4717d721c30377cb023585dc4c94689e93c1a0118b37942053388a53",
-        "reason": "Exact current evidence binds the research-pipeline 1.3.1 codex adapter, its zero-write boundary, and the protective tombstone for headless-codex-advance-or-kill."
+        "reason": "Exact current evidence binds capability:scope:trade-journal/research-pipeline 1.3.2 and its codex adapter to the canonical governed Provider Entry Point."
       },
       "generation_eligible": true,
       "ineligibility_reasons": [],
       "final_disposition": {
         "state": "governed",
-        "rationale": "The governed replacement is authoritative; the former legacy path is retained only as a protective tombstone with explicit rollback provenance."
+        "rationale": "Exact current evidence binds capability:scope:trade-journal/research-pipeline 1.3.2 and its codex adapter to the canonical governed Provider Entry Point."
       }
     },
     {
@@ -82,7 +82,7 @@
       "ineligibility_reasons": [],
       "final_disposition": {
         "state": "governed",
-        "rationale": "The governed adapter is current and authoritative; retain the generic headless mirror as a non-authoritative rollback input."
+        "rationale": "Exact current evidence binds the options-vol-analysis 1.0.0 package, deterministic fixture, eligible no-write data probe, and governed Codex adapter."
       }
     },
     {
@@ -117,7 +117,7 @@
       ],
       "final_disposition": {
         "state": "retired",
-        "rationale": "Removed from active discovery and retained only as repository history under issue #75."
+        "rationale": "Final disposition is historical evidence only; this non-candidate has no current Capability or operational adapter. Final boundary: Removed from active discovery and retained only as repository history under issue #75."
       }
     },
     {
@@ -152,7 +152,7 @@
       ],
       "final_disposition": {
         "state": "retired",
-        "rationale": "Removed from active discovery and retained only as repository history under issue #75."
+        "rationale": "Final disposition is historical evidence only; this non-candidate has no current Capability or operational adapter. Final boundary: Removed from active discovery and retained only as repository history under issue #75."
       }
     },
     {
@@ -173,16 +173,16 @@
       "evidence": {
         "state": "current",
         "as_of": "2026-08-08",
-        "capability_version": "1.0.0",
-        "package_digest": "sha256:a500733334c51f739511621d90bc53e0489137a3dedc3889264ccc05ea1a77df",
+        "capability_version": "1.0.1",
+        "package_digest": "sha256:758d4f0c233c7479f62daf6cc8fa4221b4379eb2dd517a258a0f2feeded805e7",
         "adapter_digest": "sha256:0fb1750bc026e48370d4e0d193b0e90213974b87009731cc699f856c3d078adb",
-        "reason": "Exact current evidence is bound to belief-evidence-assessment 1.0.0 and the governed Codex adapter."
+        "reason": "Exact current evidence binds capability:scope:trade-journal/belief-evidence-assessment 1.0.1 and its codex adapter to the canonical governed Provider Entry Point."
       },
       "generation_eligible": true,
       "ineligibility_reasons": [],
       "final_disposition": {
         "state": "governed",
-        "rationale": "The governed adapter is current and authoritative; retain the bespoke headless mirror as a non-authoritative rollback input."
+        "rationale": "Exact current evidence binds capability:scope:trade-journal/belief-evidence-assessment 1.0.1 and its codex adapter to the canonical governed Provider Entry Point."
       }
     },
     {
@@ -212,7 +212,7 @@
       "ineligibility_reasons": [],
       "final_disposition": {
         "state": "governed",
-        "rationale": "The governed adapter is current and authoritative; retain the existing headless mirror and live invocation only where a separately governed operational consumer still delegates to it."
+        "rationale": "Exact current evidence is bound to belief-maintenance 1.0.0 and the governed Codex adapter."
       }
     },
     {
@@ -233,16 +233,16 @@
       "evidence": {
         "state": "current",
         "as_of": "2026-08-07",
-        "capability_version": "1.0.0",
-        "package_digest": "sha256:de419b2f068c31343cf0267e208d0594ac72bd61eb3276b2b61bccf1fc73fccb",
+        "capability_version": "1.0.1",
+        "package_digest": "sha256:57a65268ae6033915b2ae1401b15551949dda8336e1a5f510e8c1a89cc646e7e",
         "adapter_digest": "sha256:f5067026d7a81aa37de1d1ddc78d9c80511112b6e28e59f15851ed033b887a45",
-        "reason": "Exact current evidence is bound to thesis-underwriting 1.0.0 and the governed Codex adapter."
+        "reason": "Exact current evidence binds capability:scope:trade-journal/thesis-underwriting 1.0.1 and its codex adapter to the canonical governed Provider Entry Point."
       },
       "generation_eligible": true,
       "ineligibility_reasons": [],
       "final_disposition": {
         "state": "governed",
-        "rationale": "The governed adapter is current and authoritative; retain the bespoke headless mirror as a non-authoritative rollback input."
+        "rationale": "Exact current evidence binds capability:scope:trade-journal/thesis-underwriting 1.0.1 and its codex adapter to the canonical governed Provider Entry Point."
       }
     },
     {
@@ -277,7 +277,7 @@
       ],
       "final_disposition": {
         "state": "tombstone",
-        "rationale": "Retire the procedure permanently while retaining this no-read/no-write tombstone to prevent unsafe revival."
+        "rationale": "Protective retirement tombstone only; it is not a current Capability or operational adapter. Final boundary: Retire the procedure permanently while retaining this no-read/no-write tombstone to prevent unsafe revival."
       }
     },
     {
@@ -298,16 +298,16 @@
       "evidence": {
         "state": "current",
         "as_of": "2026-08-12",
-        "capability_version": "1.0.0",
-        "package_digest": "sha256:66158ba085f39170be27eea5b1b7180dfc872ced87a4b5f134cfdd56729e64d8",
+        "capability_version": "1.0.1",
+        "package_digest": "sha256:0761d66e9ce3e9e77ff2d71e8c8b304e5b354f06542378155e3c1641b1f62bb4",
         "adapter_digest": "sha256:4618d8ca2d232fda1490ebb53309d787bfcaedafb9e8f7bb5f94f397c3986f44",
-        "reason": "Exact current evidence binds the Codex adapter's interactive-only semantics and unconditional headless refusal; unattended execution remains ineligible."
+        "reason": "Exact current evidence binds capability:scope:trade-journal/decision-resolution 1.0.1 and its codex adapter to the canonical governed Provider Entry Point."
       },
       "generation_eligible": true,
       "ineligibility_reasons": [],
       "final_disposition": {
         "state": "governed",
-        "rationale": "Stage the exact governed Codex adapter while retaining the bespoke refusal mirror as the only headless migration input."
+        "rationale": "Exact current evidence binds capability:scope:trade-journal/decision-resolution 1.0.1 and its codex adapter to the canonical governed Provider Entry Point."
       }
     },
     {
@@ -328,16 +328,16 @@
       "evidence": {
         "state": "current",
         "as_of": "2026-08-08",
-        "capability_version": "1.0.0",
-        "package_digest": "sha256:da0148b289c422cdbab90905b00bf03f767f201c5d193f5ec2411b77ef99d8f6",
+        "capability_version": "1.0.1",
+        "package_digest": "sha256:72eaaf59988b176adf331564775420e89fc80d234e97fd64788c3972eba8ef21",
         "adapter_digest": "sha256:e89e187bc4e509f3fa1e56cf2f27d2da85c65113bc5c93fe2e0d43a2ab8118e0",
-        "reason": "Exact current evidence is bound to research-publication 1.0.0 and the governed Codex adapter."
+        "reason": "Exact current evidence binds capability:scope:trade-journal/research-publication 1.0.1 and its codex adapter to the canonical governed Provider Entry Point."
       },
       "generation_eligible": true,
       "ineligibility_reasons": [],
       "final_disposition": {
         "state": "governed",
-        "rationale": "The governed adapter is current and authoritative; retain the bespoke headless mirror as a preparation-only migration input as a non-authoritative rollback input."
+        "rationale": "Exact current evidence binds capability:scope:trade-journal/research-publication 1.0.1 and its codex adapter to the canonical governed Provider Entry Point."
       }
     },
     {
@@ -370,7 +370,7 @@
       ],
       "final_disposition": {
         "state": "retained",
-        "rationale": "Retain the bounded non-governed gateway boundary until Radon publishes an accepted immutable package; do not infer support from connectivity or local files."
+        "rationale": "Radon publishes no accepted immutable gateway-control Capability Package or exact Adapter Conformance evidence at the reviewed revision. Final boundary: Retain the bounded non-governed gateway boundary until Radon publishes an accepted immutable package; do not infer support from connectivity or local files."
       }
     },
     {
@@ -391,16 +391,16 @@
       "evidence": {
         "state": "current",
         "as_of": "2026-08-10",
-        "capability_version": "1.3.1",
-        "package_digest": "sha256:5fe78a3a67c2ce2756c37cdc6052523012835d5068cc29992e98158dd591e039",
+        "capability_version": "1.3.2",
+        "package_digest": "sha256:95a0ab405433e250bb08b19a0d282518633852bf816b6520ff817a97b04210d0",
         "adapter_digest": "sha256:746ca82d4717d721c30377cb023585dc4c94689e93c1a0118b37942053388a53",
-        "reason": "Exact current evidence binds the research-pipeline 1.3.1 codex adapter, its zero-write boundary, and the protective tombstone for headless-codex-graduate-pipeline-idea."
+        "reason": "Exact current evidence binds capability:scope:trade-journal/research-pipeline 1.3.2 and its codex adapter to the canonical governed Provider Entry Point."
       },
       "generation_eligible": true,
       "ineligibility_reasons": [],
       "final_disposition": {
         "state": "governed",
-        "rationale": "The governed replacement is authoritative; the former legacy path is retained only as a protective tombstone with explicit rollback provenance."
+        "rationale": "Exact current evidence binds capability:scope:trade-journal/research-pipeline 1.3.2 and its codex adapter to the canonical governed Provider Entry Point."
       }
     },
     {
@@ -433,7 +433,7 @@
       ],
       "final_disposition": {
         "state": "retained",
-        "rationale": "Retain the bounded non-governed requested-contract quote boundary until Radon publishes an accepted immutable package; do not infer support from gateway connectivity, market-data availability, or local files."
+        "rationale": "Radon publishes no accepted immutable option-quote Capability Package or exact Adapter Conformance evidence at the reviewed revision. Final boundary: Retain the bounded non-governed requested-contract quote boundary until Radon publishes an accepted immutable package; do not infer support from gateway connectivity, market-data availability, or local files."
       }
     },
     {
@@ -463,7 +463,7 @@
       "ineligibility_reasons": [],
       "final_disposition": {
         "state": "governed",
-        "rationale": "The governed adapter is current and authoritative; retain the existing headless mirror and live invocation only where a separately governed operational consumer still delegates to it."
+        "rationale": "Exact current evidence is bound to belief-maintenance 1.0.0 and the governed Codex adapter."
       }
     },
     {
@@ -493,7 +493,7 @@
       "ineligibility_reasons": [],
       "final_disposition": {
         "state": "governed",
-        "rationale": "The governed adapter is current and authoritative; retain the existing headless mirror and live invocation only where a separately governed operational consumer still delegates to it."
+        "rationale": "Exact current evidence is bound to morning-attention-brief 1.0.0 and the governed Codex adapter."
       }
     },
     {
@@ -523,7 +523,7 @@
       "ineligibility_reasons": [],
       "final_disposition": {
         "state": "governed",
-        "rationale": "The governed adapter is current and authoritative; retain the existing headless mirror and live invocation only where a separately governed operational consumer still delegates to it."
+        "rationale": "Exact current evidence is bound to portfolio-options-advice 1.0.0 and the governed Codex adapter."
       }
     },
     {
@@ -558,7 +558,7 @@
       ],
       "final_disposition": {
         "state": "retired",
-        "rationale": "Removed from active discovery and retained only as repository history under issue #75."
+        "rationale": "Final disposition is historical evidence only; this non-candidate has no current Capability or operational adapter. Final boundary: Removed from active discovery and retained only as repository history under issue #75."
       }
     },
     {
@@ -579,16 +579,16 @@
       "evidence": {
         "state": "current",
         "as_of": "2026-08-10",
-        "capability_version": "1.3.1",
-        "package_digest": "sha256:5fe78a3a67c2ce2756c37cdc6052523012835d5068cc29992e98158dd591e039",
+        "capability_version": "1.3.2",
+        "package_digest": "sha256:95a0ab405433e250bb08b19a0d282518633852bf816b6520ff817a97b04210d0",
         "adapter_digest": "sha256:746ca82d4717d721c30377cb023585dc4c94689e93c1a0118b37942053388a53",
-        "reason": "Exact current evidence binds the research-pipeline 1.3.1 codex adapter, its zero-write boundary, and the protective tombstone for headless-codex-pipeline-status."
+        "reason": "Exact current evidence binds capability:scope:trade-journal/research-pipeline 1.3.2 and its codex adapter to the canonical governed Provider Entry Point."
       },
       "generation_eligible": true,
       "ineligibility_reasons": [],
       "final_disposition": {
         "state": "governed",
-        "rationale": "The governed replacement is authoritative; the former legacy path is retained only as a protective tombstone with explicit rollback provenance."
+        "rationale": "Exact current evidence binds capability:scope:trade-journal/research-pipeline 1.3.2 and its codex adapter to the canonical governed Provider Entry Point."
       }
     },
     {
@@ -618,7 +618,7 @@
       "ineligibility_reasons": [],
       "final_disposition": {
         "state": "replaced",
-        "rationale": "The authority-correct governed Capability replaces connector-era assumptions; retain the legacy source only as an explicit migration input as a non-authoritative rollback input."
+        "rationale": "Exact current evidence binds portfolio-analysis 1.0.0, its two governed dependencies, the representative observable-equivalence fixture, and the governed Codex adapter."
       }
     },
     {
@@ -648,7 +648,7 @@
       "ineligibility_reasons": [],
       "final_disposition": {
         "state": "replaced",
-        "rationale": "Replace the legacy Trade Journal projection with the Registry-locked Notes-owned content-processing adapter without transferring capture or extraction authority."
+        "rationale": "Accepted Notes evidence binds the exact immutable content-processing package and Codex adapter; live Tana operation remains unavailable and unclaimed."
       }
     },
     {
@@ -678,7 +678,7 @@
       "ineligibility_reasons": [],
       "final_disposition": {
         "state": "replaced",
-        "rationale": "Replace the legacy Trade Journal projection with the Registry-locked Notes-owned content-processing adapter without transferring capture or extraction authority."
+        "rationale": "Accepted Notes evidence binds the exact immutable content-processing package and Codex adapter; live Tana operation remains unavailable and unclaimed."
       }
     },
     {
@@ -708,7 +708,7 @@
       "ineligibility_reasons": [],
       "final_disposition": {
         "state": "governed",
-        "rationale": "The governed adapter is current and authoritative; retain the legacy headless mirror as a non-authoritative rollback input."
+        "rationale": "Exact current evidence is bound to portfolio-snapshot 1.0.0 and the governed Codex adapter."
       }
     },
     {
@@ -741,7 +741,7 @@
       ],
       "final_disposition": {
         "state": "unavailable",
-        "rationale": "Migrate the provider packaging in J2 without changing the underlying Trade Journal workflow semantics."
+        "rationale": "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point. Final boundary: Migrate the provider packaging in J2 without changing the underlying Trade Journal workflow semantics."
       }
     },
     {
@@ -762,16 +762,16 @@
       "evidence": {
         "state": "current",
         "as_of": "2026-08-09",
-        "capability_version": "1.0.0",
-        "package_digest": "sha256:cb22d7d213b258674df7990a78c75362a9a271def943929a8ee01636f53406f8",
+        "capability_version": "1.0.1",
+        "package_digest": "sha256:ad7bf0f89879faf4c38e10aa7de0009d429034843e009e3eab12a15b808ba149",
         "adapter_digest": "sha256:339b828b0b2a0649339657da16c8f20188adbabdf08215a2868e92f06cc3ef74",
-        "reason": "Exact current evidence is bound to belief-research-relation 1.0.0 and the governed Codex adapter."
+        "reason": "Exact current evidence binds capability:scope:trade-journal/belief-research-relation 1.0.1 and its codex adapter to the canonical governed Provider Entry Point."
       },
       "generation_eligible": true,
       "ineligibility_reasons": [],
       "final_disposition": {
         "state": "governed",
-        "rationale": "The governed adapter is current and authoritative; retain the canonical headless mirror as a preparation-only migration input as a non-authoritative rollback input."
+        "rationale": "Exact current evidence binds capability:scope:trade-journal/belief-research-relation 1.0.1 and its codex adapter to the canonical governed Provider Entry Point."
       }
     },
     {
@@ -792,16 +792,16 @@
       "evidence": {
         "state": "current",
         "as_of": "2026-08-10",
-        "capability_version": "1.3.1",
-        "package_digest": "sha256:5fe78a3a67c2ce2756c37cdc6052523012835d5068cc29992e98158dd591e039",
+        "capability_version": "1.3.2",
+        "package_digest": "sha256:95a0ab405433e250bb08b19a0d282518633852bf816b6520ff817a97b04210d0",
         "adapter_digest": "sha256:746ca82d4717d721c30377cb023585dc4c94689e93c1a0118b37942053388a53",
-        "reason": "Exact current evidence binds the research-pipeline 1.3.1 codex adapter, its zero-write boundary, and the protective tombstone for headless-codex-stage-1-init-idea."
+        "reason": "Exact current evidence binds capability:scope:trade-journal/research-pipeline 1.3.2 and its codex adapter to the canonical governed Provider Entry Point."
       },
       "generation_eligible": true,
       "ineligibility_reasons": [],
       "final_disposition": {
         "state": "governed",
-        "rationale": "The governed replacement is authoritative; the former legacy path is retained only as a protective tombstone with explicit rollback provenance."
+        "rationale": "Exact current evidence binds capability:scope:trade-journal/research-pipeline 1.3.2 and its codex adapter to the canonical governed Provider Entry Point."
       }
     },
     {
@@ -822,16 +822,16 @@
       "evidence": {
         "state": "current",
         "as_of": "2026-08-10",
-        "capability_version": "1.3.1",
-        "package_digest": "sha256:5fe78a3a67c2ce2756c37cdc6052523012835d5068cc29992e98158dd591e039",
+        "capability_version": "1.3.2",
+        "package_digest": "sha256:95a0ab405433e250bb08b19a0d282518633852bf816b6520ff817a97b04210d0",
         "adapter_digest": "sha256:746ca82d4717d721c30377cb023585dc4c94689e93c1a0118b37942053388a53",
-        "reason": "Exact current evidence binds the research-pipeline 1.3.1 codex adapter, its zero-write boundary, and the protective tombstone for headless-codex-stage-2-formalize-thesis."
+        "reason": "Exact current evidence binds capability:scope:trade-journal/research-pipeline 1.3.2 and its codex adapter to the canonical governed Provider Entry Point."
       },
       "generation_eligible": true,
       "ineligibility_reasons": [],
       "final_disposition": {
         "state": "governed",
-        "rationale": "The governed replacement is authoritative; the former legacy path is retained only as a protective tombstone with explicit rollback provenance."
+        "rationale": "Exact current evidence binds capability:scope:trade-journal/research-pipeline 1.3.2 and its codex adapter to the canonical governed Provider Entry Point."
       }
     },
     {
@@ -852,16 +852,16 @@
       "evidence": {
         "state": "current",
         "as_of": "2026-08-10",
-        "capability_version": "1.3.1",
-        "package_digest": "sha256:5fe78a3a67c2ce2756c37cdc6052523012835d5068cc29992e98158dd591e039",
+        "capability_version": "1.3.2",
+        "package_digest": "sha256:95a0ab405433e250bb08b19a0d282518633852bf816b6520ff817a97b04210d0",
         "adapter_digest": "sha256:746ca82d4717d721c30377cb023585dc4c94689e93c1a0118b37942053388a53",
-        "reason": "Exact current evidence binds the research-pipeline 1.3.1 codex adapter, its zero-write boundary, and the protective tombstone for headless-codex-stage-3-map-unknowns."
+        "reason": "Exact current evidence binds capability:scope:trade-journal/research-pipeline 1.3.2 and its codex adapter to the canonical governed Provider Entry Point."
       },
       "generation_eligible": true,
       "ineligibility_reasons": [],
       "final_disposition": {
         "state": "governed",
-        "rationale": "The governed replacement is authoritative; the former legacy path is retained only as a protective tombstone with explicit rollback provenance."
+        "rationale": "Exact current evidence binds capability:scope:trade-journal/research-pipeline 1.3.2 and its codex adapter to the canonical governed Provider Entry Point."
       }
     },
     {
@@ -882,16 +882,16 @@
       "evidence": {
         "state": "current",
         "as_of": "2026-08-10",
-        "capability_version": "1.3.1",
-        "package_digest": "sha256:5fe78a3a67c2ce2756c37cdc6052523012835d5068cc29992e98158dd591e039",
+        "capability_version": "1.3.2",
+        "package_digest": "sha256:95a0ab405433e250bb08b19a0d282518633852bf816b6520ff817a97b04210d0",
         "adapter_digest": "sha256:746ca82d4717d721c30377cb023585dc4c94689e93c1a0118b37942053388a53",
-        "reason": "Exact current evidence binds the research-pipeline 1.3.1 codex adapter, its zero-write boundary, and the protective tombstone for headless-codex-stage-4a-prep-desktop-research."
+        "reason": "Exact current evidence binds capability:scope:trade-journal/research-pipeline 1.3.2 and its codex adapter to the canonical governed Provider Entry Point."
       },
       "generation_eligible": true,
       "ineligibility_reasons": [],
       "final_disposition": {
         "state": "governed",
-        "rationale": "The governed replacement is authoritative; the former legacy path is retained only as a protective tombstone with explicit rollback provenance."
+        "rationale": "Exact current evidence binds capability:scope:trade-journal/research-pipeline 1.3.2 and its codex adapter to the canonical governed Provider Entry Point."
       }
     },
     {
@@ -912,16 +912,16 @@
       "evidence": {
         "state": "current",
         "as_of": "2026-08-10",
-        "capability_version": "1.3.1",
-        "package_digest": "sha256:5fe78a3a67c2ce2756c37cdc6052523012835d5068cc29992e98158dd591e039",
+        "capability_version": "1.3.2",
+        "package_digest": "sha256:95a0ab405433e250bb08b19a0d282518633852bf816b6520ff817a97b04210d0",
         "adapter_digest": "sha256:746ca82d4717d721c30377cb023585dc4c94689e93c1a0118b37942053388a53",
-        "reason": "Exact current evidence binds the research-pipeline 1.3.1 codex adapter, its zero-write boundary, and the protective tombstone for headless-codex-stage-4a-research-unknown."
+        "reason": "Exact current evidence binds capability:scope:trade-journal/research-pipeline 1.3.2 and its codex adapter to the canonical governed Provider Entry Point."
       },
       "generation_eligible": true,
       "ineligibility_reasons": [],
       "final_disposition": {
         "state": "governed",
-        "rationale": "The governed replacement is authoritative; the former legacy path is retained only as a protective tombstone with explicit rollback provenance."
+        "rationale": "Exact current evidence binds capability:scope:trade-journal/research-pipeline 1.3.2 and its codex adapter to the canonical governed Provider Entry Point."
       }
     },
     {
@@ -942,16 +942,16 @@
       "evidence": {
         "state": "current",
         "as_of": "2026-08-10",
-        "capability_version": "1.3.1",
-        "package_digest": "sha256:5fe78a3a67c2ce2756c37cdc6052523012835d5068cc29992e98158dd591e039",
+        "capability_version": "1.3.2",
+        "package_digest": "sha256:95a0ab405433e250bb08b19a0d282518633852bf816b6520ff817a97b04210d0",
         "adapter_digest": "sha256:746ca82d4717d721c30377cb023585dc4c94689e93c1a0118b37942053388a53",
-        "reason": "Exact current evidence binds the research-pipeline 1.3.1 codex adapter, its zero-write boundary, and the protective tombstone for headless-codex-stage-4b-synthesize-evidence."
+        "reason": "Exact current evidence binds capability:scope:trade-journal/research-pipeline 1.3.2 and its codex adapter to the canonical governed Provider Entry Point."
       },
       "generation_eligible": true,
       "ineligibility_reasons": [],
       "final_disposition": {
         "state": "governed",
-        "rationale": "The governed replacement is authoritative; the former legacy path is retained only as a protective tombstone with explicit rollback provenance."
+        "rationale": "Exact current evidence binds capability:scope:trade-journal/research-pipeline 1.3.2 and its codex adapter to the canonical governed Provider Entry Point."
       }
     },
     {
@@ -972,16 +972,16 @@
       "evidence": {
         "state": "current",
         "as_of": "2026-08-10",
-        "capability_version": "1.3.1",
-        "package_digest": "sha256:5fe78a3a67c2ce2756c37cdc6052523012835d5068cc29992e98158dd591e039",
+        "capability_version": "1.3.2",
+        "package_digest": "sha256:95a0ab405433e250bb08b19a0d282518633852bf816b6520ff817a97b04210d0",
         "adapter_digest": "sha256:746ca82d4717d721c30377cb023585dc4c94689e93c1a0118b37942053388a53",
-        "reason": "Exact current evidence binds the research-pipeline 1.3.1 codex adapter, its zero-write boundary, and the protective tombstone for headless-codex-stage-5-express-thesis."
+        "reason": "Exact current evidence binds capability:scope:trade-journal/research-pipeline 1.3.2 and its codex adapter to the canonical governed Provider Entry Point."
       },
       "generation_eligible": true,
       "ineligibility_reasons": [],
       "final_disposition": {
         "state": "governed",
-        "rationale": "The governed replacement is authoritative; the former legacy path is retained only as a protective tombstone with explicit rollback provenance."
+        "rationale": "Exact current evidence binds capability:scope:trade-journal/research-pipeline 1.3.2 and its codex adapter to the canonical governed Provider Entry Point."
       }
     },
     {
@@ -1002,16 +1002,16 @@
       "evidence": {
         "state": "current",
         "as_of": "2026-08-08",
-        "capability_version": "1.0.0",
-        "package_digest": "sha256:33b24164d37a548e5b5683694c375f724f5e8c756d7a366d48ca923c4461d942",
+        "capability_version": "1.0.1",
+        "package_digest": "sha256:b20b92a6e66de2281074813c60672daf0e985520d355e5a2ffa56f383cc99b52",
         "adapter_digest": "sha256:18ff6b767b4e501bbf97930ec803dedb787fe767b0ffc57f0b5cf4bed86f9a99",
-        "reason": "Exact current evidence is bound to claims-synthesis 1.0.0 and the governed Codex adapter."
+        "reason": "Exact current evidence binds capability:scope:trade-journal/claims-synthesis 1.0.1 and its codex adapter to the canonical governed Provider Entry Point."
       },
       "generation_eligible": true,
       "ineligibility_reasons": [],
       "final_disposition": {
         "state": "governed",
-        "rationale": "The governed adapter is current and authoritative; retain the bespoke headless mirror as a non-authoritative rollback input."
+        "rationale": "Exact current evidence binds capability:scope:trade-journal/claims-synthesis 1.0.1 and its codex adapter to the canonical governed Provider Entry Point."
       }
     },
     {
@@ -1032,16 +1032,16 @@
       "evidence": {
         "state": "current",
         "as_of": "2026-08-12",
-        "capability_version": "1.0.0",
-        "package_digest": "sha256:41eae671d367800c55fd35fd1cad21ab022faa18a9310db84f6de0a70f4cfae5",
+        "capability_version": "1.0.1",
+        "package_digest": "sha256:ba06f98a1639b18b499efe2b198a911deaf17e8452b17b7438a5ae2b5be0f8fd",
         "adapter_digest": "sha256:9e0452709adb108dcf8baf307608d21e9a09973faab11c0d538a4d2c28be893d",
-        "reason": "Exact current evidence binds the Codex adapter's interactive-only semantics and unconditional headless refusal; unattended execution remains ineligible."
+        "reason": "Exact current evidence binds capability:scope:trade-journal/thesis-foreground 1.0.1 and its codex adapter to the canonical governed Provider Entry Point."
       },
       "generation_eligible": true,
       "ineligibility_reasons": [],
       "final_disposition": {
         "state": "governed",
-        "rationale": "The governed adapter is current and authoritative; retain the bespoke refusal mirror as a non-authoritative rollback input."
+        "rationale": "Exact current evidence binds capability:scope:trade-journal/thesis-foreground 1.0.1 and its codex adapter to the canonical governed Provider Entry Point."
       }
     },
     {
@@ -1071,7 +1071,7 @@
       "ineligibility_reasons": [],
       "final_disposition": {
         "state": "governed",
-        "rationale": "The governed adapter is current and authoritative; retain the existing headless mirror and live invocation only where a separately governed operational consumer still delegates to it."
+        "rationale": "Exact current evidence is bound to thesis-observation 1.0.0 and the governed Codex adapter."
       }
     },
     {
@@ -1101,7 +1101,7 @@
       "ineligibility_reasons": [],
       "final_disposition": {
         "state": "governed",
-        "rationale": "The governed adapter is current and authoritative; retain the existing headless mirror and live invocation only where a separately governed operational consumer still delegates to it."
+        "rationale": "Exact current evidence is bound to belief-maintenance 1.0.0 and the governed Codex adapter."
       }
     },
     {
@@ -1134,7 +1134,7 @@
       ],
       "final_disposition": {
         "state": "deferred",
-        "rationale": "Keep only the existing pull-only manual boundary as a non-governed migration input; do not route, schedule, or represent it as current support."
+        "rationale": "File presence, mirror parity, and machine-local Notes data do not establish current Adapter Conformance. Final boundary: Keep only the existing pull-only manual boundary as a non-governed migration input; do not route, schedule, or represent it as current support."
       }
     },
     {
@@ -1155,16 +1155,16 @@
       "evidence": {
         "state": "current",
         "as_of": "2026-08-10",
-        "capability_version": "1.3.1",
-        "package_digest": "sha256:5fe78a3a67c2ce2756c37cdc6052523012835d5068cc29992e98158dd591e039",
+        "capability_version": "1.3.2",
+        "package_digest": "sha256:95a0ab405433e250bb08b19a0d282518633852bf816b6520ff817a97b04210d0",
         "adapter_digest": "sha256:ae03a42715dbce27565cf772cff6f71c82ec8bf7f4fb6c3ef7f3cf017ff30fd5",
-        "reason": "Exact current evidence binds the research-pipeline 1.3.1 claude adapter, its zero-write boundary, and the protective tombstone for interactive-claude-advance-or-kill."
+        "reason": "Exact current evidence binds capability:scope:trade-journal/research-pipeline 1.3.2 and its claude adapter to the canonical governed Provider Entry Point."
       },
       "generation_eligible": true,
       "ineligibility_reasons": [],
       "final_disposition": {
         "state": "governed",
-        "rationale": "The governed replacement is authoritative; the former legacy path is retained only as a protective tombstone with explicit rollback provenance."
+        "rationale": "Exact current evidence binds capability:scope:trade-journal/research-pipeline 1.3.2 and its claude adapter to the canonical governed Provider Entry Point."
       }
     },
     {
@@ -1194,7 +1194,7 @@
       "ineligibility_reasons": [],
       "final_disposition": {
         "state": "governed",
-        "rationale": "The governed adapter is current and authoritative; retain the authored workflow as a non-authoritative rollback input."
+        "rationale": "Exact current evidence binds the options-vol-analysis 1.0.0 package, deterministic fixture, eligible no-write data probe, and governed Claude adapter."
       }
     },
     {
@@ -1229,7 +1229,7 @@
       ],
       "final_disposition": {
         "state": "retired",
-        "rationale": "Removed from active discovery and retained only as repository history under issue #75."
+        "rationale": "Final disposition is historical evidence only; this non-candidate has no current Capability or operational adapter. Final boundary: Removed from active discovery and retained only as repository history under issue #75."
       }
     },
     {
@@ -1264,7 +1264,7 @@
       ],
       "final_disposition": {
         "state": "retired",
-        "rationale": "Removed from active discovery and retained only as repository history under issue #75."
+        "rationale": "Final disposition is historical evidence only; this non-candidate has no current Capability or operational adapter. Final boundary: Removed from active discovery and retained only as repository history under issue #75."
       }
     },
     {
@@ -1285,16 +1285,16 @@
       "evidence": {
         "state": "current",
         "as_of": "2026-08-08",
-        "capability_version": "1.0.0",
-        "package_digest": "sha256:a500733334c51f739511621d90bc53e0489137a3dedc3889264ccc05ea1a77df",
+        "capability_version": "1.0.1",
+        "package_digest": "sha256:758d4f0c233c7479f62daf6cc8fa4221b4379eb2dd517a258a0f2feeded805e7",
         "adapter_digest": "sha256:9d68674236145e1217029ef723d481a05c7580d90559da8891f674b42c186d6c",
-        "reason": "Exact current evidence is bound to belief-evidence-assessment 1.0.0 and the governed Claude adapter."
+        "reason": "Exact current evidence binds capability:scope:trade-journal/belief-evidence-assessment 1.0.1 and its claude adapter to the canonical governed Provider Entry Point."
       },
       "generation_eligible": true,
       "ineligibility_reasons": [],
       "final_disposition": {
         "state": "governed",
-        "rationale": "The governed adapter is current and authoritative; retain the authored workflow as a non-authoritative rollback input."
+        "rationale": "Exact current evidence binds capability:scope:trade-journal/belief-evidence-assessment 1.0.1 and its claude adapter to the canonical governed Provider Entry Point."
       }
     },
     {
@@ -1324,7 +1324,7 @@
       "ineligibility_reasons": [],
       "final_disposition": {
         "state": "governed",
-        "rationale": "The governed adapter is current and authoritative; retain the existing Claude discovery input and live invocation only where a separately governed operational consumer still delegates to it."
+        "rationale": "Exact current evidence is bound to belief-maintenance 1.0.0 and the governed Claude adapter."
       }
     },
     {
@@ -1345,16 +1345,16 @@
       "evidence": {
         "state": "current",
         "as_of": "2026-08-07",
-        "capability_version": "1.0.0",
-        "package_digest": "sha256:de419b2f068c31343cf0267e208d0594ac72bd61eb3276b2b61bccf1fc73fccb",
+        "capability_version": "1.0.1",
+        "package_digest": "sha256:57a65268ae6033915b2ae1401b15551949dda8336e1a5f510e8c1a89cc646e7e",
         "adapter_digest": "sha256:58ec39a1d27c3a184e5cc7624ba4e95ffcf96a289318352555f2e1826ddd490d",
-        "reason": "Exact current evidence is bound to thesis-underwriting 1.0.0 and the governed Claude adapter."
+        "reason": "Exact current evidence binds capability:scope:trade-journal/thesis-underwriting 1.0.1 and its claude adapter to the canonical governed Provider Entry Point."
       },
       "generation_eligible": true,
       "ineligibility_reasons": [],
       "final_disposition": {
         "state": "governed",
-        "rationale": "The governed adapter is current and authoritative; retain the authored workflow as a non-authoritative rollback input."
+        "rationale": "Exact current evidence binds capability:scope:trade-journal/thesis-underwriting 1.0.1 and its claude adapter to the canonical governed Provider Entry Point."
       }
     },
     {
@@ -1389,7 +1389,7 @@
       ],
       "final_disposition": {
         "state": "tombstone",
-        "rationale": "Retire the procedure permanently while retaining this no-read/no-write tombstone to prevent unsafe revival."
+        "rationale": "Protective retirement tombstone only; it is not a current Capability or operational adapter. Final boundary: Retire the procedure permanently while retaining this no-read/no-write tombstone to prevent unsafe revival."
       }
     },
     {
@@ -1410,16 +1410,16 @@
       "evidence": {
         "state": "current",
         "as_of": "2026-08-12",
-        "capability_version": "1.0.0",
-        "package_digest": "sha256:66158ba085f39170be27eea5b1b7180dfc872ced87a4b5f134cfdd56729e64d8",
+        "capability_version": "1.0.1",
+        "package_digest": "sha256:0761d66e9ce3e9e77ff2d71e8c8b304e5b354f06542378155e3c1641b1f62bb4",
         "adapter_digest": "sha256:2536391fdd71e813c3fc3ea7771cf07c69ee9717ae4a3931501ecb8c3eb48d2a",
-        "reason": "Exact current evidence binds decision-resolution 1.0.0 and its interactive-only Claude adapter; unattended and scheduling eligibility remain prohibited."
+        "reason": "Exact current evidence binds capability:scope:trade-journal/decision-resolution 1.0.1 and its claude adapter to the canonical governed Provider Entry Point."
       },
       "generation_eligible": true,
       "ineligibility_reasons": [],
       "final_disposition": {
         "state": "governed",
-        "rationale": "The governed adapter is current and authoritative; retain the authored interactive workflow as a non-authoritative rollback input."
+        "rationale": "Exact current evidence binds capability:scope:trade-journal/decision-resolution 1.0.1 and its claude adapter to the canonical governed Provider Entry Point."
       }
     },
     {
@@ -1440,16 +1440,16 @@
       "evidence": {
         "state": "current",
         "as_of": "2026-08-08",
-        "capability_version": "1.0.0",
-        "package_digest": "sha256:da0148b289c422cdbab90905b00bf03f767f201c5d193f5ec2411b77ef99d8f6",
+        "capability_version": "1.0.1",
+        "package_digest": "sha256:72eaaf59988b176adf331564775420e89fc80d234e97fd64788c3972eba8ef21",
         "adapter_digest": "sha256:bd963ae249d123183632c5c09bd878b2979d99149d4e8815a9bcbb1c24e58134",
-        "reason": "Exact current evidence is bound to research-publication 1.0.0 and the governed Claude adapter."
+        "reason": "Exact current evidence binds capability:scope:trade-journal/research-publication 1.0.1 and its claude adapter to the canonical governed Provider Entry Point."
       },
       "generation_eligible": true,
       "ineligibility_reasons": [],
       "final_disposition": {
         "state": "governed",
-        "rationale": "The governed adapter is current and authoritative; retain the modernized interactive skill as a non-authoritative rollback input."
+        "rationale": "Exact current evidence binds capability:scope:trade-journal/research-publication 1.0.1 and its claude adapter to the canonical governed Provider Entry Point."
       }
     },
     {
@@ -1482,7 +1482,7 @@
       ],
       "final_disposition": {
         "state": "retained",
-        "rationale": "Retain the bounded non-governed gateway boundary until Radon publishes an accepted immutable package; do not infer support from connectivity or local files."
+        "rationale": "Radon publishes no accepted immutable gateway-control Capability Package or exact Adapter Conformance evidence at the reviewed revision. Final boundary: Retain the bounded non-governed gateway boundary until Radon publishes an accepted immutable package; do not infer support from connectivity or local files."
       }
     },
     {
@@ -1503,16 +1503,16 @@
       "evidence": {
         "state": "current",
         "as_of": "2026-08-10",
-        "capability_version": "1.3.1",
-        "package_digest": "sha256:5fe78a3a67c2ce2756c37cdc6052523012835d5068cc29992e98158dd591e039",
+        "capability_version": "1.3.2",
+        "package_digest": "sha256:95a0ab405433e250bb08b19a0d282518633852bf816b6520ff817a97b04210d0",
         "adapter_digest": "sha256:ae03a42715dbce27565cf772cff6f71c82ec8bf7f4fb6c3ef7f3cf017ff30fd5",
-        "reason": "Exact current evidence binds the research-pipeline 1.3.1 claude adapter, its zero-write boundary, and the protective tombstone for interactive-claude-graduate-pipeline-idea."
+        "reason": "Exact current evidence binds capability:scope:trade-journal/research-pipeline 1.3.2 and its claude adapter to the canonical governed Provider Entry Point."
       },
       "generation_eligible": true,
       "ineligibility_reasons": [],
       "final_disposition": {
         "state": "governed",
-        "rationale": "The governed replacement is authoritative; the former legacy path is retained only as a protective tombstone with explicit rollback provenance."
+        "rationale": "Exact current evidence binds capability:scope:trade-journal/research-pipeline 1.3.2 and its claude adapter to the canonical governed Provider Entry Point."
       }
     },
     {
@@ -1545,7 +1545,7 @@
       ],
       "final_disposition": {
         "state": "retained",
-        "rationale": "Retain the bounded non-governed requested-contract quote boundary until Radon publishes an accepted immutable package; do not infer support from gateway connectivity, market-data availability, or local files."
+        "rationale": "Radon publishes no accepted immutable option-quote Capability Package or exact Adapter Conformance evidence at the reviewed revision. Final boundary: Retain the bounded non-governed requested-contract quote boundary until Radon publishes an accepted immutable package; do not infer support from gateway connectivity, market-data availability, or local files."
       }
     },
     {
@@ -1575,7 +1575,7 @@
       "ineligibility_reasons": [],
       "final_disposition": {
         "state": "governed",
-        "rationale": "The governed adapter is current and the maintenance scheduler cutover completed under issue #49 approval; retain the authored skill only as the delegated workflow source."
+        "rationale": "Exact current evidence is bound to belief-maintenance 1.0.0 and the governed Claude adapter."
       }
     },
     {
@@ -1605,7 +1605,7 @@
       "ineligibility_reasons": [],
       "final_disposition": {
         "state": "governed",
-        "rationale": "The governed adapter is current and the scheduled morning-brief consumer cutover completed under issue #56 approval; retain interactive discovery and the authored skill outside that bounded live invocation change."
+        "rationale": "Exact current evidence is bound to morning-attention-brief 1.0.0 and the governed Claude adapter."
       }
     },
     {
@@ -1635,7 +1635,7 @@
       "ineligibility_reasons": [],
       "final_disposition": {
         "state": "governed",
-        "rationale": "The governed adapter is current and live for the morning-batch and LEAP consumers under #53/#54; retain the existing interactive discovery input only where a separately governed operational consumer still delegates to it."
+        "rationale": "Exact current evidence is bound to portfolio-options-advice 1.0.0 and the governed Claude adapter."
       }
     },
     {
@@ -1670,7 +1670,7 @@
       ],
       "final_disposition": {
         "state": "retired",
-        "rationale": "Removed from active discovery and retained only as repository history under issue #75."
+        "rationale": "Final disposition is historical evidence only; this non-candidate has no current Capability or operational adapter. Final boundary: Removed from active discovery and retained only as repository history under issue #75."
       }
     },
     {
@@ -1691,16 +1691,16 @@
       "evidence": {
         "state": "current",
         "as_of": "2026-08-10",
-        "capability_version": "1.3.1",
-        "package_digest": "sha256:5fe78a3a67c2ce2756c37cdc6052523012835d5068cc29992e98158dd591e039",
+        "capability_version": "1.3.2",
+        "package_digest": "sha256:95a0ab405433e250bb08b19a0d282518633852bf816b6520ff817a97b04210d0",
         "adapter_digest": "sha256:ae03a42715dbce27565cf772cff6f71c82ec8bf7f4fb6c3ef7f3cf017ff30fd5",
-        "reason": "Exact current evidence binds the research-pipeline 1.3.1 claude adapter, its zero-write boundary, and the protective tombstone for interactive-claude-pipeline-status."
+        "reason": "Exact current evidence binds capability:scope:trade-journal/research-pipeline 1.3.2 and its claude adapter to the canonical governed Provider Entry Point."
       },
       "generation_eligible": true,
       "ineligibility_reasons": [],
       "final_disposition": {
         "state": "governed",
-        "rationale": "The governed replacement is authoritative; the former legacy path is retained only as a protective tombstone with explicit rollback provenance."
+        "rationale": "Exact current evidence binds capability:scope:trade-journal/research-pipeline 1.3.2 and its claude adapter to the canonical governed Provider Entry Point."
       }
     },
     {
@@ -1730,7 +1730,7 @@
       "ineligibility_reasons": [],
       "final_disposition": {
         "state": "replaced",
-        "rationale": "The authority-correct governed Capability replaces connector-era assumptions; retain the legacy source only as an explicit migration input as a non-authoritative rollback input."
+        "rationale": "Exact current evidence binds portfolio-analysis 1.0.0, its two governed dependencies, the representative observable-equivalence fixture, and the governed Claude adapter."
       }
     },
     {
@@ -1760,7 +1760,7 @@
       "ineligibility_reasons": [],
       "final_disposition": {
         "state": "replaced",
-        "rationale": "Replace the legacy Trade Journal projection with the Registry-locked Notes-owned content-processing adapter without transferring capture or extraction authority."
+        "rationale": "Accepted Notes evidence binds the exact immutable content-processing package and Claude adapter; live Tana operation remains unavailable and unclaimed."
       }
     },
     {
@@ -1790,7 +1790,7 @@
       "ineligibility_reasons": [],
       "final_disposition": {
         "state": "replaced",
-        "rationale": "Replace the legacy Trade Journal projection with the Registry-locked Notes-owned content-processing adapter without transferring capture or extraction authority."
+        "rationale": "Accepted Notes evidence binds the exact immutable content-processing package and Claude adapter; live Tana operation remains unavailable and unclaimed."
       }
     },
     {
@@ -1820,7 +1820,7 @@
       "ineligibility_reasons": [],
       "final_disposition": {
         "state": "governed",
-        "rationale": "The governed adapter is current and authoritative; retain the legacy discovery input as a non-authoritative rollback input."
+        "rationale": "Exact current evidence is bound to portfolio-snapshot 1.0.0 and the governed Claude adapter."
       }
     },
     {
@@ -1853,7 +1853,7 @@
       ],
       "final_disposition": {
         "state": "unavailable",
-        "rationale": "Migrate the provider packaging in J2 without changing the underlying Trade Journal workflow semantics."
+        "rationale": "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point. Final boundary: Migrate the provider packaging in J2 without changing the underlying Trade Journal workflow semantics."
       }
     },
     {
@@ -1874,16 +1874,16 @@
       "evidence": {
         "state": "current",
         "as_of": "2026-08-09",
-        "capability_version": "1.0.0",
-        "package_digest": "sha256:cb22d7d213b258674df7990a78c75362a9a271def943929a8ee01636f53406f8",
+        "capability_version": "1.0.1",
+        "package_digest": "sha256:ad7bf0f89879faf4c38e10aa7de0009d429034843e009e3eab12a15b808ba149",
         "adapter_digest": "sha256:f6b73f31596b71532b45d4a37512b3251ec615053ff2e7bc1b974df75126994a",
-        "reason": "Exact current evidence is bound to belief-research-relation 1.0.0 and the governed Claude adapter."
+        "reason": "Exact current evidence binds capability:scope:trade-journal/belief-research-relation 1.0.1 and its claude adapter to the canonical governed Provider Entry Point."
       },
       "generation_eligible": true,
       "ineligibility_reasons": [],
       "final_disposition": {
         "state": "governed",
-        "rationale": "The governed adapter is current and authoritative; retain the canonical interactive skill as a non-authoritative rollback input."
+        "rationale": "Exact current evidence binds capability:scope:trade-journal/belief-research-relation 1.0.1 and its claude adapter to the canonical governed Provider Entry Point."
       }
     },
     {
@@ -1904,16 +1904,16 @@
       "evidence": {
         "state": "current",
         "as_of": "2026-08-10",
-        "capability_version": "1.3.1",
-        "package_digest": "sha256:5fe78a3a67c2ce2756c37cdc6052523012835d5068cc29992e98158dd591e039",
+        "capability_version": "1.3.2",
+        "package_digest": "sha256:95a0ab405433e250bb08b19a0d282518633852bf816b6520ff817a97b04210d0",
         "adapter_digest": "sha256:ae03a42715dbce27565cf772cff6f71c82ec8bf7f4fb6c3ef7f3cf017ff30fd5",
-        "reason": "Exact current evidence binds the research-pipeline 1.3.1 claude adapter, its zero-write boundary, and the protective tombstone for interactive-claude-stage-1-init-idea."
+        "reason": "Exact current evidence binds capability:scope:trade-journal/research-pipeline 1.3.2 and its claude adapter to the canonical governed Provider Entry Point."
       },
       "generation_eligible": true,
       "ineligibility_reasons": [],
       "final_disposition": {
         "state": "governed",
-        "rationale": "The governed replacement is authoritative; the former legacy path is retained only as a protective tombstone with explicit rollback provenance."
+        "rationale": "Exact current evidence binds capability:scope:trade-journal/research-pipeline 1.3.2 and its claude adapter to the canonical governed Provider Entry Point."
       }
     },
     {
@@ -1934,16 +1934,16 @@
       "evidence": {
         "state": "current",
         "as_of": "2026-08-10",
-        "capability_version": "1.3.1",
-        "package_digest": "sha256:5fe78a3a67c2ce2756c37cdc6052523012835d5068cc29992e98158dd591e039",
+        "capability_version": "1.3.2",
+        "package_digest": "sha256:95a0ab405433e250bb08b19a0d282518633852bf816b6520ff817a97b04210d0",
         "adapter_digest": "sha256:ae03a42715dbce27565cf772cff6f71c82ec8bf7f4fb6c3ef7f3cf017ff30fd5",
-        "reason": "Exact current evidence binds the research-pipeline 1.3.1 claude adapter, its zero-write boundary, and the protective tombstone for interactive-claude-stage-2-formalize-thesis."
+        "reason": "Exact current evidence binds capability:scope:trade-journal/research-pipeline 1.3.2 and its claude adapter to the canonical governed Provider Entry Point."
       },
       "generation_eligible": true,
       "ineligibility_reasons": [],
       "final_disposition": {
         "state": "governed",
-        "rationale": "The governed replacement is authoritative; the former legacy path is retained only as a protective tombstone with explicit rollback provenance."
+        "rationale": "Exact current evidence binds capability:scope:trade-journal/research-pipeline 1.3.2 and its claude adapter to the canonical governed Provider Entry Point."
       }
     },
     {
@@ -1964,16 +1964,16 @@
       "evidence": {
         "state": "current",
         "as_of": "2026-08-10",
-        "capability_version": "1.3.1",
-        "package_digest": "sha256:5fe78a3a67c2ce2756c37cdc6052523012835d5068cc29992e98158dd591e039",
+        "capability_version": "1.3.2",
+        "package_digest": "sha256:95a0ab405433e250bb08b19a0d282518633852bf816b6520ff817a97b04210d0",
         "adapter_digest": "sha256:ae03a42715dbce27565cf772cff6f71c82ec8bf7f4fb6c3ef7f3cf017ff30fd5",
-        "reason": "Exact current evidence binds the research-pipeline 1.3.1 claude adapter, its zero-write boundary, and the protective tombstone for interactive-claude-stage-3-map-unknowns."
+        "reason": "Exact current evidence binds capability:scope:trade-journal/research-pipeline 1.3.2 and its claude adapter to the canonical governed Provider Entry Point."
       },
       "generation_eligible": true,
       "ineligibility_reasons": [],
       "final_disposition": {
         "state": "governed",
-        "rationale": "The governed replacement is authoritative; the former legacy path is retained only as a protective tombstone with explicit rollback provenance."
+        "rationale": "Exact current evidence binds capability:scope:trade-journal/research-pipeline 1.3.2 and its claude adapter to the canonical governed Provider Entry Point."
       }
     },
     {
@@ -1994,16 +1994,16 @@
       "evidence": {
         "state": "current",
         "as_of": "2026-08-10",
-        "capability_version": "1.3.1",
-        "package_digest": "sha256:5fe78a3a67c2ce2756c37cdc6052523012835d5068cc29992e98158dd591e039",
+        "capability_version": "1.3.2",
+        "package_digest": "sha256:95a0ab405433e250bb08b19a0d282518633852bf816b6520ff817a97b04210d0",
         "adapter_digest": "sha256:ae03a42715dbce27565cf772cff6f71c82ec8bf7f4fb6c3ef7f3cf017ff30fd5",
-        "reason": "Exact current evidence binds the research-pipeline 1.3.1 claude adapter, its zero-write boundary, and the protective tombstone for interactive-claude-stage-4a-prep-desktop-research."
+        "reason": "Exact current evidence binds capability:scope:trade-journal/research-pipeline 1.3.2 and its claude adapter to the canonical governed Provider Entry Point."
       },
       "generation_eligible": true,
       "ineligibility_reasons": [],
       "final_disposition": {
         "state": "governed",
-        "rationale": "The governed replacement is authoritative; the former legacy path is retained only as a protective tombstone with explicit rollback provenance."
+        "rationale": "Exact current evidence binds capability:scope:trade-journal/research-pipeline 1.3.2 and its claude adapter to the canonical governed Provider Entry Point."
       }
     },
     {
@@ -2024,16 +2024,16 @@
       "evidence": {
         "state": "current",
         "as_of": "2026-08-10",
-        "capability_version": "1.3.1",
-        "package_digest": "sha256:5fe78a3a67c2ce2756c37cdc6052523012835d5068cc29992e98158dd591e039",
+        "capability_version": "1.3.2",
+        "package_digest": "sha256:95a0ab405433e250bb08b19a0d282518633852bf816b6520ff817a97b04210d0",
         "adapter_digest": "sha256:ae03a42715dbce27565cf772cff6f71c82ec8bf7f4fb6c3ef7f3cf017ff30fd5",
-        "reason": "Exact current evidence binds the research-pipeline 1.3.1 claude adapter, its zero-write boundary, and the protective tombstone for interactive-claude-stage-4a-research-unknown."
+        "reason": "Exact current evidence binds capability:scope:trade-journal/research-pipeline 1.3.2 and its claude adapter to the canonical governed Provider Entry Point."
       },
       "generation_eligible": true,
       "ineligibility_reasons": [],
       "final_disposition": {
         "state": "governed",
-        "rationale": "The governed replacement is authoritative; the former legacy path is retained only as a protective tombstone with explicit rollback provenance."
+        "rationale": "Exact current evidence binds capability:scope:trade-journal/research-pipeline 1.3.2 and its claude adapter to the canonical governed Provider Entry Point."
       }
     },
     {
@@ -2054,16 +2054,16 @@
       "evidence": {
         "state": "current",
         "as_of": "2026-08-10",
-        "capability_version": "1.3.1",
-        "package_digest": "sha256:5fe78a3a67c2ce2756c37cdc6052523012835d5068cc29992e98158dd591e039",
+        "capability_version": "1.3.2",
+        "package_digest": "sha256:95a0ab405433e250bb08b19a0d282518633852bf816b6520ff817a97b04210d0",
         "adapter_digest": "sha256:ae03a42715dbce27565cf772cff6f71c82ec8bf7f4fb6c3ef7f3cf017ff30fd5",
-        "reason": "Exact current evidence binds the research-pipeline 1.3.1 claude adapter, its zero-write boundary, and the protective tombstone for interactive-claude-stage-4b-synthesize-evidence."
+        "reason": "Exact current evidence binds capability:scope:trade-journal/research-pipeline 1.3.2 and its claude adapter to the canonical governed Provider Entry Point."
       },
       "generation_eligible": true,
       "ineligibility_reasons": [],
       "final_disposition": {
         "state": "governed",
-        "rationale": "The governed replacement is authoritative; the former legacy path is retained only as a protective tombstone with explicit rollback provenance."
+        "rationale": "Exact current evidence binds capability:scope:trade-journal/research-pipeline 1.3.2 and its claude adapter to the canonical governed Provider Entry Point."
       }
     },
     {
@@ -2084,16 +2084,16 @@
       "evidence": {
         "state": "current",
         "as_of": "2026-08-10",
-        "capability_version": "1.3.1",
-        "package_digest": "sha256:5fe78a3a67c2ce2756c37cdc6052523012835d5068cc29992e98158dd591e039",
+        "capability_version": "1.3.2",
+        "package_digest": "sha256:95a0ab405433e250bb08b19a0d282518633852bf816b6520ff817a97b04210d0",
         "adapter_digest": "sha256:ae03a42715dbce27565cf772cff6f71c82ec8bf7f4fb6c3ef7f3cf017ff30fd5",
-        "reason": "Exact current evidence binds the research-pipeline 1.3.1 claude adapter, its zero-write boundary, and the protective tombstone for interactive-claude-stage-5-express-thesis."
+        "reason": "Exact current evidence binds capability:scope:trade-journal/research-pipeline 1.3.2 and its claude adapter to the canonical governed Provider Entry Point."
       },
       "generation_eligible": true,
       "ineligibility_reasons": [],
       "final_disposition": {
         "state": "governed",
-        "rationale": "The governed replacement is authoritative; the former legacy path is retained only as a protective tombstone with explicit rollback provenance."
+        "rationale": "Exact current evidence binds capability:scope:trade-journal/research-pipeline 1.3.2 and its claude adapter to the canonical governed Provider Entry Point."
       }
     },
     {
@@ -2114,16 +2114,16 @@
       "evidence": {
         "state": "current",
         "as_of": "2026-08-08",
-        "capability_version": "1.0.0",
-        "package_digest": "sha256:33b24164d37a548e5b5683694c375f724f5e8c756d7a366d48ca923c4461d942",
+        "capability_version": "1.0.1",
+        "package_digest": "sha256:b20b92a6e66de2281074813c60672daf0e985520d355e5a2ffa56f383cc99b52",
         "adapter_digest": "sha256:ffea868f3116dd820e11f0a9524e06d6bca225ad50de1f28a704559f69a48c40",
-        "reason": "Exact current evidence is bound to claims-synthesis 1.0.0 and the governed Claude adapter."
+        "reason": "Exact current evidence binds capability:scope:trade-journal/claims-synthesis 1.0.1 and its claude adapter to the canonical governed Provider Entry Point."
       },
       "generation_eligible": true,
       "ineligibility_reasons": [],
       "final_disposition": {
         "state": "governed",
-        "rationale": "The governed adapter is current and authoritative; retain the authored workflow as a non-authoritative rollback input."
+        "rationale": "Exact current evidence binds capability:scope:trade-journal/claims-synthesis 1.0.1 and its claude adapter to the canonical governed Provider Entry Point."
       }
     },
     {
@@ -2144,16 +2144,16 @@
       "evidence": {
         "state": "current",
         "as_of": "2026-08-12",
-        "capability_version": "1.0.0",
-        "package_digest": "sha256:41eae671d367800c55fd35fd1cad21ab022faa18a9310db84f6de0a70f4cfae5",
+        "capability_version": "1.0.1",
+        "package_digest": "sha256:ba06f98a1639b18b499efe2b198a911deaf17e8452b17b7438a5ae2b5be0f8fd",
         "adapter_digest": "sha256:96216e50097b758ef9d2a0557974329cf1e491d20dbe1a67725b1348c2fd4650",
-        "reason": "Exact current evidence binds thesis-foreground 1.0.0 and the governed Claude adapter while unattended execution and scheduling remain ineligible."
+        "reason": "Exact current evidence binds capability:scope:trade-journal/thesis-foreground 1.0.1 and its claude adapter to the canonical governed Provider Entry Point."
       },
       "generation_eligible": true,
       "ineligibility_reasons": [],
       "final_disposition": {
         "state": "governed",
-        "rationale": "The governed adapter is current and authoritative; retain the authored /thesis skill as a non-authoritative rollback input."
+        "rationale": "Exact current evidence binds capability:scope:trade-journal/thesis-foreground 1.0.1 and its claude adapter to the canonical governed Provider Entry Point."
       }
     },
     {
@@ -2183,7 +2183,7 @@
       "ineligibility_reasons": [],
       "final_disposition": {
         "state": "governed",
-        "rationale": "The governed adapter is current and the thesis-observe scheduler cutover completed under issue #51 approval; retain the authored skill only as the delegated workflow source."
+        "rationale": "Exact current evidence is bound to thesis-observation 1.0.0 and the governed Claude adapter."
       }
     },
     {
@@ -2213,7 +2213,7 @@
       "ineligibility_reasons": [],
       "final_disposition": {
         "state": "governed",
-        "rationale": "The governed adapter is current and authoritative; retain the existing Claude discovery input and live invocation only where a separately governed operational consumer still delegates to it."
+        "rationale": "Exact current evidence is bound to belief-maintenance 1.0.0 and the governed Claude adapter."
       }
     },
     {
@@ -2246,7 +2246,7 @@
       ],
       "final_disposition": {
         "state": "deferred",
-        "rationale": "Keep only the existing pull-only manual boundary as a non-governed migration input; do not route, schedule, or represent it as current support."
+        "rationale": "File presence, mirror parity, and machine-local Notes data do not establish current Adapter Conformance. Final boundary: Keep only the existing pull-only manual boundary as a non-governed migration input; do not route, schedule, or represent it as current support."
       }
     },
     {
@@ -2267,16 +2267,16 @@
       "evidence": {
         "state": "current",
         "as_of": "2026-08-11",
-        "capability_version": "1.0.0",
-        "package_digest": "sha256:7d6e82ace6a60ccd997b47af759b5345783580eccb903007872c2f3c0f9bc5d6",
+        "capability_version": "1.0.1",
+        "package_digest": "sha256:238471af4b82e2ab8cf29016c15ac3b7d8ee93d1a36b5d5dbb031b289f809ff4",
         "adapter_digest": "sha256:82ee574c9e1e4c2bce81a425775a5de45ba350350f8589c3f9ff60d8f945b82b",
-        "reason": "Exact current evidence binds repository-owned workflow-discovery 1.0.0 and its Claude adapter."
+        "reason": "Exact current evidence binds capability:scope:trade-journal/workflow-discovery 1.0.1 and its claude adapter to the canonical governed Provider Entry Point."
       },
       "generation_eligible": true,
       "ineligibility_reasons": [],
       "final_disposition": {
         "state": "governed",
-        "rationale": "Stage exact inventory-based Claude routing without changing any authored workflow procedure or active execution consumer."
+        "rationale": "Exact current evidence binds capability:scope:trade-journal/workflow-discovery 1.0.1 and its claude adapter to the canonical governed Provider Entry Point."
       }
     },
     {
@@ -2297,16 +2297,16 @@
       "evidence": {
         "state": "current",
         "as_of": "2026-08-11",
-        "capability_version": "1.0.0",
-        "package_digest": "sha256:7d6e82ace6a60ccd997b47af759b5345783580eccb903007872c2f3c0f9bc5d6",
-        "adapter_digest": "sha256:b39e462bd35a94522f912bfea7792918d55a08955759898708b2cc0e7be2a887",
-        "reason": "Exact current evidence binds repository-owned workflow-discovery 1.0.0 and its Codex adapter; the active legacy external router remains separately unavailable for Adapter Conformance."
+        "capability_version": "1.0.1",
+        "package_digest": "sha256:238471af4b82e2ab8cf29016c15ac3b7d8ee93d1a36b5d5dbb031b289f809ff4",
+        "adapter_digest": "sha256:b36d0c5055bf4e63f42d0407cf4349a2e4f567afb52f097aa0ece5ab4bcd39a0",
+        "reason": "Exact current evidence binds capability:scope:trade-journal/workflow-discovery 1.0.1 and its codex adapter to the canonical governed Provider Entry Point."
       },
       "generation_eligible": true,
       "ineligibility_reasons": [],
       "final_disposition": {
         "state": "replaced",
-        "rationale": "Repository inventory and exact governed adapters own routing authority; retain the unchanged machine-local bridge as an explicitly limited active legacy competing router with unavailable evidence."
+        "rationale": "Exact current evidence binds capability:scope:trade-journal/workflow-discovery 1.0.1 and its codex adapter to the canonical governed Provider Entry Point."
       }
     }
   ],
