@@ -313,7 +313,7 @@ describe('portfolio-analysis Capability', () => {
         'docs/agents/provider-adapters/generation-eligibility.json',
       ),
       inventory_entries: 74,
-      generation_eligible_entries: 56,
+      generation_eligible_entries: 58,
     });
 
     expect(receipt.legacy_inventory_disposition).toMatchObject({

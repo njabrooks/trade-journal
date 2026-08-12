@@ -104,6 +104,10 @@
       "path": "capabilities/research-pipeline/capability-package.json"
     },
     {
+      "id": "capability:scope:trade-journal/thesis-foreground",
+      "path": "capabilities/thesis-foreground/capability-package.json"
+    },
+    {
       "id": "capability:scope:trade-journal/thesis-observation",
       "path": "capabilities/thesis-observation/capability-package.json"
     },
@@ -289,7 +293,7 @@
       "id": "headless-codex-thesis",
       "capability": "capability:scope:trade-journal/thesis-foreground",
       "provider": "codex",
-      "path": ".agents/skills/thesis/SKILL.md"
+      "path": "capabilities/thesis-foreground/adapters/codex.md"
     },
     {
       "id": "headless-codex-thesis-observe",
@@ -481,7 +485,7 @@
       "id": "interactive-claude-thesis",
       "capability": "capability:scope:trade-journal/thesis-foreground",
       "provider": "claude",
-      "path": ".claude/skills/thesis/SKILL.md"
+      "path": "capabilities/thesis-foreground/adapters/claude.md"
     },
     {
       "id": "interactive-claude-thesis-observe",
@@ -695,6 +699,16 @@
         "id": "decision-resolution-capability",
         "method": "interactive-only-judgment-refusal-and-approved-operation-conformance",
         "path": "capabilities/decision-resolution/capability-package.json"
+      },
+      {
+        "id": "thesis-foreground-capability",
+        "method": "interactive-only-single-thesis-dependency-and-refusal-conformance",
+        "path": "capabilities/thesis-foreground/capability-package.json"
+      },
+      {
+        "id": "issue-61-thesis-foreground",
+        "method": "exact-digest-interactive-refusal-and-read-only-environment-receipt",
+        "path": "evidence/issue-61-thesis-foreground.json"
       },
       {
         "id": "provider-generation-eligibility",

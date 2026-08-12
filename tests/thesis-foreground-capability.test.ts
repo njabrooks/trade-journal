@@ -22,6 +22,19 @@ function digest(path: string): string {
   return `sha256:${createHash("sha256").update(read(path)).digest("hex")}`;
 }
 
+function repositoryDigest(path: string): string {
+  return `sha256:${createHash("sha256")
+    .update(readFileSync(resolve(root, path)))
+    .digest("hex")}`;
+}
+
+function inventoryEntry(path: string, id: string): Record<string, unknown> {
+  const inventory = JSON.parse(
+    readFileSync(resolve(root, path), "utf8"),
+  ) as { entries: Array<Record<string, unknown>> };
+  return inventory.entries.find((entry) => entry.id === id)!;
+}
+
 describe("thesis-foreground Capability", () => {
   it("binds both exact adapters to current complete evidence", () => {
     const packageDigest = digest("capability-package.json");
@@ -117,6 +130,65 @@ describe("thesis-foreground Capability", () => {
     );
     expect(codexPreamble).not.toContain("proceed with your best judgment");
     expect(codexPreamble).not.toContain("surface decisions");
+  });
+
+  it("reconciles current inventory evidence without granting unattended eligibility", () => {
+    expect(
+      inventoryEntry(
+        "docs/agents/provider-adapters/interactive-inventory.json",
+        "interactive-claude-thesis",
+      ),
+    ).toMatchObject({
+      source: { path: "capabilities/thesis-foreground/adapters/claude.md" },
+      packaging: "governed-provider-adapter",
+      invocation: { mode: "interactive", unattended_eligibility: "ineligible" },
+      evidence: { state: "current", capability_version: "1.0.0" },
+    });
+    expect(
+      inventoryEntry(
+        "docs/agents/provider-adapters/headless-inventory.json",
+        "headless-codex-thesis",
+      ),
+    ).toMatchObject({
+      source: { path: "capabilities/thesis-foreground/adapters/codex.md" },
+      packaging: "governed-provider-adapter",
+      execution_contract: {
+        class: "bespoke",
+        preamble_path: ".claude/skills/thesis/HEADLESS_PREAMBLE.md",
+      },
+      invocation: { mode: "headless", unattended_eligibility: "ineligible" },
+      authority_and_write_scope: {
+        reads: expect.stringContaining("No unattended reads"),
+        writes: expect.stringContaining("No unattended writes"),
+      },
+      evidence: { state: "current", capability_version: "1.0.0" },
+    });
+  });
+
+  it("records deterministic publication artifacts and unchanged operational scope", () => {
+    const receipt = JSON.parse(
+      readFileSync(resolve(root, "evidence/issue-61-thesis-foreground.json"), "utf8"),
+    ) as Record<string, Record<string, unknown>>;
+
+    expect(receipt.published_artifacts).toMatchObject({
+      registry_lock: repositoryDigest("capability-registry-lock.json"),
+      claude_staging: repositoryDigest("docs/agents/provider-entry-points/staging/claude.md"),
+      codex_staging: repositoryDigest("docs/agents/provider-entry-points/staging/codex.md"),
+      interactive_inventory: repositoryDigest("docs/agents/provider-adapters/interactive-inventory.json"),
+      headless_inventory: repositoryDigest("docs/agents/provider-adapters/headless-inventory.json"),
+      generation_eligibility: repositoryDigest("docs/agents/provider-adapters/generation-eligibility.json"),
+      inventory_entries: 74,
+      generation_eligible_entries: 58,
+    });
+    expect(receipt.scope).toMatchObject({
+      active_discovery_changed: false,
+      scheduler_or_launchd_changed: false,
+      live_provider_invoked: false,
+      database_or_investment_state_changed: false,
+      credentials_changed: false,
+      cross_repository_write: false,
+      trade_or_order_authority: false,
+    });
   });
 
   governanceIt(

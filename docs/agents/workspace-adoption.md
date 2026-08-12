@@ -43,8 +43,8 @@ uses the accepted native-first hierarchy/dependency policy. The five canonical l
 live labels; unrelated labels remain a namespaced extension. The live `needs-triage` description was aligned to
 the exact canonical Work Item meaning during adoption.
 
-The accepted J1 manifest declared no owned Capability Packages. J2 now declares fifteen Trade Journal-owned
-packages: portfolio snapshot, belief maintenance, belief-research relation, decision resolution, claims synthesis, thesis observation, thesis underwriting, belief evidence assessment,
+The accepted J1 manifest declared no owned Capability Packages. J2 now declares sixteen Trade Journal-owned
+packages: portfolio snapshot, belief maintenance, belief-research relation, decision resolution, claims synthesis, thesis foreground, thesis observation, thesis underwriting, belief evidence assessment,
 research publication, research pipeline, portfolio options advice, options volatility analysis, portfolio analysis, morning attention brief, and workflow discovery. Archived, retired, and deprecated non-candidates remain visible in a namespaced extension; the machine-local Codex bridge is recorded as an active legacy competing router with unavailable conformance evidence. Rich inventory validity, mirror parity, and file presence do not
 establish Adapter Conformance; only exact W1-bound evidence upgrades an inventory entry. The federated Registry
 also resolves three Notes-owned packages from their accepted immutable release without declaring them owned by
@@ -54,8 +54,8 @@ Trade Journal.
 
 `docs/agents/provider-adapters/generation-eligibility.json` deterministically projects all 74 interactive and
 headless inventory entries. The accepted J1 state at governed evidence date `2026-08-04` recorded zero
-generation-eligible adapters and no governed outputs. At the current J2 evidence date `2026-08-12`, eighteen
-locked Capabilities—fifteen Trade Journal-owned packages plus three Notes-owned packages—make 56 inventory
+generation-eligible adapters and no governed outputs. At the current J2 evidence date `2026-08-12`, nineteen
+locked Capabilities—sixteen Trade Journal-owned packages plus three Notes-owned packages—make 58 inventory
 entries generation eligible while the whole-file Claude and Codex outputs
 remain staged. Existing `CLAUDE.md`, `.claude/skills/`, and `.agents/skills/` remain migration inputs until their
 separately governed cutovers, except for the twenty research-pipeline
@@ -69,6 +69,15 @@ agent-authored authority before Decision Item access. The Codex mirror carries a
 zero-read/zero-write refusal, so current adapter evidence, parity, and staged discovery never authorize
 unattended execution or scheduling. No live provider, scheduler, credential, database state, active discovery,
 or investment state changed while collecting evidence.
+
+Issue #61 adds the source-owned `thesis-foreground` Capability at immutable revision
+`4cdfea2400b4cca8324ac255d752ad88914076b6`. It is interactive-only over one exact macro or asset thesis and
+one explicit query, what-changed, observe, assess-evidence, or re-underwrite verb. Query and delta are read-only;
+observation, explicitly requested evidence recording, and re-underwriting resolve the exact governed
+thesis-observation, belief-evidence-assessment, and thesis-underwriting dependencies without widening their
+writes or judgment scope. Missing targets, ambiguity, incomplete inputs, absent user judgment, every unattended
+mode, and every scheduling request fail closed before writes. Its read-only environment probe loaded one current
+ENTG snapshot; no provider, scheduler, credential, database, investment-state, or active-discovery write occurred.
 
 The controlled refusal harness was executed in human and JSON modes against a clean detached Workspace
 checkout at accepted revision `2b6ea3e02ff5ba114b0f91dd779c4afb26181358`:

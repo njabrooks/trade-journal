@@ -66,8 +66,8 @@ The inventory deliberately distinguishes packaging from readiness:
 - ten contracted research-pipeline paths have bespoke refusal preambles that name their exact governed CLI replacement;
 - `gateway`, `ibkr-quote`, and `visser-scan` have bespoke zero-read/zero-write unavailable refusal preambles;
 - `configure-signal` has a bespoke no-read/no-write protective retirement tombstone;
-- `decisions` has a bespoke unconditional zero-read/zero-write refusal;
-- the other 13 projections have generic generated preambles, which are packaging baselines only; and
+- `decisions` and `thesis` have bespoke unconditional zero-read/zero-write refusals;
+- the other 12 projections have generic generated preambles, which are packaging baselines only; and
 - `decisions` and `thesis` are mirrored for parity but remain ineligible for unattended execution.
 
 Issue #75 gives all eight non-candidate records their final disposition. The interactive and headless
@@ -126,13 +126,13 @@ and staged generated output bind it through W1. The remaining generic projection
 
 `generation-eligibility.json` is the deterministic projection of both inventories into J1's governed
 generation decision and the incremental J2 migration state. It covers all 74 inventoried entry points. The
-eighteen locked Capabilities now record 56 generation-eligible inventory entries and two whole-file governed
-staging outputs. Fifteen packages are Trade Journal-owned; the three Notes-owned content-processing dependency
-packages remain external. The other 22 entries remain non-governed migration inputs or non-candidates with
+nineteen locked Capabilities now record 58 generation-eligible inventory entries and two whole-file governed
+staging outputs. Sixteen packages are Trade Journal-owned; the three Notes-owned content-processing dependency
+packages remain external. The other 20 entries remain non-governed migration inputs or non-candidates with
 explicit dispositions.
 
 The portfolio-snapshot, belief-maintenance, belief-research-relation, decision-resolution, claims-synthesis, research-publication,
-thesis-observation, thesis-underwriting, belief-evidence-assessment, portfolio-options-advice,
+thesis-foreground, thesis-observation, thesis-underwriting, belief-evidence-assessment, portfolio-options-advice,
 options-vol-analysis, portfolio-analysis, and morning-attention-brief adapters are `current` because they bind to source-owned Capability version `1.0.0`, exact package and
 adapter digests, complete current evidence, and the immutable published Registry Lock. The belief-maintenance
 package covers the maintenance, thesis-review, and claim-backfill inventory entries through one provider-
@@ -145,6 +145,13 @@ the current user's exact action, close only through `resolve-decision.ts --by us
 only through `update-entity-status.ts`. The Codex mirror has a bespoke unconditional refusal that performs no
 reads or writes. Its exact adapter evidence is current for interactive staged discovery, while unattended
 execution and scheduling remain ineligible and cannot be inferred from Registry, mirror, or staging presence.
+
+Issue #61 adds `thesis-foreground` as an exact interactive-only Capability over one thesis. Query and
+what-changed are read-only; fresh observation, explicitly requested evidence recording, and re-underwriting
+delegate only to the Registry-resolved thesis-observation, belief-evidence-assessment, and thesis-underwriting
+Capabilities. Missing or ambiguous targets, incomplete evidence, missing current-user judgment, headless use,
+and every scheduling request fail closed. The Codex mirror now carries a bespoke unconditional zero-read/
+zero-write refusal, so current staged Adapter Conformance never implies unattended or scheduling eligibility.
 
 Workflow discovery adds current Claude and Codex interactive adapters. Each selects from this validated
 inventory and delegates to the selected provider's exact locked adapter or an honestly unavailable repository-authored

@@ -564,6 +564,51 @@
     {
       "approved_version": "1.0.0",
       "authority": "scope:trade-journal",
+      "dependencies": [
+        {
+          "id": "capability:scope:trade-journal/thesis-observation",
+          "version_constraint": ">=1.0.0 <2.0.0"
+        },
+        {
+          "id": "capability:scope:trade-journal/thesis-underwriting",
+          "version_constraint": ">=1.0.0 <2.0.0"
+        },
+        {
+          "id": "capability:scope:trade-journal/belief-evidence-assessment",
+          "version_constraint": ">=1.0.0 <2.0.0"
+        }
+      ],
+      "id": "capability:scope:trade-journal/thesis-foreground",
+      "package_digest": "sha256:01437f79c7d9c0485b827227d43dd551c57f298473e3de96267fe0575ab036c8",
+      "provider_adapters": [
+        {
+          "evidence": "evidence/claude.json",
+          "id": "thesis-foreground-claude",
+          "provider": "claude",
+          "source": "adapters/claude.md",
+          "state": "current",
+          "validated_at": "2026-08-12"
+        },
+        {
+          "evidence": "evidence/codex.json",
+          "id": "thesis-foreground-codex",
+          "provider": "codex",
+          "source": "adapters/codex.md",
+          "state": "current",
+          "validated_at": "2026-08-12"
+        }
+      ],
+      "repository": "github:njabrooks/trade-journal",
+      "source": {
+        "development_digest": null,
+        "package_path": "capabilities/thesis-foreground",
+        "release_reference": "4cdfea2400b4cca8324ac255d752ad88914076b6",
+        "revision": "4cdfea2400b4cca8324ac255d752ad88914076b6"
+      }
+    },
+    {
+      "approved_version": "1.0.0",
+      "authority": "scope:trade-journal",
       "dependencies": [],
       "id": "capability:scope:trade-journal/thesis-observation",
       "package_digest": "sha256:3bd4bbd415adf291ae8a421cb09724031b147008d79482914a20f5f19f7f230c",
@@ -662,6 +707,6 @@
   "kind": "CapabilityRegistryLock",
   "mode": "published",
   "publication_eligible": true,
-  "registry_digest": "sha256:6e8d08c29fc0527b6c75c2230a684e5768e862a27a2c7cd4ecae8f2f28810fb5",
+  "registry_digest": "sha256:b12bd8d94ad2f83b090a78f9f892c2ccbad330de868fd6f2d6aa25988747b4ea",
   "schema_version": "1.0.0"
 }

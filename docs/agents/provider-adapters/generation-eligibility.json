@@ -4,7 +4,7 @@
   "as_of": "2026-08-12",
   "accepted_workspace_revision": "2b6ea3e02ff5ba114b0f91dd779c4afb26181358",
   "outcome": "eligible-adapters-present",
-  "generation_eligible_count": 56,
+  "generation_eligible_count": 58,
   "governed_outputs": [
     "docs/agents/provider-entry-points/staging/claude.md",
     "docs/agents/provider-entry-points/staging/codex.md"
@@ -1020,7 +1020,7 @@
       "source": {
         "ownership": "repository:njabrooks/trade-journal",
         "location_class": "repository",
-        "path": ".agents/skills/thesis/SKILL.md"
+        "path": "capabilities/thesis-foreground/adapters/codex.md"
       },
       "lifecycle_status": "active",
       "capability": {
@@ -1030,21 +1030,18 @@
         "reason": null
       },
       "evidence": {
-        "state": "unavailable",
-        "as_of": "2026-08-04",
-        "capability_version": null,
-        "package_digest": null,
-        "adapter_digest": null,
-        "reason": "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
+        "state": "current",
+        "as_of": "2026-08-12",
+        "capability_version": "1.0.0",
+        "package_digest": "sha256:01437f79c7d9c0485b827227d43dd551c57f298473e3de96267fe0575ab036c8",
+        "adapter_digest": "sha256:139617bfe3c6ea3303e57daaa44dfd348d2c166573a38c33a8f9a4a6cecec84a",
+        "reason": "Exact current evidence binds the Codex adapter's interactive-only semantics and unconditional headless refusal; unattended execution remains ineligible."
       },
-      "generation_eligible": false,
-      "ineligibility_reasons": [
-        "No complete current evidence with exact Capability and adapter bindings is available.",
-        "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
-      ],
+      "generation_eligible": true,
+      "ineligibility_reasons": [],
       "j2_disposition": {
         "action": "migrate",
-        "rationale": "Migrate the provider packaging in J2 without changing the underlying Trade Journal workflow semantics."
+        "rationale": "The governed adapter is current and staged; retain the bespoke refusal mirror as a migration input until final discovery cutover."
       }
     },
     {
@@ -2135,7 +2132,7 @@
       "source": {
         "ownership": "repository:njabrooks/trade-journal",
         "location_class": "repository",
-        "path": ".claude/skills/thesis/SKILL.md"
+        "path": "capabilities/thesis-foreground/adapters/claude.md"
       },
       "lifecycle_status": "active",
       "capability": {
@@ -2145,21 +2142,18 @@
         "reason": null
       },
       "evidence": {
-        "state": "unavailable",
-        "as_of": "2026-08-04",
-        "capability_version": null,
-        "package_digest": null,
-        "adapter_digest": null,
-        "reason": "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
+        "state": "current",
+        "as_of": "2026-08-12",
+        "capability_version": "1.0.0",
+        "package_digest": "sha256:01437f79c7d9c0485b827227d43dd551c57f298473e3de96267fe0575ab036c8",
+        "adapter_digest": "sha256:98da87f2dc887862f5627f7922f7a68924dee8a2f415574e57fbadaa786fb6cd",
+        "reason": "Exact current evidence binds thesis-foreground 1.0.0 and the governed Claude adapter while unattended execution and scheduling remain ineligible."
       },
-      "generation_eligible": false,
-      "ineligibility_reasons": [
-        "No complete current evidence with exact Capability and adapter bindings is available.",
-        "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
-      ],
+      "generation_eligible": true,
+      "ineligibility_reasons": [],
       "j2_disposition": {
         "action": "migrate",
-        "rationale": "Migrate the provider packaging in J2 without changing the underlying Trade Journal workflow semantics."
+        "rationale": "The governed adapter is current and staged; retain the authored /thesis skill as a migration input until final discovery cutover."
       }
     },
     {

@@ -29,14 +29,14 @@
     "execution_authority": "none-discovery-only"
   },
   "published_artifacts": {
-    "registry_lock": "sha256:122d0bb9334ac8171391f8086d622cec7799f24b9888d30aecc882f1f72b88de",
-    "claude_staging": "sha256:bb2cc2a64fc4dde5cca096e7f220ba51f83f7aae033de2b7fe5a1de23d56edd9",
-    "codex_staging": "sha256:54fec6d70d5f7ea22cf31b7b20e23c6e6119a51e436ea775f6f5cde1a8781d39",
-    "interactive_inventory": "sha256:b610c0dc497d991749c309d92fa963eaac116160554666ef00d07bf8bd95361c",
-    "headless_inventory": "sha256:b8f05d946241c9d1579eebc84e6cb9e88a151d6586e7f2d7c81fbadf4d73aa53",
-    "generation_eligibility": "sha256:0a9f612a5f2a0b557cfa48cd8288049864bb2f37860a540eb08fed2282489887",
+    "registry_lock": "sha256:be27093572637b69900acef53b9e51c2d2fa8ec557255e318aac5e1a4b93dd9e",
+    "claude_staging": "sha256:9f4937fb8b6c4136ecbac60b0c1a8ea6a538f2db0a4b2c6b7851e5edc65fee3d",
+    "codex_staging": "sha256:a840ab61f6440b529086c63882f0bc9308e0e682f69b356f5a1de12e1e8afb64",
+    "interactive_inventory": "sha256:ae3293c3057aae2ed733f706b988ffc270ff244c85b189da6afc0b3f160ce33b",
+    "headless_inventory": "sha256:3f47b79442df9c225c177e998fa71eb90a142cb57f43bcfc8724fe971b7b8458",
+    "generation_eligibility": "sha256:03da7e7ef868b24155dea9c314e7cc1c94116987276d09b5f4df6714623b0164",
     "inventory_entries": 74,
-    "generation_eligible_entries": 56
+    "generation_eligible_entries": 58
   },
   "machine_local_bridge": {
     "role": "active-legacy-competing-router",
