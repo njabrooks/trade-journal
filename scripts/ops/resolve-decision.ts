@@ -36,7 +36,7 @@
  *   ... --by user --dry-run
  */
 import { db, closeDb, schema, logToJournal } from "../lib/db.js";
-import { and, eq, sql } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import {
   getDecisionPacket,
   type DecisionResolution,
@@ -46,8 +46,10 @@ import { linkAssetMacro, unlinkAssetMacro } from "../lib/linkAssetMacro.js";
 import {
   assertBoundedDecisionSelection,
   assertValidDecisionResolutionRequest,
+  getBuiltInDecisionAction,
   type DecisionResolutionWrite,
 } from "../lib/decisionResolutionAuthority.js";
+import { OPEN_DECISION_PREDICATE } from "../lib/decisionItemQuery.js";
 
 const {
   journalEntries,
@@ -56,9 +58,6 @@ const {
   mainClaims,
   claimThesisMappings,
 } = schema;
-const SNOOZED_UNTIL = sql`COALESCE(${journalEntries.metadata}->'decision'->>'snoozed_until', ${journalEntries.metadata}->>'snoozed_until')`;
-const OPEN_DECISION = sql`(${journalEntries.status} = 'active' OR (${journalEntries.status} = 'snoozed' AND ${SNOOZED_UNTIL} IS NOT NULL AND (${SNOOZED_UNTIL})::timestamptz <= now()))`;
-
 type GraphWrite = DecisionResolutionWrite;
 
 interface Input {
@@ -150,25 +149,23 @@ async function runHandler(
 ): Promise<GraphWrite[]> {
   const type = packet?.decision_type;
   const action = input.action;
+  const builtInAction = type
+    ? getBuiltInDecisionAction(type, action)
+    : undefined;
 
-  if (type === "classify_macro_link" || type === "frame_asset_under_macro") {
+  if (builtInAction?.startsWith("framing-")) {
     const assetThesisId =
       input.assetId ??
       (row.objectType === "asset_thesis" ? row.objectId : undefined) ??
       relatedId(packet, "asset_thesis");
     const macroThesisId = input.macroId ?? relatedId(packet, "macro_thesis");
-    if (
-      action === "stand_alone" ||
-      action === "none" ||
-      action === "keep_in_tana"
-    )
-      return [];
+    if (builtInAction === "framing-noop") return [];
     if (!assetThesisId || !macroThesisId) {
       throw new Error(
         "framing needs assetThesisId (primary object or --asset-id) and macroThesisId (--macro-id or a related macro_thesis)",
       );
     }
-    if (action === "unlink") {
+    if (builtInAction === "framing-unlink") {
       if (!input.dryRun) await unlinkAssetMacro(assetThesisId, macroThesisId);
       return [
         {
@@ -178,7 +175,8 @@ async function runHandler(
         },
       ];
     }
-    const relationshipType = action === "set_gated_by" ? "gated_by" : "related";
+    const relationshipType =
+      builtInAction === "framing-gated" ? "gated_by" : "related";
     if (!input.dryRun) {
       await linkAssetMacro({
         assetThesisId,
@@ -196,7 +194,7 @@ async function runHandler(
     ];
   }
 
-  if (type === "link_strategy_to_thesis" && action === "link") {
+  if (builtInAction === "strategy-link") {
     const strategyId =
       input.strategyId ??
       (row.objectType === "strategy" ? row.objectId : undefined);
@@ -214,7 +212,7 @@ async function runHandler(
     return [{ table: "strategies", op: "update", ids: [strategyId] }];
   }
 
-  if (type === "resolve_proxy_underlying" && action === "map") {
+  if (builtInAction === "proxy-map") {
     const underlyingId = input.underlyingId ?? relatedId(packet, "underlying");
     if (!underlyingId || !input.parentId)
       throw new Error(
@@ -229,7 +227,7 @@ async function runHandler(
     return [{ table: "underlyings", op: "update", ids: [underlyingId] }];
   }
 
-  if (type === "confirm_claim_link" && action === "sever") {
+  if (builtInAction === "claim-sever") {
     const meta = (row.metadata ?? {}) as Record<string, unknown>;
     const evidence = packet?.evidence_context ?? {};
     const insightId =
@@ -297,7 +295,7 @@ async function runHandler(
     ];
   }
 
-  if (type === "cluster_claims_to_thesis" && action === "create_macro") {
+  if (builtInAction === "macro-create") {
     // Emergent macro accepted (docs/v2/13 §1c step 3): the agent created the macro via
     // create-macro-thesis and passes its id; link every member asset thesis from the packet
     // to it (the cascade promotes status from there). Members live in
@@ -353,7 +351,7 @@ async function main() {
       and(
         eq(journalEntries.id, input.id),
         eq(journalEntries.actionType, "decision_required"),
-        OPEN_DECISION,
+        OPEN_DECISION_PREDICATE,
       ),
     )
     .limit(1);

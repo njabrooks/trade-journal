@@ -5,11 +5,6 @@ export type DecisionResolutionAuthorityInput = {
 export const MISSING_USER_JUDGMENT_MESSAGE =
   "Refused: decision resolution requires explicit current-user judgment via --by user; missing, agent-authored, headless, autonomous, or scheduled judgment is not authorized.";
 
-export type DecisionItemLifecycleInput = {
-  status?: string | null;
-  snoozedUntil?: string | null;
-};
-
 export type DecisionResolutionWrite = {
   table: string;
   op: "insert" | "update" | "delete";
@@ -52,21 +47,6 @@ export function assertExplicitUserJudgment(
   if (input.by !== "user") {
     throw new Error(MISSING_USER_JUDGMENT_MESSAGE);
   }
-}
-
-/**
- * Keep the testable lifecycle rule aligned with list-decisions: active items are
- * open, and snoozed items reopen only once their explicit snooze has expired.
- */
-export function isOpenDecisionItem(
-  input: DecisionItemLifecycleInput,
-  now: Date = new Date(),
-): boolean {
-  if (input.status === "active") return true;
-  if (input.status !== "snoozed" || !input.snoozedUntil) return false;
-
-  const snoozedUntil = new Date(input.snoozedUntil);
-  return !Number.isNaN(snoozedUntil.getTime()) && snoozedUntil <= now;
 }
 
 function isNonEmptyString(value: unknown): value is string {
@@ -160,28 +140,47 @@ function isCompleteDecisionPacket(
   );
 }
 
-const BUILT_IN_ACTIONS = new Set([
-  "classify_macro_link:stand_alone",
-  "classify_macro_link:none",
-  "classify_macro_link:keep_in_tana",
-  "classify_macro_link:unlink",
-  "classify_macro_link:set_gated_by",
-  "classify_macro_link:set_related",
-  "classify_macro_link:related",
-  "classify_macro_link:link",
-  "frame_asset_under_macro:stand_alone",
-  "frame_asset_under_macro:none",
-  "frame_asset_under_macro:keep_in_tana",
-  "frame_asset_under_macro:unlink",
-  "frame_asset_under_macro:set_gated_by",
-  "frame_asset_under_macro:set_related",
-  "frame_asset_under_macro:related",
-  "frame_asset_under_macro:link",
-  "link_strategy_to_thesis:link",
-  "resolve_proxy_underlying:map",
-  "confirm_claim_link:sever",
-  "cluster_claims_to_thesis:create_macro",
-]);
+export type BuiltInDecisionAction =
+  | "framing-noop"
+  | "framing-unlink"
+  | "framing-related"
+  | "framing-gated"
+  | "strategy-link"
+  | "proxy-map"
+  | "claim-sever"
+  | "macro-create";
+
+const BUILT_IN_DECISION_ACTIONS: Readonly<
+  Record<string, BuiltInDecisionAction>
+> = {
+  "classify_macro_link:stand_alone": "framing-noop",
+  "classify_macro_link:none": "framing-noop",
+  "classify_macro_link:keep_in_tana": "framing-noop",
+  "classify_macro_link:unlink": "framing-unlink",
+  "classify_macro_link:set_gated_by": "framing-gated",
+  "classify_macro_link:set_related": "framing-related",
+  "classify_macro_link:related": "framing-related",
+  "classify_macro_link:link": "framing-related",
+  "frame_asset_under_macro:stand_alone": "framing-noop",
+  "frame_asset_under_macro:none": "framing-noop",
+  "frame_asset_under_macro:keep_in_tana": "framing-noop",
+  "frame_asset_under_macro:unlink": "framing-unlink",
+  "frame_asset_under_macro:set_gated_by": "framing-gated",
+  "frame_asset_under_macro:set_related": "framing-related",
+  "frame_asset_under_macro:related": "framing-related",
+  "frame_asset_under_macro:link": "framing-related",
+  "link_strategy_to_thesis:link": "strategy-link",
+  "resolve_proxy_underlying:map": "proxy-map",
+  "confirm_claim_link:sever": "claim-sever",
+  "cluster_claims_to_thesis:create_macro": "macro-create",
+};
+
+export function getBuiltInDecisionAction(
+  decisionType: string,
+  action: string,
+): BuiltInDecisionAction | undefined {
+  return BUILT_IN_DECISION_ACTIONS[`${decisionType}:${action}`];
+}
 
 /** Validate the selected action against the exact complete packet before mutation. */
 export function assertBoundedDecisionSelection(
@@ -203,11 +202,13 @@ export function assertBoundedDecisionSelection(
     );
   }
   if (input.action === "dismiss" && input.writes?.length) {
-    throw new Error("Refused: dismissed decisions cannot declare graph writes.");
+    throw new Error(
+      "Refused: dismissed decisions cannot declare graph writes.",
+    );
   }
   if (
     input.writes?.length &&
-    BUILT_IN_ACTIONS.has(`${packet.decision_type}:${input.action}`)
+    getBuiltInDecisionAction(packet.decision_type, input.action)
   ) {
     throw new Error(
       "Refused: built-in mechanical actions derive their own exact write audit.",

@@ -7,7 +7,6 @@ import {
   assertExplicitUserJudgment,
   assertBoundedDecisionSelection,
   assertValidDecisionResolutionRequest,
-  isOpenDecisionItem,
   MISSING_USER_JUDGMENT_MESSAGE,
 } from "../scripts/lib/decisionResolutionAuthority";
 
@@ -80,31 +79,24 @@ describe("decision-resolution Capability", () => {
     expect(resolver).toContain('actionType: "decision_resolved"');
   });
 
-  it("accepts only active or expired-snoozed Decision Items", () => {
-    const now = new Date("2026-08-12T12:00:00Z");
-
-    expect(isOpenDecisionItem({ status: "active" }, now)).toBe(true);
-    expect(
-      isOpenDecisionItem(
-        { status: "snoozed", snoozedUntil: "2026-08-12T11:59:59Z" },
-        now,
-      ),
-    ).toBe(true);
-    expect(
-      isOpenDecisionItem(
-        { status: "snoozed", snoozedUntil: "2026-08-12T12:00:01Z" },
-        now,
-      ),
-    ).toBe(false);
-    expect(isOpenDecisionItem({ status: "resolved" }, now)).toBe(false);
-    expect(isOpenDecisionItem({ status: "dismissed" }, now)).toBe(false);
-    expect(isOpenDecisionItem({ status: "superseded" }, now)).toBe(false);
-
+  it("shares one canonical open-item predicate between listing and resolution", () => {
     const resolver = readFileSync(
       resolve(process.cwd(), "scripts/ops/resolve-decision.ts"),
       "utf8",
     );
-    expect(resolver).toContain("OPEN_DECISION");
+    const listing = readFileSync(
+      resolve(process.cwd(), "scripts/ops/list-decisions.ts"),
+      "utf8",
+    );
+    const predicate = readFileSync(
+      resolve(process.cwd(), "scripts/lib/decisionItemQuery.ts"),
+      "utf8",
+    );
+    expect(resolver).toContain("OPEN_DECISION_PREDICATE");
+    expect(listing).toContain("OPEN_DECISION_PREDICATE");
+    expect(predicate).toContain("= 'active' OR");
+    expect(predicate).toContain("= 'snoozed'");
+    expect(predicate).toContain("::timestamptz <= now()");
     expect(resolver).toContain("No open decision_required journal entry");
   });
 
