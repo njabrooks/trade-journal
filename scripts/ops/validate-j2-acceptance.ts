@@ -1,6 +1,7 @@
 import { createHash } from "node:crypto";
 import { execFileSync } from "node:child_process";
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync, mkdtempSync, readFileSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
 import { resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 
@@ -270,6 +271,18 @@ export function validateJ2Acceptance(): string[] {
     acceptanceRun.trade_journal_revision,
     "acceptance_run.trade_journal_revision",
   );
+  const workspaceRevision = text(
+    acceptanceRun.workspace_revision,
+    "acceptance_run.workspace_revision",
+  );
+  const workspaceCliBlob = text(
+    acceptanceRun.workspace_cli_git_blob,
+    "acceptance_run.workspace_cli_git_blob",
+  );
+  const workspaceLauncherDigest = text(
+    acceptanceRun.workspace_launcher_sha256,
+    "acceptance_run.workspace_launcher_sha256",
+  );
   for (const artifact of artifacts) {
     const path = resolve(root, artifact.path);
     if (!existsSync(path)) {
@@ -303,6 +316,77 @@ export function validateJ2Acceptance(): string[] {
     }
   }
 
+  let launcherBytes: Buffer | undefined;
+  try {
+    launcherBytes = execFileSync(
+      "git",
+      ["show", `${acceptanceRevision}:workspace`],
+      { cwd: root },
+    );
+    if (
+      createHash("sha256").update(launcherBytes).digest("hex") !==
+      workspaceLauncherDigest
+    ) {
+      diagnostics.push(
+        "acceptance revision has a different Workspace launcher digest",
+      );
+    }
+    const launcher = launcherBytes.toString("utf8");
+    if (!launcher.includes(`accepted_revision="${workspaceRevision}"`)) {
+      diagnostics.push("Workspace revision is not bound by the exact launcher");
+    }
+    if (!launcher.includes(`accepted_cli_blob="${workspaceCliBlob}"`)) {
+      diagnostics.push("Workspace CLI blob is not bound by the exact launcher");
+    }
+  } catch {
+    diagnostics.push(
+      "Workspace launcher cannot be reproduced at the acceptance revision",
+    );
+  }
+
+  const workspaceRoot = process.env.WORKSPACE_REPOSITORY_ROOT;
+  if (workspaceRoot && existsSync(resolve(workspaceRoot, "workspace"))) {
+    const checkout = mkdtempSync(resolve(tmpdir(), "j2-acceptance-"));
+    try {
+      execFileSync(
+        "git",
+        ["worktree", "add", "--detach", checkout, acceptanceRevision],
+        {
+          cwd: root,
+          stdio: "ignore",
+        },
+      );
+      const status = execFileSync("git", ["status", "--short"], {
+        cwd: checkout,
+        encoding: "utf8",
+      });
+      if (status !== "")
+        diagnostics.push("exact acceptance checkout is not clean");
+      execFileSync(
+        resolve(checkout, "workspace"),
+        ["validate", "repository", checkout, "--format", "json"],
+        {
+          cwd: checkout,
+          env: { ...process.env, WORKSPACE_REPOSITORY_ROOT: workspaceRoot },
+          stdio: "ignore",
+        },
+      );
+    } catch {
+      diagnostics.push(
+        "public Workspace CLI did not validate the clean exact revision",
+      );
+    } finally {
+      try {
+        execFileSync("git", ["worktree", "remove", "--force", checkout], {
+          cwd: root,
+          stdio: "ignore",
+        });
+      } finally {
+        rmSync(checkout, { recursive: true, force: true });
+      }
+    }
+  }
+
   const cutovers = array(receipt.live_cutovers, "live_cutovers");
   if (cutovers.length !== ACCEPTANCE_COUNTS.liveCutovers) {
     diagnostics.push(
@@ -319,6 +403,48 @@ export function validateJ2Acceptance(): string[] {
       "evidence_date",
     ]) {
       text(cutover[field], `live_cutovers[${index}].${field}`);
+    }
+  }
+
+  const external = array(
+    receipt.external_authority_dispositions,
+    "external_authority_dispositions",
+  ).map((value, index) =>
+    object(value, `external_authority_dispositions[${index}]`),
+  );
+  const externalCapabilities = new Set(
+    external.flatMap((disposition) =>
+      typeof disposition.capability === "string"
+        ? [disposition.capability]
+        : [],
+    ),
+  );
+  const retainedExternalCapabilities = new Set(
+    entries.flatMap((entry) => {
+      const disposition = object(
+        entry.final_disposition,
+        "entry.final_disposition",
+      );
+      const capability = object(entry.capability, "entry.capability");
+      return disposition.state === "retained" &&
+        typeof capability.id === "string" &&
+        capability.authority !== "scope:trade-journal"
+        ? [capability.id]
+        : [];
+    }),
+  );
+  for (const capability of retainedExternalCapabilities) {
+    if (!externalCapabilities.has(capability)) {
+      diagnostics.push(
+        `external retained disposition is missing: ${capability}`,
+      );
+    }
+  }
+  for (const capability of externalCapabilities) {
+    if (!retainedExternalCapabilities.has(capability)) {
+      diagnostics.push(
+        `external Capability disposition is not inventory-backed: ${capability}`,
+      );
     }
   }
 
