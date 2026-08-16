@@ -27,6 +27,13 @@ metadata is complete, repository sources resolve, interactive Claude source cove
 declared session hooks match `.claude/settings.json`. It does not prove Workspace Repository Conformance or
 Adapter Conformance. The accepted Workspace CLI remains authoritative for those separate contracts.
 
+Deterministic provider consumers that are not agent adapters are governed as inventory extensions in this
+directory. `workspace-x-consumer-inventory.json` is the canonical extension for the supported read-only X
+seam: it declares Workspace service and credential identities, the exact operation allowlist, zero writes,
+support state, failure behavior, superseded stores, and the projects#35 compatibility-removal gate. Its public
+schema and source binding are enforced by `tests/x-credential-adoption.test.ts`; it does not inflate the
+36-entry agent-adapter history or rewrite accepted J2 evidence.
+
 ## Interactive inventory
 
 `interactive-inventory.json` contains:
