@@ -72,12 +72,11 @@ run_governed_codex() {
     local schema_file
     schema_file="$(write_schema_file)"
     # Least-privilege unattended equivalent of the former Claude
-    # --dangerously-skip-permissions: workspace-write + --approve-for-me (Codex 0.147
-    # exec --help). Full --dangerously-bypass-approvals-and-sandbox is not required
+    # --dangerously-skip-permissions: --approve-for-me (implies workspace-write; Codex 0.147 rejects combining it
+    # with --sandbox). Full --dangerously-bypass-approvals-and-sandbox is not required
     # for the sensing-only --thesis-observe-only write boundary.
     exec "$CODEX_BIN" exec --ephemeral -C "$TJ_REPO_ROOT" \
         -m "$CODEX_MODEL" \
-        --sandbox workspace-write \
         --approve-for-me \
         --output-schema "$schema_file" \
         "$(governed_prompt "capabilities/thesis-observation/adapters/codex.md" "$request" "$read_only")"
