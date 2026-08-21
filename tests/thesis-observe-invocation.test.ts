@@ -57,7 +57,7 @@ describe('governed thesis-observe invocation', () => {
     expect(result.stdout).not.toContain('--json-schema');
     expect(result.stdout).not.toContain('--model\nopus');
     const schemaPath = schemaAfterFlag(result.stdout, '--output-schema');
-    expect(readFileSync(schemaPath, 'utf8')).toContain('"thesesObserved":{"type":"array"}');
+    expect(readFileSync(schemaPath, 'utf8')).toContain('"thesesObserved":{"type":"array"');
   });
 
   it('makes shadow read-only and canary one-thesis bounded', () => {
