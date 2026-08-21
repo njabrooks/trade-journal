@@ -50,6 +50,7 @@ describe('morning brief provider selector', () => {
     const result = invoke('live');
     expect(result.status).toBe(0);
     expect(result.stdout).toContain('capabilities/morning-attention-brief/adapters/codex.md');
+    expect(result.stdout).toContain('-m\ngpt-5.6-luna');
     expect(result.stdout).toContain('"briefDate":"2026-08-07","dryRun":false');
     expect(result.stdout).toContain('exactly once');
     expect(result.stdout).toContain('Never write journal_entries');

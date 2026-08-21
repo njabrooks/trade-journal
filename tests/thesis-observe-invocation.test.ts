@@ -53,6 +53,7 @@ describe('governed thesis-observe invocation', () => {
     expect(result.stdout).toContain('--ephemeral');
     expect(result.stdout).toMatch(/(?:^|\n)(?:-C|--cd)\n/);
     expect(result.stdout).toContain('--output-schema');
+    expect(result.stdout).toContain('-m\ngpt-5.6-terra');
     expect(result.stdout).not.toContain('--json-schema');
     expect(result.stdout).not.toContain('--model\nopus');
     const schemaPath = schemaAfterFlag(result.stdout, '--output-schema');

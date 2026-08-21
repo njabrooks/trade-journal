@@ -14,6 +14,7 @@ set -euo pipefail
 
 TJ_REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 CODEX_BIN="${TJ_THESIS_OBSERVE_CODEX_BIN:-/Users/home-hub/.local/bin/codex}"
+CODEX_MODEL="${TJ_THESIS_OBSERVE_CODEX_MODEL:-gpt-5.6-terra}"
 CLAUDE_BIN="${TJ_THESIS_OBSERVE_CLAUDE_BIN:-/opt/homebrew/bin/claude}"
 CODEX_ADAPTER_PATH="$TJ_REPO_ROOT/capabilities/thesis-observation/adapters/codex.md"
 CLAUDE_ADAPTER_PATH="$TJ_REPO_ROOT/capabilities/thesis-observation/adapters/claude.md"
@@ -75,6 +76,7 @@ run_governed_codex() {
     # exec --help). Full --dangerously-bypass-approvals-and-sandbox is not required
     # for the sensing-only --thesis-observe-only write boundary.
     exec "$CODEX_BIN" exec --ephemeral -C "$TJ_REPO_ROOT" \
+        -m "$CODEX_MODEL" \
         --sandbox workspace-write \
         --approve-for-me \
         --output-schema "$schema_file" \

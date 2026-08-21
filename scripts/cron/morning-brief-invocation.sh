@@ -14,6 +14,7 @@ set -euo pipefail
 
 TJ_REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 CODEX_BIN="${TJ_MORNING_BRIEF_CODEX_BIN:-/Users/home-hub/.local/bin/codex}"
+CODEX_MODEL="${TJ_MORNING_BRIEF_CODEX_MODEL:-gpt-5.6-luna}"
 CLAUDE_BIN="${TJ_MORNING_BRIEF_CLAUDE_BIN:-/opt/homebrew/bin/claude}"
 DATE_BIN="${TJ_MORNING_BRIEF_DATE_BIN:-/bin/date}"
 CODEX_ADAPTER_PATH="$TJ_REPO_ROOT/capabilities/morning-attention-brief/adapters/codex.md"
@@ -91,6 +92,7 @@ run_governed_codex() {
     # exec --help). Full --dangerously-bypass-approvals-and-sandbox is not required
     # for the sole save-morning-brief.ts --stdin write.
     exec "$CODEX_BIN" exec --ephemeral -C "$TJ_REPO_ROOT" \
+        -m "$CODEX_MODEL" \
         --sandbox workspace-write \
         --approve-for-me \
         --output-schema "$schema_file" \
