@@ -12,7 +12,7 @@ interface FlexQueryConfig {
   isActive: boolean;
   scheduleCron: string | null;
   lastRunAt: string | null;
-  lastRunStatus: 'success' | 'failed' | null;
+  lastRunStatus: 'success' | 'expected' | 'failed' | null;
   lastRunError: string | null;
 }
 
@@ -408,7 +408,9 @@ export default function FlexConfigsPage() {
                               className={
                                 config.lastRunStatus === 'success'
                                   ? 'text-green-600'
-                                  : 'text-red-600'
+                                  : config.lastRunStatus === 'expected'
+                                    ? 'text-amber-600'
+                                    : 'text-red-600'
                               }
                             >
                               ({config.lastRunStatus})
@@ -417,7 +419,7 @@ export default function FlexConfigsPage() {
                         </div>
                       )}
                       {config.lastRunError && (
-                        <div className="text-red-600 text-xs mt-1">
+                        <div className={config.lastRunStatus === 'expected' ? 'text-amber-600 text-xs mt-1' : 'text-red-600 text-xs mt-1'}>
                           Error: {config.lastRunError}
                         </div>
                       )}
@@ -453,4 +455,3 @@ export default function FlexConfigsPage() {
     </DashboardShell>
   );
 }
-

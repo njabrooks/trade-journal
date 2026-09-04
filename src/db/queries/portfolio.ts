@@ -726,10 +726,22 @@ export async function getPortfolioPositionsData(
   }
 
   // Fetch all open positions at each account's latest snapshot date.
-  // Uses per-account correlated subquery because different exchanges
-  // (IBKR, HyperLiquid, Coinbase, Kraken) ingest on different schedules.
+  // Uses a grouped relation rather than a correlated MAX() subquery because
+  // different exchanges (IBKR, HyperLiquid, Coinbase, Kraken) ingest on
+  // different schedules. The correlated form rescanned positions once per
+  // candidate row and became quadratic as snapshots accumulated.
   // Joins with parent underlying to get the canonical ticker for grouping
   // (e.g., HSOL -> SOL, CBBTC -> BTC).
+  const latestPositionDates = db
+    .select({
+      accountId: positions.accountId,
+      snapshotDate: sql<string>`MAX(${positions.snapshotDate})`.as('snapshot_date'),
+    })
+    .from(positions)
+    .where(inArray(positions.accountId, accountIds))
+    .groupBy(positions.accountId)
+    .as('latest_position_dates');
+
   const positionRows = await db
     .select({
       id: positions.id,
@@ -758,17 +770,18 @@ export async function getPortfolioPositionsData(
       strategyId: positions.strategyId,
     })
     .from(positions)
+    .innerJoin(
+      latestPositionDates,
+      and(
+        eq(positions.accountId, latestPositionDates.accountId),
+        sql`${positions.snapshotDate} = ${sql.raw('"latest_position_dates"."snapshot_date"')}`,
+      ),
+    )
     .leftJoin(underlyings, eq(positions.underlyingId, underlyings.id))
     .leftJoin(parentUnderlyings, eq(underlyings.parentUnderlyingId, parentUnderlyings.id))
     .where(
       and(
-        inArray(positions.accountId, accountIds),
         sql`${positions.quantity} != 0`,
-        sql`${positions.snapshotDate} = (
-          SELECT MAX(p2.snapshot_date)
-          FROM positions p2
-          WHERE p2.account_id = ${positions.accountId}
-        )`
       )
     )
     .orderBy(asc(positions.symbol));
@@ -784,7 +797,23 @@ export async function getPortfolioPositionsData(
   }, null as string | null);
 
   // Get aggregated NAV, cash, and leverage from portfolio_snapshots.
-  // Uses per-account latest dates so all exchanges contribute.
+  // Uses per-account latest dates so all exchanges contribute, expressed as a
+  // grouped relation for the same reason as the position query above.
+  const latestPortfolioDates = db
+    .select({
+      accountId: portfolioSnapshots.accountId,
+      snapshotDate: sql<string>`MAX(${portfolioSnapshots.snapshotDate})`.as('snapshot_date'),
+    })
+    .from(portfolioSnapshots)
+    .where(
+      and(
+        inArray(portfolioSnapshots.accountId, accountIds),
+        eq(portfolioSnapshots.level, 'account'),
+      ),
+    )
+    .groupBy(portfolioSnapshots.accountId)
+    .as('latest_portfolio_dates');
+
   const portfolioResult = await db
     .select({
       nav: sql<string>`SUM(CAST(COALESCE(${portfolioSnapshots.navAtSnapshotUsd}, ${portfolioSnapshots.navAtSnapshot}) AS NUMERIC))`,
@@ -792,16 +821,16 @@ export async function getPortfolioPositionsData(
       totalAbsNotional: sql<string>`SUM(CAST(COALESCE(${portfolioSnapshots.totalAbsNotionalUsd}, ${portfolioSnapshots.totalAbsNotional}) AS NUMERIC))`,
     })
     .from(portfolioSnapshots)
+    .innerJoin(
+      latestPortfolioDates,
+      and(
+        eq(portfolioSnapshots.accountId, latestPortfolioDates.accountId),
+        sql`${portfolioSnapshots.snapshotDate} = ${sql.raw('"latest_portfolio_dates"."snapshot_date"')}`,
+      ),
+    )
     .where(
       and(
-        inArray(portfolioSnapshots.accountId, accountIds),
         eq(portfolioSnapshots.level, "account"),
-        sql`${portfolioSnapshots.snapshotDate} = (
-          SELECT MAX(ps2.snapshot_date)
-          FROM portfolio_snapshots ps2
-          WHERE ps2.account_id = ${portfolioSnapshots.accountId}
-            AND ps2.level = 'account'
-        )`
       )
     );
 
@@ -851,7 +880,19 @@ export async function getPortfolioPositionsData(
     // Build lookup keys for all held options
     const optTickers = [...new Set(optPositions.map((p) => p.underlyingTicker!))];
 
-    // Fetch deltas for these tickers from the latest options chain snapshot
+    // Fetch deltas for these tickers from the latest options chain snapshot.
+    // Use one grouped latest-date relation per ticker; the previous correlated
+    // MAX() subquery was evaluated once for every historical chain row.
+    const latestOptionSnapshotDates = db
+      .select({
+        ticker: optionsChainSnapshots.ticker,
+        snapshotDate: sql<string>`MAX(${optionsChainSnapshots.snapshotDate})`.as('snapshot_date'),
+      })
+      .from(optionsChainSnapshots)
+      .where(inArray(optionsChainSnapshots.ticker, optTickers))
+      .groupBy(optionsChainSnapshots.ticker)
+      .as('latest_option_snapshot_dates');
+
     const greekRows = await db
       .select({
         ticker: optionsChainSnapshots.ticker,
@@ -861,15 +902,16 @@ export async function getPortfolioPositionsData(
         delta: optionsChainSnapshots.delta,
       })
       .from(optionsChainSnapshots)
+      .innerJoin(
+        latestOptionSnapshotDates,
+        and(
+          eq(optionsChainSnapshots.ticker, latestOptionSnapshotDates.ticker),
+          sql`${optionsChainSnapshots.snapshotDate} = ${sql.raw('"latest_option_snapshot_dates"."snapshot_date"')}`,
+        ),
+      )
       .where(
         and(
-          inArray(optionsChainSnapshots.ticker, optTickers),
           sql`${optionsChainSnapshots.delta} IS NOT NULL`,
-          sql`${optionsChainSnapshots.snapshotDate} = (
-            SELECT MAX(ocs2.snapshot_date)
-            FROM options_chain_snapshots ocs2
-            WHERE ocs2.ticker = ${optionsChainSnapshots.ticker}
-          )`
         )
       );
 
