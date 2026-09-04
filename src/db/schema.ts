@@ -775,7 +775,12 @@ export const positions = pgTable('positions', {
   snapshotDate: date('snapshot_date'),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow(),
-});
+}, (table) => ({
+  accountSnapshotIdx: index('idx_positions_account_snapshot_date').on(
+    table.accountId,
+    table.snapshotDate,
+  ),
+}));
 
 // ============================================================================
 // MTM Snapshots
@@ -1152,7 +1157,7 @@ export const flexQueryConfigs = pgTable('flex_query_configs', {
   isActive: boolean('is_active').notNull().default(true),
   scheduleCron: text('schedule_cron'), // Cron expression for scheduling
   lastRunAt: timestamp('last_run_at', { withTimezone: true }),
-  lastRunStatus: text('last_run_status'), // 'success' | 'failed' | 'pending'
+  lastRunStatus: text('last_run_status'), // 'success' | 'expected' | 'failed' | 'pending'
   lastRunError: text('last_run_error'),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),

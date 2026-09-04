@@ -27,12 +27,18 @@ import { flexQueryConfigs } from '../src/db/schema';
 import { eq } from 'drizzle-orm';
 import { fetchFlexQuery, FlexApiError } from '../src/lib/ingestion/flex/api';
 import { processPositionsCsv, processTradesCsv } from '../src/lib/ingestion/flex/processCsv';
+import {
+  classifyFlexFailure,
+  getDailyFlexPositionCoverage,
+  type FlexFailureDisposition,
+} from '../src/lib/ingestion/flex/dailyHealth';
 
 interface IngestionResult {
   configId: string;
   queryName: string;
   queryType: string;
   success: boolean;
+  disposition?: FlexFailureDisposition | 'success';
   error?: string;
   summary?: any;
 }
@@ -101,7 +107,11 @@ async function processFlexQuery(
   }
 }
 
-async function runIngestionForConfig(configId: string, saveCsvDir?: string): Promise<IngestionResult> {
+async function runIngestionForConfig(
+  configId: string,
+  saveCsvDir: string | undefined,
+  dailyPositionCoverage: Set<string>,
+): Promise<IngestionResult> {
   const config = await db
     .select()
     .from(flexQueryConfigs)
@@ -120,6 +130,7 @@ async function runIngestionForConfig(configId: string, saveCsvDir?: string): Pro
       queryName: flexConfig.queryName,
       queryType: flexConfig.queryType,
       success: false,
+      disposition: 'failed',
       error: 'Config is not active',
     };
   }
@@ -149,6 +160,10 @@ async function runIngestionForConfig(configId: string, saveCsvDir?: string): Pro
       flexConfig.queryName
     );
 
+    if (!ingestionResult.success) {
+      throw new Error(`Flex ${flexConfig.queryType} processing reported errors: ${JSON.stringify(ingestionResult.summary)}`);
+    }
+
     await db
       .update(flexQueryConfigs)
       .set({
@@ -159,6 +174,10 @@ async function runIngestionForConfig(configId: string, saveCsvDir?: string): Pro
       })
       .where(eq(flexQueryConfigs.id, configId));
 
+    if (flexConfig.queryType === 'positions') {
+      dailyPositionCoverage.add(flexConfig.accountId);
+    }
+
     console.log(`[${flexConfig.queryName}] ✅ Success`);
     console.log(`[${flexConfig.queryName}] Summary:`, JSON.stringify(ingestionResult.summary, null, 2));
 
@@ -167,6 +186,7 @@ async function runIngestionForConfig(configId: string, saveCsvDir?: string): Pro
       queryName: flexConfig.queryName,
       queryType: flexConfig.queryType,
       success: true,
+      disposition: 'success',
       summary: ingestionResult,
     };
   } catch (error) {
@@ -180,14 +200,17 @@ async function runIngestionForConfig(configId: string, saveCsvDir?: string): Pro
       errorMessage = JSON.stringify(error);
     }
 
-    console.error(`[${flexConfig.queryName}] ❌ Error:`, errorMessage);
+    const dailyPositionCaptured = dailyPositionCoverage.has(flexConfig.accountId);
+    const disposition = classifyFlexFailure(errorMessage, dailyPositionCaptured);
+    const icon = disposition === 'expected' ? '◐' : '❌';
+    console.error(`[${flexConfig.queryName}] ${icon} ${disposition}:`, errorMessage);
 
     await db
       .update(flexQueryConfigs)
       .set({
         lastRunAt: new Date(),
-        lastRunStatus: 'failed',
-        lastRunError: errorMessage,
+        lastRunStatus: disposition,
+        lastRunError: disposition === 'expected' ? `Expected: ${errorMessage}` : errorMessage,
         updatedAt: new Date(),
       })
       .where(eq(flexQueryConfigs.id, configId));
@@ -196,7 +219,8 @@ async function runIngestionForConfig(configId: string, saveCsvDir?: string): Pro
       configId,
       queryName: flexConfig.queryName,
       queryType: flexConfig.queryType,
-      success: false,
+      success: disposition === 'expected',
+      disposition,
       error: errorMessage,
     };
   }
@@ -243,7 +267,16 @@ async function main() {
 
     if (configId) {
       console.log(`Running for config: ${configId}\n`);
-      const result = await runIngestionForConfig(configId, saveCsvDir);
+      const configRow = await db
+        .select({ accountId: flexQueryConfigs.accountId })
+        .from(flexQueryConfigs)
+        .where(eq(flexQueryConfigs.id, configId))
+        .limit(1);
+      const dailyPositionCoverage = await getDailyFlexPositionCoverage(
+        db,
+        configRow[0] ? [configRow[0].accountId] : [],
+      );
+      const result = await runIngestionForConfig(configId, saveCsvDir, dailyPositionCoverage);
       results.push(result);
     } else {
       console.log('Running for all active configs...\n');
@@ -259,25 +292,39 @@ async function main() {
 
       console.log(`Found ${activeConfigs.length} active config(s)\n`);
 
-      for (const config of activeConfigs) {
-        const result = await runIngestionForConfig(config.id, saveCsvDir);
+      const dailyPositionCoverage = await getDailyFlexPositionCoverage(
+        db,
+        activeConfigs.filter((config) => config.queryType === 'positions').map((config) => config.accountId),
+      );
+
+      // Capture positions before trades so a same-cycle position success also
+      // makes subsequent trade-query polling failures non-actionable.
+      const orderedConfigs = [...activeConfigs].sort((a, b) => {
+        if (a.queryType === b.queryType) return 0;
+        return a.queryType === 'positions' ? -1 : 1;
+      });
+
+      for (const config of orderedConfigs) {
+        const result = await runIngestionForConfig(config.id, saveCsvDir, dailyPositionCoverage);
         results.push(result);
         console.log(''); // Empty line between runs
       }
     }
 
-    const successCount = results.filter((r) => r.success).length;
-    const failureCount = results.filter((r) => !r.success).length;
+    const successCount = results.filter((r) => r.disposition === 'success').length;
+    const expectedCount = results.filter((r) => r.disposition === 'expected').length;
+    const failureCount = results.filter((r) => r.disposition === 'failed').length;
 
     console.log('\n📊 Summary:');
     console.log(`  Total: ${results.length}`);
     console.log(`  ✅ Success: ${successCount}`);
+    console.log(`  ◐ Expected: ${expectedCount}`);
     console.log(`  ❌ Failed: ${failureCount}\n`);
 
     if (failureCount > 0) {
       console.log('Failed configs:');
       results
-        .filter((r) => !r.success)
+        .filter((r) => r.disposition === 'failed')
         .forEach((r) => {
           console.log(`  - ${r.queryName}: ${r.error}`);
         });
@@ -285,7 +332,7 @@ async function main() {
       process.exit(1);
     }
 
-    console.log('✅ All ingestion runs completed successfully!');
+    console.log('✅ Flex polling cycle completed without an actionable failure.');
     process.exit(0);
   } catch (error) {
     console.error('❌ Fatal error:', error);
@@ -294,4 +341,3 @@ async function main() {
 }
 
 main();
-

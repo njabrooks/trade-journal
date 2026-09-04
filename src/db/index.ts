@@ -66,6 +66,9 @@ const WATCHDOG_STALL_MS = process.env.DB_WATCHDOG_STALL_MS !== undefined
   : 150_000;
 const WATCHDOG_TICK_MS = Math.min(15_000, Math.max(1_000, Math.floor(WATCHDOG_STALL_MS / 4) || 15_000));
 const HANDSHAKE_PHASE_TIMEOUT_MS = 10_000;
+const POOL_MAX = Number(process.env.DB_POOL_MAX || 10);
+const POOL_IDLE_TIMEOUT_SECONDS = Number(process.env.DB_POOL_IDLE_TIMEOUT_SECONDS || 20);
+const POOL_MAX_LIFETIME_SECONDS = Number(process.env.DB_POOL_MAX_LIFETIME_SECONDS || 15 * 60);
 
 // Postgres wire protocol SSLRequest: int32 length (8) + int32 code (80877103)
 const SSL_REQUEST = Buffer.from([0x00, 0x00, 0x00, 0x08, 0x04, 0xd2, 0x16, 0x2f]);
@@ -165,11 +168,16 @@ type PostgresOptionsWithSocket = postgres.Options<Record<string, postgres.Postgr
 // Connection pooling is handled by Supabase
 const clientOptions: PostgresOptionsWithSocket = {
   prepare: false,
-  max: 10, // Allow multiple connections to prevent blocking (pooler handles pooling)
+  max: POOL_MAX, // Allow multiple connections to prevent blocking (pooler handles pooling)
   connect_timeout: 10, // Covers startup/auth after the socket factory resolves
-  idle_timeout: 20, // Idle timeout in seconds
-  max_lifetime: 60 * 30, // Max connection lifetime in seconds (30 minutes)
+  idle_timeout: POOL_IDLE_TIMEOUT_SECONDS,
+  // Recycle connections frequently enough to avoid retaining a pooler socket
+  // across long-lived app sessions or sleep/wake cycles.
+  max_lifetime: POOL_MAX_LIFETIME_SECONDS,
   keep_alive: 60, // TCP keepalive delay in seconds (postgres.js default, made explicit)
+  onclose: (connectionId) => {
+    console.warn(`[DB] Connection ${connectionId} closed; postgres.js will reconnect as needed`);
+  },
   // TLS is performed inside the socket factory (STARTTLS); this false also
   // overrides ?sslmode=require in the connection string so postgres.js does
   // not attempt a second upgrade.

@@ -12,16 +12,22 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/db';
 import { flexQueryConfigs } from '@/db/schema';
-import { eq } from 'drizzle-orm';
+import { and, eq } from 'drizzle-orm';
 import { fetchFlexQuery, FlexApiError } from '@/lib/ingestion/flex/api';
 import { startProcess, completeProcess, failProcess } from '@/lib/services/processTracking';
 import { processPositionsCsv, processTradesCsv } from '@/lib/ingestion/flex/processCsv';
+import {
+  classifyFlexFailure,
+  getDailyFlexPositionCoverage,
+  type FlexFailureDisposition,
+} from '@/lib/ingestion/flex/dailyHealth';
 
 interface IngestionResult {
   configId: string;
   queryName: string;
   queryType: string;
   success: boolean;
+  disposition?: FlexFailureDisposition | 'success';
   error?: string;
   summary?: any;
 }
@@ -100,7 +106,10 @@ async function processFlexQuery(
 /**
  * Runs automated ingestion for a specific Flex query config
  */
-async function runIngestionForConfig(configId: string): Promise<IngestionResult> {
+async function runIngestionForConfig(
+  configId: string,
+  dailyPositionCoverage: Set<string>,
+): Promise<IngestionResult> {
   // Fetch config from database
   const config = await db
     .select()
@@ -120,6 +129,7 @@ async function runIngestionForConfig(configId: string): Promise<IngestionResult>
       queryName: flexConfig.queryName,
       queryType: flexConfig.queryType,
       success: false,
+      disposition: 'failed',
       error: 'Config is not active',
     };
   }
@@ -140,6 +150,10 @@ async function runIngestionForConfig(configId: string): Promise<IngestionResult>
       flexConfig.queryName
     );
 
+    if (!ingestionResult.success) {
+      throw new Error(`Flex ${flexConfig.queryType} processing reported errors: ${JSON.stringify(ingestionResult.summary)}`);
+    }
+
     // Update config with success status
     await db
       .update(flexQueryConfigs)
@@ -151,11 +165,16 @@ async function runIngestionForConfig(configId: string): Promise<IngestionResult>
       })
       .where(eq(flexQueryConfigs.id, configId));
 
+    if (flexConfig.queryType === 'positions') {
+      dailyPositionCoverage.add(flexConfig.accountId);
+    }
+
     return {
       configId,
       queryName: flexConfig.queryName,
       queryType: flexConfig.queryType,
       success: true,
+      disposition: 'success',
       summary: ingestionResult,
     };
   } catch (error) {
@@ -185,13 +204,16 @@ async function runIngestionForConfig(configId: string): Promise<IngestionResult>
       details: errorDetails,
     });
 
-    // Update config with failure status
+    const dailyPositionCaptured = dailyPositionCoverage.has(flexConfig.accountId);
+    const disposition = classifyFlexFailure(errorMessage, dailyPositionCaptured);
+
+    // Preserve expected polling outcomes separately from actionable failures.
     await db
       .update(flexQueryConfigs)
       .set({
         lastRunAt: new Date(),
-        lastRunStatus: 'failed',
-        lastRunError: errorMessage,
+        lastRunStatus: disposition,
+        lastRunError: disposition === 'expected' ? `Expected: ${errorMessage}` : errorMessage,
         updatedAt: new Date(),
       })
       .where(eq(flexQueryConfigs.id, configId));
@@ -200,7 +222,8 @@ async function runIngestionForConfig(configId: string): Promise<IngestionResult>
       configId,
       queryName: flexConfig.queryName,
       queryType: flexConfig.queryType,
-      success: false,
+      success: disposition === 'expected',
+      disposition,
       error: errorMessage,
     };
   }
@@ -237,6 +260,28 @@ export async function POST(request: NextRequest) {
 
     const results: IngestionResult[] = [];
 
+    let positionConfigAccountIds: string[] = [];
+    if (all) {
+      const activePositionConfigs = await db
+        .select({ accountId: flexQueryConfigs.accountId })
+        .from(flexQueryConfigs)
+        .where(
+          and(
+            eq(flexQueryConfigs.isActive, true),
+            eq(flexQueryConfigs.queryType, 'positions'),
+          ),
+        );
+      positionConfigAccountIds = activePositionConfigs.map((config) => config.accountId);
+    } else if (configId) {
+      const selectedConfig = await db
+        .select({ accountId: flexQueryConfigs.accountId })
+        .from(flexQueryConfigs)
+        .where(eq(flexQueryConfigs.id, configId))
+        .limit(1);
+      positionConfigAccountIds = selectedConfig.map((config) => config.accountId);
+    }
+    const dailyPositionCoverage = await getDailyFlexPositionCoverage(db, positionConfigAccountIds);
+
     if (all) {
       // Run all active configs
       const activeConfigs = await db
@@ -244,13 +289,20 @@ export async function POST(request: NextRequest) {
         .from(flexQueryConfigs)
         .where(eq(flexQueryConfigs.isActive, true));
 
-      for (const config of activeConfigs) {
-        const result = await runIngestionForConfig(config.id);
+      // Capture positions before trades so a same-cycle position success also
+      // makes subsequent trade-query polling failures non-actionable.
+      const orderedConfigs = [...activeConfigs].sort((a, b) => {
+        if (a.queryType === b.queryType) return 0;
+        return a.queryType === 'positions' ? -1 : 1;
+      });
+
+      for (const config of orderedConfigs) {
+        const result = await runIngestionForConfig(config.id, dailyPositionCoverage);
         results.push(result);
       }
     } else if (configId) {
       // Run specific config
-      const result = await runIngestionForConfig(configId);
+      const result = await runIngestionForConfig(configId, dailyPositionCoverage);
       results.push(result);
     } else {
       return NextResponse.json(
@@ -259,8 +311,9 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const successCount = results.filter((r) => r.success).length;
-    const failureCount = results.filter((r) => !r.success).length;
+    const successCount = results.filter((r) => r.disposition === 'success').length;
+    const expectedCount = results.filter((r) => r.disposition === 'expected').length;
+    const failureCount = results.filter((r) => r.disposition === 'failed').length;
 
     // Complete process tracking
     if (processRunId) {
@@ -269,6 +322,7 @@ export async function POST(request: NextRequest) {
         summary: {
           total: results.length,
           success: successCount,
+          expected: expectedCount,
           failures: failureCount,
           results,
         },
@@ -280,6 +334,7 @@ export async function POST(request: NextRequest) {
       summary: {
         total: results.length,
         success: successCount,
+        expected: expectedCount,
         failures: failureCount,
       },
       results,
@@ -343,4 +398,3 @@ export async function GET(request: NextRequest) {
     );
   }
 }
-

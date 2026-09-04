@@ -1,0 +1,31 @@
+name: Flex Daily Health
+
+# Flex statements are published once per day at a variable time. The hourly
+# polling workflow is allowed to report expected "not ready"/"already
+# captured" outcomes; this check is the daily completeness assertion.
+
+on:
+  schedule:
+    - cron: '0 15 * * 1-5'
+  workflow_dispatch:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - run: npm ci
+
+      - name: Check daily Flex coverage
+        env:
+          DATABASE_URL_POOLER: ${{ secrets.DATABASE_URL_POOLER }}
+          DATABASE_URL_DIRECT: ${{ secrets.DATABASE_URL_DIRECT }}
+          USE_DIRECT_CONNECTION: ${{ secrets.USE_DIRECT_CONNECTION }}
+        run: npx tsx scripts/check-flex-daily-health.ts
