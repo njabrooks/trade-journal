@@ -69,12 +69,14 @@ function formatCompactCurrency(value: number): string {
   return `$${value.toFixed(0)}`;
 }
 
-type TimePeriod = "7d" | "14d" | "1m" | "3m";
+type TimePeriod = "7d" | "14d" | "1m" | "3m" | "6m" | "12m";
 const TIME_PERIODS: { key: TimePeriod; label: string; days: number }[] = [
   { key: "7d", label: "7D", days: 7 },
   { key: "14d", label: "14D", days: 14 },
   { key: "1m", label: "1M", days: 30 },
   { key: "3m", label: "3M", days: 90 },
+  { key: "6m", label: "6M", days: 180 },
+  { key: "12m", label: "12M", days: 365 },
 ];
 
 export function PortfolioCharts({ dashboardData, exposureBreakdown }: PortfolioChartsProps) {
@@ -151,9 +153,9 @@ export function PortfolioCharts({ dashboardData, exposureBreakdown }: PortfolioC
     <section className="grid gap-4 lg:grid-cols-4">
       {/* NAV by Owner — stacked area chart */}
       <div className="rounded-2xl border bg-card p-5 shadow-sm lg:col-span-2">
-        <div className="flex items-center justify-between mb-1">
+        <div className="mb-1 flex flex-wrap items-center justify-between gap-2">
           <p className="text-xs font-medium text-muted-foreground">NAV by Owner</p>
-          <div className="flex items-center gap-1">
+          <div className="flex flex-wrap items-center justify-end gap-1">
             {TIME_PERIODS.map((period) => (
               <button
                 key={period.key}

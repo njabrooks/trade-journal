@@ -15,6 +15,7 @@ import { toNumber } from "@/lib/numbers";
 
 // Alias for parent underlying self-join
 const parentUnderlyings = alias(underlyings, "parent_underlyings");
+const PORTFOLIO_HISTORY_DAYS = 365;
 
 export interface PortfolioTrendPoint {
   date: string;
@@ -111,7 +112,7 @@ export async function getPortfolioDashboardData(
       )
     )
     .orderBy(desc(portfolioSnapshots.snapshotDate))
-    .limit(90);
+    .limit(PORTFOLIO_HISTORY_DAYS);
 
   const accountSnapshots = accountRows
     .map<PortfolioTrendPoint>((row) => ({
@@ -308,7 +309,7 @@ export async function getPortfolioDashboardDataMultiAccount(
     )
     .groupBy(portfolioSnapshots.snapshotDate)
     .orderBy(desc(portfolioSnapshots.snapshotDate))
-    .limit(90);
+    .limit(PORTFOLIO_HISTORY_DAYS);
 
   // Build account snapshots with leverage from navAtSnapshot
   const accountSnapshots = accountRows
@@ -532,7 +533,7 @@ export async function getPortfolioDashboardDataMultiAccount(
       )
     )
     .orderBy(desc(portfolioSnapshots.snapshotDate))
-    .limit(90 * accountIds.length);
+    .limit(PORTFOLIO_HISTORY_DAYS * accountIds.length);
 
   // Reverse so rows are chronological (query fetches most-recent first)
   perAccountNavRows.reverse();
