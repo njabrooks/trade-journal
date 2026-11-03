@@ -1,4 +1,4 @@
-/** Pure reporting logic. No database imports: safe for unit tests. */
+/** Reporting helpers without database imports. */
 export interface CloseWindow {
   since: string;
   through: string;
@@ -165,4 +165,22 @@ export function buildClosedStrategyReport(rows: ClosedStrategyScope[], window: C
       }];
     }),
   };
+}
+
+/** Keep optional closed-strategy failures out of the rest of the morning brief. */
+export async function gatherClosedStrategiesSoftly(
+  gather: () => Promise<ReturnType<typeof buildClosedStrategyReport>>,
+) {
+  try {
+    const report = await gather();
+    return { ...report, closedStrategiesError: null };
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    process.stderr.write(`Warning: closed strategies unavailable: ${message.replace(/[\r\n\u2028\u2029]+/g, ' ')}\n`);
+    return {
+      closedSinceLastPull: null,
+      closedStrategyHealth: null,
+      closedStrategiesError: message,
+    };
+  }
 }

@@ -1,9 +1,10 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
   buildClosedStrategyReport,
   classifyCloseHealth,
   closeWindow,
   closeWindowFromArgs,
+  gatherClosedStrategiesSoftly,
   isClosingSnapshot,
   type ClosedStrategyScope,
 } from '../src/lib/portfolio/closedStrategies';
@@ -53,6 +54,55 @@ describe('closed-strategy window', () => {
   it('rejects missing --since values instead of silently using the default', () => {
     expect(() => closeWindowFromArgs(['--since'])).toThrow('--since requires');
     expect(() => closeWindowFromArgs(['--since', '--format', 'json'])).toThrow('--since requires');
+  });
+});
+
+describe('morning-brief closed-strategy soft failure', () => {
+  afterEach(() => vi.restoreAllMocks());
+
+  it('returns null sections and an error, with a single-line stderr warning and no stdout', async () => {
+    const stderr = vi.spyOn(process.stderr, 'write').mockImplementation(() => true);
+    const stdout = vi.spyOn(process.stdout, 'write').mockImplementation(() => true);
+    const result = await gatherClosedStrategiesSoftly(async () => {
+      throw new Error('query failed\nhealth check unavailable');
+    });
+
+    expect(result).toEqual({
+      closedSinceLastPull: null,
+      closedStrategyHealth: null,
+      closedStrategiesError: 'query failed\nhealth check unavailable',
+    });
+    expect(stderr).toHaveBeenCalledExactlyOnceWith(
+      'Warning: closed strategies unavailable: query failed health check unavailable\n',
+    );
+    expect(stdout).not.toHaveBeenCalled();
+  });
+
+  it('also catches synchronous throws with non-Error values', async () => {
+    const stderr = vi.spyOn(process.stderr, 'write').mockImplementation(() => true);
+    const result = await gatherClosedStrategiesSoftly(() => { throw 'connection lost'; });
+    expect(result).toEqual({
+      closedSinceLastPull: null,
+      closedStrategyHealth: null,
+      closedStrategiesError: 'connection lost',
+    });
+    expect(stderr).toHaveBeenCalledOnce();
+  });
+
+  it('passes a successful report through with a null error and no warning', async () => {
+    const stderr = vi.spyOn(process.stderr, 'write').mockImplementation(() => true);
+    const report = buildClosedStrategyReport([scope()], window);
+    const gather = vi.fn(async () => report);
+    const result = await gatherClosedStrategiesSoftly(gather);
+
+    expect(gather).toHaveBeenCalledOnce();
+    expect(result).toEqual({ ...report, closedStrategiesError: null });
+    expect(result.closedSinceLastPull).toBe(report.closedSinceLastPull);
+    expect(result.closedStrategyHealth).toBe(report.closedStrategyHealth);
+    expect(Object.keys(result)).toEqual([
+      'closedSinceLastPull', 'closedStrategyHealth', 'closedStrategiesError',
+    ]);
+    expect(stderr).not.toHaveBeenCalled();
   });
 });
 

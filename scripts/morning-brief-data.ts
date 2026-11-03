@@ -20,6 +20,8 @@
  *   closedSinceLastPull — inclusive --since (default previous London weekday) through today;
  *                         same account/strategy rows and USD period totals as pull-portfolio
  *   closedStrategyHealth — read-only complete-strategy diagnostics, all dates
+ *   closedStrategiesError — null on success; on failure, an error message with both
+ *                           closed-strategy sections null and a warning on stderr
  *
  * Usage: npx tsx scripts/morning-brief-data.ts --json [--since YYYY-MM-DD]
  *        (from repo root; self-loads .env.local). New field shapes/semantics are
@@ -28,7 +30,7 @@
 // scripts/lib/db loads dotenv at import time — it MUST come before '@/db' (which creates
 // its client from env at module eval). ESM evaluates imports in declaration order.
 import { closeDb } from './lib/db.js';
-import { closeWindowFromArgs } from '../src/lib/portfolio/closedStrategies.js';
+import { closeWindowFromArgs, gatherClosedStrategiesSoftly } from '../src/lib/portfolio/closedStrategies.js';
 import { gatherClosedStrategies } from './lib/closed-strategies.js';
 import { db } from '@/db';
 import {
@@ -410,7 +412,7 @@ async function main() {
     gatherSizingFindings(navDelta.latestNavUsd),
     gatherCalendar(),
     gatherRegime(),
-    gatherClosedStrategies(window),
+    gatherClosedStrategiesSoftly(() => gatherClosedStrategies(window)),
   ]);
 
   // Deterministic reuse of the sibling --json surfaces (each runs in its own process).
