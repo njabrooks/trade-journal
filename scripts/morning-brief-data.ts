@@ -17,12 +17,19 @@
  *   executionPatterns   — reuse of scripts/ops/execution-patterns.ts --json (A2)
  *   calendar            — next-48h economic + earnings events for held tickers (the orphaned
  *                         src/db/queries/{economicEvents,earningsEvents} modules' consumer)
+ *   closedSinceLastPull — inclusive --since (default previous London weekday) through today;
+ *                         same account/strategy rows and USD period totals as pull-portfolio
+ *   closedStrategyHealth — read-only complete-strategy diagnostics, all dates
  *
- * Usage: npx tsx scripts/morning-brief-data.ts --json   (from repo root; self-loads .env.local)
+ * Usage: npx tsx scripts/morning-brief-data.ts --json [--since YYYY-MM-DD]
+ *        (from repo root; self-loads .env.local). New field shapes/semantics are
+ *        documented in scripts/pull-portfolio.ts; existing bundle fields are unchanged.
  */
 // scripts/lib/db loads dotenv at import time — it MUST come before '@/db' (which creates
 // its client from env at module eval). ESM evaluates imports in declaration order.
 import { closeDb } from './lib/db.js';
+import { closeWindowFromArgs } from '../src/lib/portfolio/closedStrategies.js';
+import { gatherClosedStrategies } from './lib/closed-strategies.js';
 import { db } from '@/db';
 import {
   advisorRecommendations,
@@ -395,13 +402,15 @@ async function gatherRegime() {
 }
 
 async function main() {
+  const window = closeWindowFromArgs(process.argv.slice(2));
   const navDelta = await gatherNavDelta();
-  const [overnightEvidence, advisor, sizing, calendar, regime] = await Promise.all([
+  const [overnightEvidence, advisor, sizing, calendar, regime, closedReport] = await Promise.all([
     gatherOvernightEvidence(),
     gatherAdvisor(),
     gatherSizingFindings(navDelta.latestNavUsd),
     gatherCalendar(),
     gatherRegime(),
+    gatherClosedStrategies(window),
   ]);
 
   // Deterministic reuse of the sibling --json surfaces (each runs in its own process).
@@ -434,6 +443,7 @@ async function main() {
     sizing,
     executionPatterns,
     calendar,
+    ...closedReport,
   };
 
   console.log(JSON.stringify(bundle, null, 2));
