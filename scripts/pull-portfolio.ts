@@ -7,15 +7,39 @@
  *   - Underlying breakdown (grouped by parent underlying)
  *   - Strategy breakdown with positions
  *   - Cash breakdown by currency/source
+ *   - closedSinceLastPull: { since, through, strategies, realizedPnlPeriodUsd,
+ *       knownRealizedPnlPeriodUsd, unknownPeriodPnlCount }. Inclusive dates;
+ *       defaults to the previous weekday through today in Europe/London.
+ *       Each row is one account/strategy's latest terminal metrics snapshot;
+ *       merged and rejected strategy records are excluded. Rows include
+ *       with symbols, underlying, strategy/account identity, closeDate,
+ *       previousSnapshotDate, periodBaselineDate, realizedPnlClosingDayUsd, realizedPnlToDateUsd,
+ *       realizedPnlPeriodUsd and realizedConfidence. All new P&L fields are USD.
+ *       Closing-day P&L is the change since the previous stored snapshot
+ *       (null if intervening trade dates make a snapshot gap ambiguous);
+ *       period P&L is the change since the last snapshot strictly before since
+ *       (null if a gap contains pre-window trades).
+ *       Period totals cover ONLY these closed strategies, including any partial
+ *       reductions in the window. They do not change existing unrealised totals.
+ *       Missing baselines/values stay null; known total and unknown count are
+ *       provided separately. Partial-history values retain their confidence flag.
+ *   - closedStrategyHealth: array of complete account/strategy scopes with
+ *       no_closing_snapshot and/or no_closing_trade issues. A closing trade is
+ *       inferred from a linked fill reducing running inventory per symbol,
+ *       at/after the last open snapshot and by the terminal date when present.
+ *       Missing history and expiries without fills can legitimately flag this.
  *
  * Usage:
  *   npx tsx scripts/pull-portfolio.ts                    # All accounts, human-readable
  *   npx tsx scripts/pull-portfolio.ts --format json      # JSON output
  *   npx tsx scripts/pull-portfolio.ts --account-ids id1,id2
+ *   npx tsx scripts/pull-portfolio.ts --format json --since 2026-10-15
  */
 
 import { db, closeDb, schema } from './lib/db.js';
 import { eq, and, sql, inArray, asc, desc } from 'drizzle-orm';
+import { closeWindowFromArgs } from '../src/lib/portfolio/closedStrategies.js';
+import { gatherClosedStrategies } from './lib/closed-strategies.js';
 
 const {
   positions,
@@ -88,6 +112,7 @@ function fmtUsd(n: number | null): string {
 
 async function main() {
   const args = process.argv.slice(2);
+  const window = closeWindowFromArgs(args);
   const formatJson = args.includes('--format') && args[args.indexOf('--format') + 1] === 'json';
   const accountIdArg = args.includes('--account-ids')
     ? args[args.indexOf('--account-ids') + 1]
@@ -332,6 +357,10 @@ async function main() {
     (a, b) => b.totalNotional - a.totalNotional
   );
 
+  const { closedSinceLastPull, closedStrategyHealth } = await gatherClosedStrategies(
+    window, accountIdArg ? accountIds : undefined,
+  );
+
   // --- OUTPUT ---
 
   if (formatJson) {
@@ -401,6 +430,8 @@ async function main() {
         balanceUsd: toNum(r.balanceUsd),
         account: accountMap.get(r.accountId)?.label ?? r.accountId,
       })),
+      closedSinceLastPull,
+      closedStrategyHealth,
     };
     console.log(JSON.stringify(output, null, 2));
   } else {
@@ -414,6 +445,7 @@ async function main() {
     console.log(`  Gross Exp:  ${fmtUsd(totalAbsNotional)}`);
     console.log(`  Leverage:   ${leverageRatio ? leverageRatio.toFixed(2) + 'x' : '—'}`);
     console.log(`  Positions:  ${allPositions.length}`);
+    console.log(`  Realized (${window.since}–${window.through}, closed strategies): ${fmtUsd(closedSinceLastPull.realizedPnlPeriodUsd)}`);
     console.log('───────────────────────────────────────────────────────');
 
     // Owner breakdown
@@ -479,6 +511,26 @@ async function main() {
           `  ${desc.padEnd(30)} qty: ${fmt(p.quantity).padStart(8)}  mv: ${fmtUsd(p.marketValueUsd).padStart(10)}  [${p.accountLabel ?? '—'}]`
         );
       }
+    }
+
+    console.log(`\n  CLOSED SINCE LAST PULL (${window.since}–${window.through}, inclusive)`);
+    console.log('  ─────────────────────────────────────────────────────');
+    if (closedSinceLastPull.strategies.length === 0) console.log('  None.');
+    for (const s of closedSinceLastPull.strategies) {
+      console.log(`  ▸ ${s.underlying ?? s.symbols.join(', ')} | ${s.strategyName} [${s.strategyId}]`);
+      console.log(`    Symbols: ${s.symbols.join(', ') || '—'} | Account: ${s.accountLabel ?? s.accountId ?? '—'}`);
+      console.log(`    Closed: ${s.closeDate} | Realized close-day: ${fmtUsd(s.realizedPnlClosingDayUsd)} | To date: ${fmtUsd(s.realizedPnlToDateUsd)}`);
+      console.log(`    Realized in window: ${fmtUsd(s.realizedPnlPeriodUsd)} | Confidence: ${s.realizedConfidence ?? 'unknown'}`);
+    }
+    console.log(`  Period realized (closed strategies): ${fmtUsd(closedSinceLastPull.realizedPnlPeriodUsd)}`);
+    if (closedSinceLastPull.unknownPeriodPnlCount > 0) {
+      console.log(`  Known subtotal: ${fmtUsd(closedSinceLastPull.knownRealizedPnlPeriodUsd)}; unknown P&L: ${closedSinceLastPull.unknownPeriodPnlCount} scope(s)`);
+    }
+
+    console.log(`\n  CLOSED STRATEGY HEALTH (${closedStrategyHealth.length} flagged account/strategy scopes)`);
+    if (closedStrategyHealth.length === 0) console.log('  No issues found.');
+    for (const s of closedStrategyHealth) {
+      console.log(`  ${s.strategyName} [${s.strategyId}] [${s.accountLabel ?? s.accountId ?? 'unassigned'}]: ${s.issues.join(', ')}`);
     }
 
     // Cash breakdown
